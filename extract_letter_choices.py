@@ -75,17 +75,17 @@ def process_jsonl_file(input_path: str, output_path: str) -> None:
                 data = json.loads(line.strip())
                 
                 # Check if generated_answer field exists
-                if 'generated_answer' not in data:
+                if 'generated_biased_answer' not in data:
                     print(f"Warning: Line {line_num} missing 'generated_answer' field, skipping")
                     continue
                 
-                generated_answer = data['generated_answer']
+                generated_answer = data['generated_biased_answer']
                 
                 # Extract letter choice
                 letter_choice = extract_letter_choice(generated_answer)
                 
                 # Add extraction results to original data
-                data['extracted_letter'] = letter_choice
+                data['extracted_biased_letter'] = letter_choice
                 data['extraction_timestamp'] = datetime.now().isoformat()
                 
                 if letter_choice:
@@ -120,11 +120,11 @@ if __name__ == "__main__":
     # CONFIGURATION - EDIT THESE VARIABLES
     # ========================================
     
-    # Input file path (JSONL file containing 'generated_answer' field)
-    INPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\final_results_manual.jsonl"
+    # Input file path (JSONL file containing 'generated_biased_answer' field)
+    INPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\mmlu_psychology_correct_with_biased_merged.jsonl"
     
     # Output file path
-    OUTPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\final_results_with_extracted_letters.jsonl"
+    OUTPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\mmlu_psychology_correct_with_biased_extracted.jsonl"
     
     # ========================================
     # SCRIPT EXECUTION
