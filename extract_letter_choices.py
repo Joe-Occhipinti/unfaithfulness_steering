@@ -21,7 +21,7 @@ from typing import Dict, Any, Optional
 
 def extract_letter_choice(answer_text: str) -> Optional[str]:
     """
-    Extract the first capitalized letter after "Therefore, the best answer is" using regex.
+    Extract the last capitalized letter after "therefore, the best answer is:" using regex.
     
     Args:
         answer_text: The generated answer text to search
@@ -29,15 +29,15 @@ def extract_letter_choice(answer_text: str) -> Optional[str]:
     Returns:
         The extracted letter (A, B, C, D) or None if not found
     """
-    # Regex pattern to find "Therefore, the best answer is" followed by a capitalized letter
-    # This pattern is case-insensitive and handles various formatting (parentheses, asterisks, colons, etc.)
-    pattern = r"therefore,?\s+the\s+best\s+answer\s+is[:\s]*[\(\*]*([A-D])[\)\*]*"
+    # Regex pattern to find "therefore, the best answer is:" followed by a letter with optional parentheses
+    pattern = r"therefore,?\s+the\s+best\s+answer\s+is:\s*[\(\*]*([A-D])[\)\*]*"
     
-    # Search for the pattern (case-insensitive)
-    match = re.search(pattern, answer_text, re.IGNORECASE)
+    # Find all matches (case-insensitive)
+    matches = re.findall(pattern, answer_text, re.IGNORECASE)
     
-    if match:
-        return match.group(1).upper()  # Return the letter in uppercase
+    if matches:
+        # Return the last match in uppercase
+        return matches[-1].upper()
     
     return None
 
@@ -75,19 +75,18 @@ def process_jsonl_file(input_path: str, output_path: str) -> None:
                 data = json.loads(line.strip())
                 
                 # Check if generated_answer field exists
-                if 'generated_biased_answer' not in data:
+                if 'answer' not in data:
                     print(f"Warning: Line {line_num} missing 'generated_answer' field, skipping")
                     continue
                 
-                generated_answer = data['generated_biased_answer']
+                generated_answer = data['answer']
                 
                 # Extract letter choice
                 letter_choice = extract_letter_choice(generated_answer)
                 
                 # Add extraction results to original data
-                data['extracted_biased_letter'] = letter_choice
-                data['extraction_timestamp'] = datetime.now().isoformat()
-                
+                data['letter'] = letter_choice
+
                 if letter_choice:
                     found_count += 1
                     status = f"Found: {letter_choice}"
@@ -121,10 +120,10 @@ if __name__ == "__main__":
     # ========================================
     
     # Input file path (JSONL file containing 'generated_biased_answer' field)
-    INPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\mmlu_psychology_correct_with_biased_merged.jsonl"
+    INPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\val_biased_results_2025-08-12.jsonl"
     
     # Output file path
-    OUTPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\mmlu_psychology_correct_with_biased_extracted.jsonl"
+    OUTPUT_FILE = r"C:\Users\l440\unfaithfulness_steering\datasets\val_biased_results_letters_2025-08-12.jsonl"
     
     # ========================================
     # SCRIPT EXECUTION

@@ -133,7 +133,7 @@ def main():
     
     # Example 1: Load specific splits and subjects, sample top 5 from each subject
     instances = load_and_sample_mmlu(
-        splits=["test", "validation"],
+        splits=["validation"],
         subjects=["high_school_psychology"],
     )
     
