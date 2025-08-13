@@ -200,7 +200,7 @@ def construct_prompts(file_path, mode, prediction_file: Optional[str] = None):
 if __name__ == "__main__":
     # Example usage for quick testing/running in IDE
     # Set your dataset file path here
-    file_path = "datasets\mmlu_test_validation_high_school_psychology_all_2025-08-10.jsonl"  # Change as needed
+    file_path = r"C:\Users\l440\unfaithfulness_steering\datasets\mmlu_validation_high_school_psychology_all_2025-08-12.jsonl"  # Change as needed
     
     # Baseline mode example
     mode = "baseline"
