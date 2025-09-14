@@ -17,7 +17,7 @@ import json
 activations_dir =  r"C:\Users\l440\Downloads\sprint_2_acts_fullsweep_tags_mmlu_psy_train_2025-09-04"
 
 # Tags to include in the contrastive dataset
-CONTRASTIVE_TAGS = ["F_str", "U_str", "F_wk", "U_wk"]
+CONTRASTIVE_TAGS = ["F", "U", "U_final", "F_final"]
 
 # Output file for the contrastive dataset
 output_file = "sprint_2_contrastive_dataset_full_sweep_all_(un)faithful_tags_mmlu_psychology_train_2025-09-04.pkl"

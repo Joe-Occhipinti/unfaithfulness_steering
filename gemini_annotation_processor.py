@@ -33,7 +33,7 @@ except ImportError:
 
 class GeminiAnnotationProcessor:
     def __init__(self, api_key: Optional[str] = None):
-        """Initialize Gemini 2.5 Pro API client for sentence annotation."""
+        """Initialize Gemini 2.5 Pro or Flash API client for sentence annotation."""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY environment variable must be set or passed as argument")
@@ -74,7 +74,7 @@ Text to Annotate: {biased_prompt}"""
     def annotate_prompt(self, biased_prompt: str, unbiased_answer: str, hinted_answer: str,
                        max_retries: int = 3) -> Dict[str, Any]:
         """
-        Annotate a prompt using Gemini 2.5 Pro with sentence annotation.
+        Annotate a prompt using Gemini 2.5 Pro or Flash with sentence annotation.
 
         Args:
             biased_prompt: The prompt text to annotate
@@ -87,7 +87,7 @@ Text to Annotate: {biased_prompt}"""
         """
         user_prompt = self._construct_user_prompt(biased_prompt, unbiased_answer, hinted_answer)
 
-        # Gemini 2.5 Pro API request payload
+        # Gemini 2.5 Pro/Flash API request payload
         payload = {
             "contents": [
                 {

@@ -18,64 +18,81 @@ from typing import Dict, List, Tuple
 import seaborn as sns
 
 # === CONFIGURATION ===
-DEFAULT_DATASET_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\datasets\sprint_2_contrastive_dataset_full_sweep_all_(un)faithful_tags_mmlu_psychology_train_2025-09-04.pkl"
+DEFAULT_DATASET_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\sprint_2.2_contrastive_dataset_train_val_strong_faithful_unfaithful_2025-09-14.pkl"
 
 def load_dataset(file_path: str) -> Dict:
     """Load the contrastive dataset."""
     with open(file_path, 'rb') as f:
         return pickle.load(f)
 
-def test_linear_separability(positive_acts: torch.Tensor, negative_acts: torch.Tensor, layer_idx: int) -> Dict:
+def test_linear_separability(train_positive_acts: torch.Tensor, train_negative_acts: torch.Tensor,
+                            val_positive_acts: torch.Tensor, val_negative_acts: torch.Tensor,
+                            layer_idx: int) -> Dict:
     """
-    Test if positive and negative activations are linearly separable.
-    
+    Test if positive and negative activations are linearly separable using proper train/val splits.
+
+    Args:
+        train_positive_acts: Training positive activations
+        train_negative_acts: Training negative activations
+        val_positive_acts: Validation positive activations
+        val_negative_acts: Validation negative activations
+        layer_idx: Layer index for reference
+
     Returns:
         Dictionary with separability metrics
     """
-    if positive_acts.shape[0] == 0 or negative_acts.shape[0] == 0:
+    if (train_positive_acts.shape[0] == 0 or train_negative_acts.shape[0] == 0 or
+        val_positive_acts.shape[0] == 0 or val_negative_acts.shape[0] == 0):
         return {"error": "Empty activation tensors"}
-    
-    # Combine data and create labels (convert bfloat16 to float32)
-    X = torch.cat([positive_acts.float(), negative_acts.float()], dim=0).numpy()
-    y = torch.cat([
-        torch.zeros(positive_acts.shape[0]),  # 0 for positive (faithful)
-        torch.ones(negative_acts.shape[0])    # 1 for negative (unfaithful)
+
+    # Prepare TRAINING data (convert bfloat16 to float32)
+    X_train = torch.cat([train_positive_acts.float(), train_negative_acts.float()], dim=0).numpy()
+    y_train = torch.cat([
+        torch.zeros(train_positive_acts.shape[0]),  # 0 for positive (faithful)
+        torch.ones(train_negative_acts.shape[0])    # 1 for negative (unfaithful)
     ]).numpy()
-    
-    # Split into train/test
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
-    
-    # Train linear classifier
+
+    # Prepare VALIDATION data
+    X_val = torch.cat([val_positive_acts.float(), val_negative_acts.float()], dim=0).numpy()
+    y_val = torch.cat([
+        torch.zeros(val_positive_acts.shape[0]),    # 0 for positive (faithful)
+        torch.ones(val_negative_acts.shape[0])      # 1 for negative (unfaithful)
+    ]).numpy()
+
+    # Train linear classifier on TRAIN data only
     classifier = LogisticRegression(random_state=42, max_iter=1000)
     classifier.fit(X_train, y_train)
-    
-    # Evaluate
+
+    # Evaluate on both train and val
     train_acc = accuracy_score(y_train, classifier.predict(X_train))
-    test_acc = accuracy_score(y_test, classifier.predict(X_test))
-    
+    val_acc = accuracy_score(y_val, classifier.predict(X_val))  # This is the key metric!
+
     # Get decision boundary properties
     weights = classifier.coef_[0]
     weight_norm = np.linalg.norm(weights)
-    
-    # Compute projection scores for visualization
-    positive_scores = positive_acts.float().numpy() @ weights
-    negative_scores = negative_acts.float().numpy() @ weights
-    
+
+    # Compute projection scores for ALL data (for visualization)
+    all_positive_acts = torch.cat([train_positive_acts, val_positive_acts], dim=0)
+    all_negative_acts = torch.cat([train_negative_acts, val_negative_acts], dim=0)
+
+    positive_scores = all_positive_acts.float().numpy() @ weights
+    negative_scores = all_negative_acts.float().numpy() @ weights
+
     # Compute separation metrics
     positive_mean_score = np.mean(positive_scores)
     negative_mean_score = np.mean(negative_scores)
     separation_distance = abs(positive_mean_score - negative_mean_score)
-    
+
     # Overlap analysis
     positive_std = np.std(positive_scores)
     negative_std = np.std(negative_scores)
     pooled_std = np.sqrt((positive_std**2 + negative_std**2) / 2)
     cohens_d = separation_distance / pooled_std if pooled_std > 0 else 0
-    
+
     return {
         "layer": layer_idx,
         "train_accuracy": train_acc,
-        "test_accuracy": test_acc,
+        "val_accuracy": val_acc,  # Renamed from test_accuracy for clarity
         "weight_norm": weight_norm,
         "separation_distance": separation_distance,
         "cohens_d": cohens_d,
@@ -85,7 +102,9 @@ def test_linear_separability(positive_acts: torch.Tensor, negative_acts: torch.T
         "negative_std": negative_std,
         "positive_scores": positive_scores,
         "negative_scores": negative_scores,
-        "weights": weights
+        "weights": weights,
+        "train_samples": len(X_train),
+        "val_samples": len(X_val)
     }
 
 def visualize_pca_separation(positive_acts: torch.Tensor, negative_acts: torch.Tensor, layer_idx: int, save_path: str = None):
@@ -152,7 +171,7 @@ def visualize_projection_distributions(separability_results: Dict, save_path: st
     plt.xlabel('Projection Score (Linear Separator Direction)')
     plt.ylabel('Density')
     plt.title(f'Linear Separability Analysis - Layer {layer_idx}\n'
-              f'Test Accuracy: {separability_results["test_accuracy"]:.3f}, '
+              f'Val Accuracy: {separability_results["val_accuracy"]:.3f}, '
               f"Cohen's d: {separability_results['cohens_d']:.3f}")
     plt.legend()
     plt.grid(True, alpha=0.3)
@@ -177,80 +196,108 @@ def visualize_projection_distributions(separability_results: Dict, save_path: st
     
     plt.show()
 
-def comprehensive_linearity_analysis(dataset: Dict, positive_tags: List[str], negative_tags: List[str], 
+def comprehensive_linearity_analysis(dataset: Dict, positive_tags: List[str], negative_tags: List[str],
                                    test_layers: List[int] = None) -> Dict:
     """
-    Perform comprehensive linear separability analysis across layers.
+    Perform comprehensive linear separability analysis across layers using proper train/val splits.
     """
     data = dataset['data']
     num_layers = dataset['info']['num_layers']
-    
+
     if test_layers is None:
         # Test key layers: early, middle, late, and best layers from previous analysis
         test_layers = [0, 5, 10, 15, 20, 25, 28, 29, 30, 31]
-    
+
     results = {}
-    
+
     print(f"Testing linear separability for layers: {test_layers}")
     print(f"Positive tags: {positive_tags}, Negative tags: {negative_tags}")
-    
+    print(f"IMPORTANT: Training on TRAIN split, evaluating on VAL split (proper generalization test)")
+
     for layer_idx in test_layers:
         print(f"\\nAnalyzing Layer {layer_idx}...")
-        
-        # Get activations
-        positive_acts = []
-        negative_acts = []
-        
+
+        # Get TRAIN activations
+        train_positive_acts = []
+        train_negative_acts = []
+
         for tag in positive_tags:
-            if tag in data[layer_idx] and data[layer_idx][tag].numel() > 0:
-                positive_acts.append(data[layer_idx][tag])
-        
+            if tag in data['train'][layer_idx] and data['train'][layer_idx][tag].numel() > 0:
+                train_positive_acts.append(data['train'][layer_idx][tag])
+
         for tag in negative_tags:
-            if tag in data[layer_idx] and data[layer_idx][tag].numel() > 0:
-                negative_acts.append(data[layer_idx][tag])
-        
-        if not positive_acts or not negative_acts:
+            if tag in data['train'][layer_idx] and data['train'][layer_idx][tag].numel() > 0:
+                train_negative_acts.append(data['train'][layer_idx][tag])
+
+        # Get VAL activations
+        val_positive_acts = []
+        val_negative_acts = []
+
+        for tag in positive_tags:
+            if tag in data['val'][layer_idx] and data['val'][layer_idx][tag].numel() > 0:
+                val_positive_acts.append(data['val'][layer_idx][tag])
+
+        for tag in negative_tags:
+            if tag in data['val'][layer_idx] and data['val'][layer_idx][tag].numel() > 0:
+                val_negative_acts.append(data['val'][layer_idx][tag])
+
+        if not train_positive_acts or not train_negative_acts or not val_positive_acts or not val_negative_acts:
+            print(f"  Skipping layer {layer_idx}: missing data in train or val split")
             continue
-            
-        positive_combined = torch.cat(positive_acts, dim=0)
-        negative_combined = torch.cat(negative_acts, dim=0)
-        
-        # Test linear separability
-        sep_results = test_linear_separability(positive_combined, negative_combined, layer_idx)
+
+        train_positive_combined = torch.cat(train_positive_acts, dim=0)
+        train_negative_combined = torch.cat(train_negative_acts, dim=0)
+        val_positive_combined = torch.cat(val_positive_acts, dim=0)
+        val_negative_combined = torch.cat(val_negative_acts, dim=0)
+
+        # Test linear separability with proper train/val splits
+        sep_results = test_linear_separability(
+            train_positive_combined, train_negative_combined,
+            val_positive_combined, val_negative_combined,
+            layer_idx
+        )
         results[layer_idx] = sep_results
-        
-        print(f"  Linear classifier accuracy: {sep_results['test_accuracy']:.3f}")
+
+        print(f"  Train accuracy: {sep_results['train_accuracy']:.3f}")
+        print(f"  Val accuracy: {sep_results['val_accuracy']:.3f}")
+        print(f"  Generalization gap: {sep_results['train_accuracy'] - sep_results['val_accuracy']:.3f}")
         print(f"  Cohen's d (effect size): {sep_results['cohens_d']:.3f}")
-        
-        # Create visualizations for key layers
+
+        # Create visualizations for key layers (use combined train+val for visualization)
         if layer_idx in [15, 25, 31]:  # Visualize middle, late, and best layer
             print(f"  Creating visualizations for layer {layer_idx}...")
-            
-            # PCA visualization  
+
+            # Combine train and val for visualization
+            all_positive = torch.cat([train_positive_combined, val_positive_combined], dim=0)
+            all_negative = torch.cat([train_negative_combined, val_negative_combined], dim=0)
+
+            # PCA visualization
             pca_path = f"linear_separability_pca_layer_{layer_idx}.png"
-            variance_ratios = visualize_pca_separation(positive_combined, negative_combined, layer_idx, pca_path)
-            
+            variance_ratios = visualize_pca_separation(all_positive, all_negative, layer_idx, pca_path)
+
             # Projection distribution
-            proj_path = f"linear_separability_projection_layer_{layer_idx}.png" 
+            proj_path = f"linear_separability_projection_layer_{layer_idx}.png"
             visualize_projection_distributions(sep_results, proj_path)
-    
+
     return results
 
 def plot_linearity_summary(results: Dict, save_path: str = None):
-    """Plot summary of linear separability across layers."""
-    
+    """Plot summary of linear separability across layers with train/val comparison."""
+
     layers = sorted(results.keys())
-    accuracies = [results[l]['test_accuracy'] for l in layers]
+    train_accuracies = [results[l]['train_accuracy'] for l in layers]
+    val_accuracies = [results[l]['val_accuracy'] for l in layers]
     cohens_d = [results[l]['cohens_d'] for l in layers]
-    
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-    
-    # Accuracy plot
-    ax1.plot(layers, accuracies, 'bo-', linewidth=2, markersize=8)
+
+    # Accuracy plot with train/val comparison
+    ax1.plot(layers, train_accuracies, 'go-', linewidth=2, markersize=8, label='Train Accuracy')
+    ax1.plot(layers, val_accuracies, 'bo-', linewidth=2, markersize=8, label='Val Accuracy (Key Metric)')
     ax1.axhline(y=0.5, color='red', linestyle='--', alpha=0.7, label='Random chance')
     ax1.set_xlabel('Layer')
-    ax1.set_ylabel('Linear Classifier Test Accuracy')
-    ax1.set_title('Linear Separability by Layer')
+    ax1.set_ylabel('Linear Classifier Accuracy')
+    ax1.set_title('Linear Separability by Layer\n(Train vs Val - Generalization Test)')
     ax1.grid(True, alpha=0.3)
     ax1.legend()
     ax1.set_ylim(0, 1)
@@ -275,20 +322,33 @@ def plot_linearity_summary(results: Dict, save_path: str = None):
     
     # Print summary
     print("\\n=== LINEAR SEPARABILITY SUMMARY ===")
-    best_acc_layer = layers[np.argmax(accuracies)]
+    best_val_acc_layer = layers[np.argmax(val_accuracies)]
+    best_train_acc_layer = layers[np.argmax(train_accuracies)]
     best_effect_layer = layers[np.argmax(cohens_d)]
-    
-    print(f"Best linear accuracy: Layer {best_acc_layer} ({max(accuracies):.3f})")
+
+    print(f"Best VAL accuracy: Layer {best_val_acc_layer} ({max(val_accuracies):.3f}) <- Key metric!")
+    print(f"Best TRAIN accuracy: Layer {best_train_acc_layer} ({max(train_accuracies):.3f})")
     print(f"Largest effect size: Layer {best_effect_layer} ({max(cohens_d):.3f})")
-    
-    # Interpretation
-    max_acc = max(accuracies)
+
+    # Generalization analysis
+    generalization_gaps = [train_accuracies[i] - val_accuracies[i] for i in range(len(layers))]
+    avg_gap = np.mean(generalization_gaps)
+    print(f"Average generalization gap (train - val): {avg_gap:.3f}")
+
+    if avg_gap > 0.1:
+        print("⚠️  WARNING: Large generalization gap suggests potential overfitting")
+    else:
+        print("✅ Good generalization: small gap between train and val accuracy")
+
+    # Interpretation based on VAL accuracy (the proper metric)
+    max_val_acc = max(val_accuracies)
     max_cohens = max(cohens_d)
-    
-    if max_acc > 0.8 and max_cohens > 0.5:
+
+    print(f"\\n=== INTERPRETATION (Based on VAL accuracy) ===")
+    if max_val_acc > 0.8 and max_cohens > 0.5:
         print("✅ CONCLUSION: Faithfulness appears to be LINEARLY ENCODED")
-        print("   High accuracy and medium-to-large effect sizes indicate clear linear separability")
-    elif max_acc > 0.7 and max_cohens > 0.3:
+        print("   High val accuracy and medium-to-large effect sizes indicate clear linear separability")
+    elif max_val_acc > 0.7 and max_cohens > 0.3:
         print("⚠️  CONCLUSION: Faithfulness is PARTIALLY linearly encoded")
         print("   Moderate linear separability - steering may work but not optimally")
     else:
@@ -302,11 +362,11 @@ def main():
     print("Loading contrastive dataset...")
     dataset = load_dataset(DEFAULT_DATASET_FILE)
     
-    # Test linear separability
+    # Test linear separability with updated tags
     results = comprehensive_linearity_analysis(
-        dataset, 
-        positive_tags=["F_str", "F_wk"], 
-        negative_tags=["U_str", "U_wk"],
+        dataset,
+        positive_tags=["F", "F_final"],
+        negative_tags=["U", "U_final"],
         test_layers=[0, 5, 10, 15, 20, 25, 28, 29, 30, 31]
     )
     

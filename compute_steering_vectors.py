@@ -14,24 +14,24 @@ import argparse
 # === CONFIGURATION ===
 
 # Default input file (contrastive dataset)
-DEFAULT_INPUT_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\datasets\sprint_2_contrastive_dataset_full_sweep_all_(un)faithful_tags_mmlu_psychology_train_2025-09-04.pkl"
+DEFAULT_INPUT_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\sprint_2.2_contrastive_dataset_train_val_strong_faithful_unfaithful_2025-09-14.pkl"
 
 # Default output file for steering vectors
-DEFAULT_OUTPUT_FILE = "steering_vectors_faithful_vs_unfaithful_2025-09-04.pkl"
+DEFAULT_OUTPUT_FILE = "steering_vectors_body_final_strongly_faithful_vs_unfaithful_2025-09-14.pkl"
 
 # Available tags in the dataset
-AVAILABLE_TAGS = ["F_str", "U_str", "F_wk", "U_wk"]
+AVAILABLE_TAGS = ["F", "U", "F_final", "U_final"]
 
 # Predefined label combinations
 LABEL_COMBINATIONS = {
     "all_faithful_vs_unfaithful": {
-        "positive": ["F_str", "F_wk"],
-        "negative": ["U_str", "U_wk"],
-        "description": "All faithful vs all unfaithful"
+        "positive": ["F", "F_final"],
+        "negative": ["U", "U_final"],
+        "description": "All strongly faithful (body + final) vs all strongly unfaithful (body + final)"
     },
-    "strong_only": {
-        "positive": ["F_str"],
-        "negative": ["U_str"], 
+    "final_only": {
+        "positive": ["F_final"],
+        "negative": ["U_final"], 
         "description": "Strong faithful vs strong unfaithful"
     },
     "weak_only": {
@@ -67,28 +67,32 @@ def load_contrastive_dataset(input_file: str) -> Dict:
     
     return dataset
 
-def get_combined_activations(data: Dict, layer_idx: int, tags: List[str]) -> torch.Tensor:
+def get_combined_activations(data: Dict, layer_idx: int, tags: List[str], split: str = "train") -> torch.Tensor:
     """
-    Combine activations from multiple tags for a specific layer.
-    
+    Combine activations from multiple tags for a specific layer from the specified split.
+
     Args:
         data: Dataset data dictionary
         layer_idx: Layer index
         tags: List of tags to combine
-        
+        split: Which data split to use ("train" or "val")
+
     Returns:
         Combined tensor of activations [total_samples, hidden_dim]
     """
     activations_list = []
-    
+
+    # Access the specified split (train or val)
+    split_data = data.get(split, data)  # Fallback to data if no splits exist
+
     for tag in tags:
-        if tag in data[layer_idx] and data[layer_idx][tag].numel() > 0:
-            activations_list.append(data[layer_idx][tag])
-    
+        if layer_idx in split_data and tag in split_data[layer_idx] and split_data[layer_idx][tag].numel() > 0:
+            activations_list.append(split_data[layer_idx][tag])
+
     if not activations_list:
         # Return empty tensor with correct hidden dimension
         return torch.empty(0, 4096)
-    
+
     # Concatenate all activations
     combined = torch.cat(activations_list, dim=0)
     return combined
@@ -129,17 +133,19 @@ def compute_steering_vectors_for_layers(
     dataset: Dict,
     positive_tags: List[str],
     negative_tags: List[str],
-    layers: Optional[List[int]] = None
+    layers: Optional[List[int]] = None,
+    split: str = "train"
 ) -> Tuple[Dict[int, torch.Tensor], Dict]:
     """
     Compute steering vectors for specified layers and tag combinations.
-    
+
     Args:
         dataset: The loaded contrastive dataset
         positive_tags: Tags to use as positive examples
-        negative_tags: Tags to use as negative examples  
+        negative_tags: Tags to use as negative examples
         layers: List of layer indices to compute for (None = all layers)
-        
+        split: Which data split to use for computation ("train" or "val")
+
     Returns:
         steering_vectors: Dict mapping layer_idx -> steering_vector
         computation_stats: Statistics about the computation
@@ -152,6 +158,7 @@ def compute_steering_vectors_for_layers(
         layers = list(range(info['num_layers']))
     
     print(f"\nComputing steering vectors:")
+    print(f"  Data split: {split} (IMPORTANT: Using only {split} data to avoid data leakage)")
     print(f"  Positive tags: {positive_tags}")
     print(f"  Negative tags: {negative_tags}")
     print(f"  Layers: {len(layers)} layers {layers[:5]}{'...' if len(layers) > 5 else ''}")
@@ -160,9 +167,9 @@ def compute_steering_vectors_for_layers(
     layer_stats = {}
     
     for layer_idx in layers:
-        # Get combined activations for positive and negative tags
-        positive_acts = get_combined_activations(data, layer_idx, positive_tags)
-        negative_acts = get_combined_activations(data, layer_idx, negative_tags)
+        # Get combined activations for positive and negative tags from specified split
+        positive_acts = get_combined_activations(data, layer_idx, positive_tags, split)
+        negative_acts = get_combined_activations(data, layer_idx, negative_tags, split)
         
         try:
             steering_vec, stats = compute_steering_vector(positive_acts, negative_acts)
@@ -181,6 +188,7 @@ def compute_steering_vectors_for_layers(
     computation_stats = {
         "positive_tags": positive_tags,
         "negative_tags": negative_tags,
+        "data_split": split,
         "layers_computed": list(steering_vectors.keys()),
         "layers_requested": layers,
         "layer_stats": layer_stats
@@ -198,6 +206,7 @@ def save_steering_vectors(steering_vectors: Dict, stats: Dict, output_file: str)
         "computation_stats": stats,
         "metadata": {
             "description": "Steering vectors computed from contrastive activations",
+            "data_split_used": stats["data_split"],
             "positive_tags": stats["positive_tags"],
             "negative_tags": stats["negative_tags"],
             "layers": stats["layers_computed"],
@@ -255,9 +264,9 @@ def main():
     # Load dataset
     dataset = load_contrastive_dataset(args.input_file)
     
-    # Compute steering vectors
+    # Compute steering vectors using only TRAIN data
     steering_vectors, stats = compute_steering_vectors_for_layers(
-        dataset, positive_tags, negative_tags, args.layers
+        dataset, positive_tags, negative_tags, args.layers, split="train"
     )
     
     # Save results

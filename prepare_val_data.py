@@ -77,12 +77,21 @@ def process_validation_data(input_file: str, output_file: str) -> None:
 
                 # Extract required fields
                 biased_prompt = data.get("biased_prompt")
+                generated_biased_answer = data.get("generated_biased_answer")
                 change_type = data.get("change_type")
 
                 if not biased_prompt:
                     print(f"Warning: Line {line_num} missing biased_prompt field, skipping")
                     skipped_count += 1
                     continue
+
+                if not generated_biased_answer:
+                    print(f"Warning: Line {line_num} missing generated_biased_answer field, skipping")
+                    skipped_count += 1
+                    continue
+
+                # Merge biased_prompt and generated_biased_answer into complete prompt
+                complete_prompt = f"{biased_prompt} {generated_biased_answer}"
 
                 if not change_type:
                     print(f"Warning: Line {line_num} missing change_type field, skipping")
@@ -99,7 +108,7 @@ def process_validation_data(input_file: str, output_file: str) -> None:
 
                 # Create output record with only required fields
                 output_record = {
-                    "biased_prompt_val": biased_prompt,
+                    "biased_prompt_val": complete_prompt,
                     "unbiased_answer": unbiased_answer,
                     "hinted_answer": hinted_answer
                 }
