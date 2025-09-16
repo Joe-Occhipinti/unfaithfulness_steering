@@ -13,7 +13,7 @@ from typing import Dict, List
 import seaborn as sns
 
 # === CONFIGURATION ===
-DEFAULT_DATASET_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\datasets\sprint_2_contrastive_dataset_full_sweep_all_(un)faithful_tags_mmlu_psychology_train_2025-09-04.pkl"
+DEFAULT_DATASET_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\sprint_2.2_contrastive_dataset_train_val_strong_faithful_unfaithful_2025-09-14.pkl"
 OUTPUT_PLOT = "layer_separability_analysis.png"
 
 def load_dataset(file_path: str) -> Dict:
@@ -21,10 +21,16 @@ def load_dataset(file_path: str) -> Dict:
     with open(file_path, 'rb') as f:
         return pickle.load(f)
 
-def compute_layer_separability(dataset: Dict, positive_tags: List[str], negative_tags: List[str]) -> Dict:
+def compute_layer_separability(dataset: Dict, positive_tags: List[str], negative_tags: List[str], split: str = "train") -> Dict:
     """
-    Compute separability metrics for each layer.
-    
+    Compute separability metrics for each layer using specified train/val split.
+
+    Args:
+        dataset: The contrastive dataset with train/val splits
+        positive_tags: Tags for positive class (faithful)
+        negative_tags: Tags for negative class (unfaithful)
+        split: Which split to use ("train" or "val")
+
     Returns:
         Dict with layer_idx -> {
             'steering_norm': steering vector norm,
@@ -35,20 +41,20 @@ def compute_layer_separability(dataset: Dict, positive_tags: List[str], negative
             'cosine_similarity': cosine similarity between positive and negative means
         }
     """
-    data = dataset['data']
+    data = dataset['data'][split]  # Use specified split (train or val)
     num_layers = dataset['info']['num_layers']
-    
+
     results = {}
-    
+
     for layer_idx in range(num_layers):
         # Collect activations for positive and negative tags
         positive_acts = []
         negative_acts = []
-        
+
         for tag in positive_tags:
             if tag in data[layer_idx] and data[layer_idx][tag].numel() > 0:
                 positive_acts.append(data[layer_idx][tag])
-        
+
         for tag in negative_tags:
             if tag in data[layer_idx] and data[layer_idx][tag].numel() > 0:
                 negative_acts.append(data[layer_idx][tag])
@@ -189,18 +195,18 @@ def main():
     comparisons = [
         {
             "name": "All Faithful vs Unfaithful",
-            "positive": ["F_str", "F_wk"],
-            "negative": ["U_str", "U_wk"]
+            "positive": ["F", "F_final"],
+            "negative": ["U", "U_final"]
         },
         {
-            "name": "Strong Only",
-            "positive": ["F_str"],
-            "negative": ["U_str"]
+            "name": "Base Tags Only",
+            "positive": ["F"],
+            "negative": ["U"]
         },
         {
-            "name": "Weak Only", 
-            "positive": ["F_wk"],
-            "negative": ["U_wk"]
+            "name": "Final Tags Only",
+            "positive": ["F_final"],
+            "negative": ["U_final"]
         }
     ]
     
@@ -210,7 +216,7 @@ def main():
         print(f"ANALYSIS {i+1}: {comp['name']}")
         print(f"{'='*50}")
         
-        results = compute_layer_separability(dataset, comp["positive"], comp["negative"])
+        results = compute_layer_separability(dataset, comp["positive"], comp["negative"], split="train")
         
         plot_name = f"separability_{comp['name'].lower().replace(' ', '_')}.png"
         plot_separability_analysis(results, comp["positive"], comp["negative"], plot_name)

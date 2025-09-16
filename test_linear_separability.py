@@ -205,8 +205,8 @@ def comprehensive_linearity_analysis(dataset: Dict, positive_tags: List[str], ne
     num_layers = dataset['info']['num_layers']
 
     if test_layers is None:
-        # Test key layers: early, middle, late, and best layers from previous analysis
-        test_layers = [0, 5, 10, 15, 20, 25, 28, 29, 30, 31]
+        # Test ALL layers for comprehensive analysis
+        test_layers = list(range(num_layers))
 
     results = {}
 
@@ -362,12 +362,12 @@ def main():
     print("Loading contrastive dataset...")
     dataset = load_dataset(DEFAULT_DATASET_FILE)
     
-    # Test linear separability with updated tags
+    # Test linear separability with updated tags - test ALL layers
     results = comprehensive_linearity_analysis(
         dataset,
         positive_tags=["F", "F_final"],
         negative_tags=["U", "U_final"],
-        test_layers=[0, 5, 10, 15, 20, 25, 28, 29, 30, 31]
+        test_layers=None  # None means test all layers
     )
     
     # Plot summary
