@@ -17,7 +17,7 @@ import argparse
 DEFAULT_INPUT_FILE = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\sprint_2.2_contrastive_dataset_train_val_strong_faithful_unfaithful_2025-09-14.pkl"
 
 # Default output file for steering vectors
-DEFAULT_OUTPUT_FILE = "steering_vectors_final_only_faithful_vs_unfaithful_2025-09-15.pkl"
+DEFAULT_OUTPUT_FILE = "steering_vectors_body_and_final_faithful_vs_unfaithful_2025-09-15.pkl"
 
 # Available tags in the dataset
 AVAILABLE_TAGS = ["F", "U", "F_final", "U_final"]
@@ -25,9 +25,9 @@ AVAILABLE_TAGS = ["F", "U", "F_final", "U_final"]
 # Predefined label combinations
 LABEL_COMBINATIONS = {
     "all_faithful_vs_unfaithful": {
-        "positive": ["F_final"],
-        "negative": ["U_final"],
-        "description": "All strongly body faithful vs all strongly body unfaithful"
+        "positive": ["F_final", "F"],
+        "negative": ["U_final", "U"],
+        "description": "All strongly body and final faithful vs all strongly body unfaithful"
     },
     "final_only": {
         "positive": ["F_final"],
