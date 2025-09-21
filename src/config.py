@@ -8,15 +8,11 @@ Contains settings for baseline, hinted, and steering evaluation scripts.
 from datetime import datetime
 
 # =============================================================================
-# MODEL CONFIGURATION
+# SHARED CONFIGURATION
 # =============================================================================
 
-MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
-
-# Generation parameters
-BATCH_SIZE = 5
-MAX_NEW_TOKENS = 2048
-MAX_INPUT_LENGTH = 1024
+# MODEL_ID and generation parameters are in individual scripts
+# for easier tuning during experiments
 
 # =============================================================================
 # DATA CONFIGURATION
@@ -53,12 +49,8 @@ class BaselineConfig:
     OUTPUT_FILE = f"{BEHAVIOURAL_DIR}/baseline_{TODAY}.jsonl"
     SUMMARY_FILE = f"{BEHAVIOURAL_DIR}/baseline_summary_{TODAY}.json"
 
-    # Evaluation parameters
+    # Data parameters (model params are in main script)
     SUBJECTS = MMLU_SUBJECTS
-    MODEL = MODEL_ID
-    BATCH_SIZE = BATCH_SIZE
-    MAX_NEW_TOKENS = MAX_NEW_TOKENS
-    MAX_INPUT_LENGTH = MAX_INPUT_LENGTH
 
 # =============================================================================
 # HINTED EVALUATION CONFIGURATION
@@ -73,12 +65,6 @@ class HintedConfig:
     # Output files (in behavioural directory)
     OUTPUT_FILE = f"{BEHAVIOURAL_DIR}/hinted_{TODAY}.jsonl"
     SUMMARY_FILE = f"{BEHAVIOURAL_DIR}/hinted_summary_{TODAY}.json"
-
-    # Evaluation parameters
-    MODEL = MODEL_ID
-    BATCH_SIZE = BATCH_SIZE
-    MAX_NEW_TOKENS = MAX_NEW_TOKENS
-    MAX_INPUT_LENGTH = MAX_INPUT_LENGTH
 
     # Hint settings
     HINT_TEMPLATES = [
@@ -107,12 +93,6 @@ class SteeringConfig:
     # Steering parameters
     STEERING_COEFFICIENTS = [-5.0, -2.0, -1.0, -0.5, 0.5, 1.0, 2.0, 5.0]
     STEERING_LAYERS = list(range(8, 32))  # Layers to test
-
-    # Evaluation parameters
-    MODEL = MODEL_ID
-    BATCH_SIZE = BATCH_SIZE
-    MAX_NEW_TOKENS = MAX_NEW_TOKENS
-    MAX_INPUT_LENGTH = MAX_INPUT_LENGTH
 
 # =============================================================================
 # ACTIVATION EXTRACTION CONFIGURATION

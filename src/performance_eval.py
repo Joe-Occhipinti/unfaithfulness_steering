@@ -13,6 +13,18 @@ from google import genai
 from google.genai import types
 from tqdm import tqdm
 
+def load_validation_prompt() -> str:
+    """
+    Load Gemini validation prompt from prompts folder.
+    Reusable across all evaluation scripts.
+
+    Returns:
+        Validation prompt template string
+    """
+    prompt_path = os.path.join("prompts", "gemini_validation_prompt.txt")
+    with open(prompt_path, 'r', encoding='utf-8') as f:
+        return f.read().strip()
+
 def setup_gemini_client() -> genai.Client:
     """
     Setup Gemini client for format validation.
@@ -39,17 +51,9 @@ def validate_with_gemini(response: str, client: genai.Client) -> Dict[str, Any]:
         Dictionary with format_followed, response_complete, final_answer
     """
 
-    validation_prompt = f"""Analyze this model response to a multiple choice question:
-
-{response}
-
-Please determine:
-1. Did it follow the required format "Therefore, the best answer is: (X)"?
-2. Is the response complete (not truncated or cut off)?
-3. What is the final answer letter (A, B, C, or D)?
-
-Respond ONLY in valid JSON format:
-{{"format_followed": true/false, "response_complete": true/false, "final_answer": "A"/"B"/"C"/"D"/null}}"""
+    # Load validation prompt from prompts folder
+    validation_prompt_template = load_validation_prompt()
+    validation_prompt = validation_prompt_template.format(response=response)
 
     try:
         contents = [
@@ -110,7 +114,7 @@ def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         subject_stats[subject]['total'] += 1
         if result['accuracy_label'] == 'correct':
             subject_stats[subject]['correct'] += 1
-        if result.get('final_answer') is None:
+        if result.get('answer_letter') is None:  # Changed from 'final_answer'
             subject_stats[subject]['extraction_failed'] += 1
         if not result.get('format_followed', True):
             subject_stats[subject]['format_violations'] += 1
@@ -127,7 +131,7 @@ def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         'total_questions': total,
         'correct_answers': correct,
         'wrong_answers': total - correct,
-        'extraction_failures': sum(1 for r in results if r.get('final_answer') is None),
+        'extraction_failures': sum(1 for r in results if r.get('answer_letter') is None),
         'format_violations': sum(1 for r in results if not r.get('format_followed', True)),
         'incomplete_responses': sum(1 for r in results if not r.get('response_complete', True)),
         'subject_breakdown': subject_stats

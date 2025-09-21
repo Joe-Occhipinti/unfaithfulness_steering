@@ -20,10 +20,20 @@ from src.performance_eval import setup_gemini_client, validate_responses_batch, 
 from src.config import BaselineConfig, TODAY
 from src.prompts import create_baseline_prompts
 
+# =============================================================================
+# BASELINE-SPECIFIC MODEL & GENERATION PARAMETERS (easy to tune)
+# =============================================================================
+
+MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+BATCH_SIZE = 10
+MAX_NEW_TOKENS = 2048
+MAX_INPUT_LENGTH = 1024
+
 print(f"=== BASELINE EVALUATION - {TODAY} ===")
-print(f"Model: {BaselineConfig.MODEL}")
+print(f"Model: {MODEL_ID}")
 print(f"MMLU Subjects: {BaselineConfig.SUBJECTS}")
 print(f"Output: {BaselineConfig.OUTPUT_FILE}")
+print(f"Batch Size: {BATCH_SIZE}, Max New Tokens: {MAX_NEW_TOKENS}")
 
 # =============================================================================
 # MAIN BASELINE EVALUATION WORKFLOW
@@ -33,7 +43,7 @@ def main():
     start_time = time.time()
 
     # Load model (reusable)
-    model, tokenizer = load_model(BaselineConfig.MODEL)
+    model, tokenizer = load_model(MODEL_ID)
 
     # Setup Gemini validation (reusable)
     gemini_client = setup_gemini_client()
@@ -51,9 +61,9 @@ def main():
         model=model,
         tokenizer=tokenizer,
         prompts=baseline_prompts,
-        batch_size=BaselineConfig.BATCH_SIZE,
-        max_new_tokens=BaselineConfig.MAX_NEW_TOKENS,
-        max_input_length=BaselineConfig.MAX_INPUT_LENGTH
+        batch_size=BATCH_SIZE,
+        max_new_tokens=MAX_NEW_TOKENS,
+        max_input_length=MAX_INPUT_LENGTH
     )
 
     # Validate responses with Gemini (reusable)
@@ -66,16 +76,16 @@ def main():
     for i, (mmlu_item, baseline_prompt, generated_answer, validation) in enumerate(
         zip(mmlu_data, baseline_prompts, all_answers, validations)
     ):
-        # Extract validation data
+        # Extract validation data from Gemini
         format_followed = validation.get('format_followed', False)
         response_complete = validation.get('response_complete', True)
-        final_answer = validation.get('final_answer', None)
+        answer_letter = validation.get('final_answer', None)  # This is the extracted letter
 
         # Get ground truth letter (reusable)
         ground_truth_letter = convert_answer_to_letter(mmlu_item['answer'])
 
         # Label correctness
-        is_correct = (final_answer == ground_truth_letter) if final_answer is not None else False
+        is_correct = (answer_letter == ground_truth_letter) if answer_letter is not None else False
         accuracy_label = 'correct' if is_correct else 'wrong'
 
         # Create baseline result record (baseline-specific structure)
@@ -92,17 +102,16 @@ def main():
             'baseline_generated_text': generated_answer,
             'baseline_output_prompt': baseline_prompt + generated_answer,
 
-            # Extracted answers (README requirement)
-            'answer_letter': final_answer,  # Via Gemini validation
-            'ground_truth_letter': ground_truth_letter,
+            # Extracted answers (README requirement - via Gemini)
+            'answer_letter': answer_letter,  # Extracted by Gemini
+            'ground_truth_letter': ground_truth_letter,  # Converted from index
 
             # Accuracy labels (README requirement)
             'accuracy_label': accuracy_label,
 
-            # Validation metadata
+            # Validation metadata (from Gemini)
             'format_followed': format_followed,
             'response_complete': response_complete,
-            'final_answer': final_answer,
             'evaluation_timestamp': datetime.now().isoformat()
         }
 
@@ -125,15 +134,15 @@ def main():
     end_time = time.time()
     summary = {
         'evaluation_date': TODAY,
-        'model_id': BaselineConfig.MODEL,
+        'model_id': MODEL_ID,
         'mmlu_subjects': BaselineConfig.SUBJECTS,
         'metrics': metrics,
         'processing_time_seconds': end_time - start_time,
         'validation_method': 'gemini-2.5-flash-lite',
         'configuration': {
-            'batch_size': BaselineConfig.BATCH_SIZE,
-            'max_new_tokens': BaselineConfig.MAX_NEW_TOKENS,
-            'max_input_length': BaselineConfig.MAX_INPUT_LENGTH
+            'batch_size': BATCH_SIZE,
+            'max_new_tokens': MAX_NEW_TOKENS,
+            'max_input_length': MAX_INPUT_LENGTH
         }
     }
 
