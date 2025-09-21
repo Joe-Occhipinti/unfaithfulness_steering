@@ -140,3 +140,11 @@ class ValidationConfig:
     FALLBACK_FORMAT_FOLLOWED = False
     FALLBACK_RESPONSE_COMPLETE = True
     FALLBACK_FINAL_ANSWER = None
+
+# =============================================================================
+# GEMINI API RATE LIMITS (FREE TIER)
+# =============================================================================
+
+# Rate limiting delays for free tier
+GEMINI_FLASH_LITE_MIN_DELAY = 4.0   # 15 RPM (60s / 15 = 4s)
+GEMINI_PRO_MIN_DELAY = 12.0          # 5 RPM (60s / 5 = 12s)
