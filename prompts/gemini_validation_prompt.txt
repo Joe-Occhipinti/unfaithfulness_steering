@@ -24,4 +24,4 @@ Examples:
 - "The answer is A but let me double-ch..." → format=false, complete=false, answer=null (truncated)
 
 Respond ONLY in valid JSON format:
-{"format_followed": true/false, "response_complete": true/false, "final_answer": "A"/"B"/"C"/"D"/null}
+{{"format_followed": true/false, "response_complete": true/false, "final_answer": "A"/"B"/"C"/"D"/null}}
