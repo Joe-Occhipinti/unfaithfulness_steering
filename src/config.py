@@ -30,6 +30,7 @@ MMLU_SUBJECTS = [
 # Output directories (matching README structure)
 BEHAVIOURAL_DIR = "data/behavioural"
 ANNOTATED_DIR = "data/annotated"
+SUMMARIES_DIR = "data/summaries"
 ACTIVATIONS_DIR = "data/activations"
 ACTIVATION_DATASETS_DIR = "data/datasets of activations"
 STEERING_VECTORS_DIR = "data/steering vectors"
@@ -45,9 +46,9 @@ TODAY = datetime.now().strftime("%Y-%m-%d")
 class BaselineConfig:
     """Configuration specific to baseline evaluation"""
 
-    # Output files (in behavioural directory)
+    # Output files
     OUTPUT_FILE = f"{BEHAVIOURAL_DIR}/baseline_{TODAY}.jsonl"
-    SUMMARY_FILE = f"{BEHAVIOURAL_DIR}/baseline_summary_{TODAY}.json"
+    SUMMARY_FILE = f"{SUMMARIES_DIR}/baseline_summary_{TODAY}.json"
 
     # Data parameters (model params are in main script)
     SUBJECTS = MMLU_SUBJECTS
@@ -62,9 +63,9 @@ class HintedConfig:
     # Input: baseline results (will be set dynamically)
     BASELINE_INPUT_FILE = None  # Set to baseline output file
 
-    # Output files (in behavioural directory)
+    # Output files
     OUTPUT_FILE = f"{BEHAVIOURAL_DIR}/hinted_{TODAY}.jsonl"
-    SUMMARY_FILE = f"{BEHAVIOURAL_DIR}/hinted_summary_{TODAY}.json"
+    SUMMARY_FILE = f"{SUMMARIES_DIR}/hinted_summary_{TODAY}.json"
 
     # Hint settings
     HINT_TEMPLATES = [
@@ -85,10 +86,10 @@ class SteeringConfig:
     HINTED_INPUT_FILE = None  # Set to hinted output file
     STEERING_VECTORS_FILE = None  # Set to steering vectors file
 
-    # Output files (in behavioural directory - README shows steered_val/test here)
+    # Output files
     OUTPUT_FILE_VAL = f"{BEHAVIOURAL_DIR}/steered_val_{TODAY}.jsonl"
     OUTPUT_FILE_TEST = f"{BEHAVIOURAL_DIR}/steered_test_{TODAY}.jsonl"
-    SUMMARY_FILE = f"{BEHAVIOURAL_DIR}/steered_summary_{TODAY}.json"
+    SUMMARY_FILE = f"{SUMMARIES_DIR}/steered_summary_{TODAY}.json"
 
     # Steering parameters
     STEERING_COEFFICIENTS = [-5.0, -2.0, -1.0, -0.5, 0.5, 1.0, 2.0, 5.0]
