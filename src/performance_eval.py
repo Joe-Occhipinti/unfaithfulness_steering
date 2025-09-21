@@ -34,7 +34,7 @@ def setup_gemini_client() -> genai.Client:
         Configured Gemini client
     """
     print(f"\n--- Setting up Gemini validation ---")
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
     print("Gemini 2.5 Flash-Lite client ready")
     return client
 

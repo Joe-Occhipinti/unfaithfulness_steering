@@ -36,132 +36,142 @@ print(f"Output: {BaselineConfig.OUTPUT_FILE}")
 print(f"Batch Size: {BATCH_SIZE}, Max New Tokens: {MAX_NEW_TOKENS}")
 
 # =============================================================================
-# MAIN BASELINE EVALUATION WORKFLOW
+# BASELINE EVALUATION WORKFLOW - CELL-BY-CELL FOR COLAB
 # =============================================================================
 
-def main():
-    start_time = time.time()
+# CELL 1: Setup and Model Loading
+print("=== CELL 1: Setup and Model Loading ===")
+start_time = time.time()
 
-    # Load model (reusable)
-    model, tokenizer = load_model(MODEL_ID)
+# Load model (reusable)
+model, tokenizer = load_model(MODEL_ID)
 
-    # Setup Gemini validation (reusable)
-    gemini_client = setup_gemini_client()
+# Setup Gemini validation (reusable)
+gemini_client = setup_gemini_client()
 
-    # Load MMLU data (reusable)
-    mmlu_data = load_mmlu_simple(BaselineConfig.SUBJECTS)
+# CELL 2: Data Loading and Prompt Creation
+print("\n=== CELL 2: Data Loading and Prompt Creation ===")
 
-    # Create baseline prompts (from prompts module)
-    baseline_prompts = create_baseline_prompts(mmlu_data)
+# Load MMLU data (reusable)
+mmlu_data = load_mmlu_simple(BaselineConfig.SUBJECTS)
 
-    print(f"\n--- Ready to process {len(baseline_prompts)} prompts ---")
+# Create baseline prompts (from prompts module)
+baseline_prompts = create_baseline_prompts(mmlu_data)
 
-    # Generate responses (reusable)
-    all_answers = batch_generate(
-        model=model,
-        tokenizer=tokenizer,
-        prompts=baseline_prompts,
-        batch_size=BATCH_SIZE,
-        max_new_tokens=MAX_NEW_TOKENS,
-        max_input_length=MAX_INPUT_LENGTH
-    )
+print(f"\n--- Ready to process {len(baseline_prompts)} prompts ---")
 
-    # Validate responses with Gemini (reusable)
-    validations = validate_responses_batch(all_answers, gemini_client)
+# CELL 3: Text Generation (can run separately)
+print("\n=== CELL 3: Text Generation ===")
 
-    # Process results (baseline-specific structure)
-    print(f"\n--- Processing baseline results ---")
-    results = []
+# Generate responses (reusable)
+all_answers = batch_generate(
+    model=model,
+    tokenizer=tokenizer,
+    prompts=baseline_prompts,
+    batch_size=BATCH_SIZE,
+    max_new_tokens=MAX_NEW_TOKENS,
+    max_input_length=MAX_INPUT_LENGTH
+)
 
-    for i, (mmlu_item, baseline_prompt, generated_answer, validation) in enumerate(
-        zip(mmlu_data, baseline_prompts, all_answers, validations)
-    ):
-        # Extract validation data from Gemini
-        format_followed = validation.get('format_followed', False)
-        response_complete = validation.get('response_complete', True)
-        answer_letter = validation.get('final_answer', None)  # This is the extracted letter
+# CELL 4: Validation with Gemini (can run separately)
+print("\n=== CELL 4: Validation with Gemini ===")
 
-        # Get ground truth letter (reusable)
-        ground_truth_letter = convert_answer_to_letter(mmlu_item['answer'])
+# Validate responses with Gemini (reusable)
+validations = validate_responses_batch(all_answers, gemini_client)
 
-        # Label correctness
-        is_correct = (answer_letter == ground_truth_letter) if answer_letter is not None else False
-        accuracy_label = 'correct' if is_correct else 'wrong'
+# CELL 5: Processing and Saving Results
+print("\n=== CELL 5: Processing and Saving Results ===")
 
-        # Create baseline result record (baseline-specific structure)
-        result = {
-            # Original MMLU data
-            'question': mmlu_item['question'],
-            'subject': mmlu_item['subject'],
-            'choices': mmlu_item['choices'],
-            'answer': mmlu_item['answer'],  # Original index
-            'split': mmlu_item['split'],
+# Process results (baseline-specific structure)
+print(f"\n--- Processing baseline results ---")
+results = []
 
-            # Baseline prompts and generation (README requirement)
-            'baseline_input_prompt': baseline_prompt,
-            'baseline_generated_text': generated_answer,
-            'baseline_output_prompt': baseline_prompt + generated_answer,
+for i, (mmlu_item, baseline_prompt, generated_answer, validation) in enumerate(
+    zip(mmlu_data, baseline_prompts, all_answers, validations)
+):
+    # Extract validation data from Gemini
+    format_followed = validation.get('format_followed', False)
+    response_complete = validation.get('response_complete', True)
+    answer_letter = validation.get('final_answer', None)  # This is the extracted letter
 
-            # Extracted answers (README requirement - via Gemini)
-            'answer_letter': answer_letter,  # Extracted by Gemini
-            'ground_truth_letter': ground_truth_letter,  # Converted from index
+    # Get ground truth letter (reusable)
+    ground_truth_letter = convert_answer_to_letter(mmlu_item['answer'])
 
-            # Accuracy labels (README requirement)
-            'accuracy_label': accuracy_label,
+    # Label correctness
+    is_correct = (answer_letter == ground_truth_letter) if answer_letter is not None else False
+    accuracy_label = 'correct' if is_correct else 'wrong'
 
-            # Validation metadata (from Gemini)
-            'format_followed': format_followed,
-            'response_complete': response_complete,
-            'evaluation_timestamp': datetime.now().isoformat()
-        }
+    # Create baseline result record (essential data only)
+    result = {
+        # Original MMLU data
+        'question': mmlu_item['question'],
+        'subject': mmlu_item['subject'],
+        'choices': mmlu_item['choices'],
+        'answer': mmlu_item['answer'],  # Original index
 
-        results.append(result)
+        # Baseline prompts and generation (README requirement)
+        'baseline_input_prompt': baseline_prompt,
+        'baseline_generated_text': generated_answer,
+        'baseline_prompt': baseline_prompt + generated_answer,
 
-    # Compute accuracy metrics (reusable)
-    metrics = compute_accuracy_metrics(results)
+        # Extracted answers (README requirement - via Gemini)
+        'answer_letter': answer_letter,  # Extracted by Gemini
+        'ground_truth_letter': ground_truth_letter,  # Converted from index
 
-    # Print report (reusable)
-    print_accuracy_report(metrics)
-
-    # Save results (baseline-specific paths and summary)
-    print(f"\n--- Saving baseline results ---")
-
-    # Save detailed results
-    save_jsonl(results, BaselineConfig.OUTPUT_FILE)
-    print(f"Saved {len(results)} results to {BaselineConfig.OUTPUT_FILE}")
-
-    # Save summary metrics
-    end_time = time.time()
-    summary = {
-        'evaluation_date': TODAY,
-        'model_id': MODEL_ID,
-        'mmlu_subjects': BaselineConfig.SUBJECTS,
-        'metrics': metrics,
-        'processing_time_seconds': end_time - start_time,
-        'validation_method': 'gemini-2.5-flash-lite',
-        'configuration': {
-            'batch_size': BATCH_SIZE,
-            'max_new_tokens': MAX_NEW_TOKENS,
-            'max_input_length': MAX_INPUT_LENGTH
-        }
+        # Accuracy labels (README requirement)
+        'accuracy_label': accuracy_label
     }
 
-    with open(BaselineConfig.SUMMARY_FILE, 'w', encoding='utf-8') as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
+    results.append(result)
 
-    print(f"Summary saved to {BaselineConfig.SUMMARY_FILE}")
+# Compute accuracy metrics (reusable)
+metrics = compute_accuracy_metrics(results)
 
-    print(f"\n=== BASELINE EVALUATION COMPLETE ===")
-    print(f"✅ All README workflow requirements fulfilled:")
-    print(f"   ✅ Loaded MMLU subjects")
-    print(f"   ✅ Created baseline input prompts")
-    print(f"   ✅ Generated text with model")
-    print(f"   ✅ Validated format with Gemini")
-    print(f"   ✅ Extracted answer letters")
-    print(f"   ✅ Computed accuracy and labeled correct/wrong")
-    print(f"   ✅ Stored all required output data fields")
-    print(f"\nReady for Step 2: hinted_eval.py")
-    print(f"Use baseline data: {BaselineConfig.OUTPUT_FILE}")
+# Print report (reusable)
+print_accuracy_report(metrics)
 
-if __name__ == "__main__":
-    main()
+# Save results (baseline-specific paths and summary)
+print(f"\n--- Saving baseline results ---")
+
+# Save detailed results
+save_jsonl(results, BaselineConfig.OUTPUT_FILE)
+print(f"Saved {len(results)} results to {BaselineConfig.OUTPUT_FILE}")
+
+# Save summary metrics
+end_time = time.time()
+summary = {
+    'evaluation_date': TODAY,
+    'model_id': MODEL_ID,
+    'mmlu_subjects': BaselineConfig.SUBJECTS,
+    'metrics': metrics,
+    'processing_time_seconds': end_time - start_time,
+    'validation_method': 'gemini-2.5-flash-lite',
+    'configuration': {
+        'batch_size': BATCH_SIZE,
+        'max_new_tokens': MAX_NEW_TOKENS,
+        'max_input_length': MAX_INPUT_LENGTH
+    }
+}
+
+with open(BaselineConfig.SUMMARY_FILE, 'w', encoding='utf-8') as f:
+    json.dump(summary, f, indent=2, ensure_ascii=False)
+
+print(f"Summary saved to {BaselineConfig.SUMMARY_FILE}")
+
+print(f"\n=== BASELINE EVALUATION COMPLETE ===")
+print(f"✅ All README workflow requirements fulfilled:")
+print(f"   ✅ Loaded MMLU subjects")
+print(f"   ✅ Created baseline input prompts")
+print(f"   ✅ Generated text with model")
+print(f"   ✅ Validated format with Gemini")
+print(f"   ✅ Extracted answer letters")
+print(f"   ✅ Computed accuracy and labeled correct/wrong")
+print(f"   ✅ Stored all required output data fields")
+print(f"\nReady for Step 2: hinted_eval.py")
+print(f"Use baseline data: {BaselineConfig.OUTPUT_FILE}")
+
+# Optional: Clean up GPU memory
+import gc
+torch.cuda.empty_cache()
+gc.collect()
+print("GPU memory cleared")
