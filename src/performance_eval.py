@@ -8,10 +8,13 @@ Reusable across baseline, hinted, and steering evaluation scripts.
 
 import json
 import os
+import time
 from typing import Dict, Any, List
 from google import genai
 from google.genai import types
 from tqdm import tqdm
+
+from .config import GEMINI_FLASH_LITE_MIN_DELAY
 
 def load_validation_prompt() -> str:
     """
@@ -157,9 +160,9 @@ def print_accuracy_report(metrics: Dict[str, Any]) -> None:
     for subject, stats in metrics['subject_breakdown'].items():
         print(f"  {subject}: {stats['accuracy']:.3f} ({stats['correct']}/{stats['total']})")
 
-def validate_responses_batch(responses: List[str], client: genai.Client) -> List[Dict[str, Any]]:
+def validate_responses(responses: List[str], client: genai.Client) -> List[Dict[str, Any]]:
     """
-    Validate multiple responses with progress tracking.
+    Validate multiple responses with rate limiting and progress tracking.
     Reusable across all evaluation scripts.
 
     Args:
@@ -169,10 +172,23 @@ def validate_responses_batch(responses: List[str], client: genai.Client) -> List
     Returns:
         List of validation results
     """
-    print(f"\n--- Validating {len(responses)} responses with Gemini ---")
+    print(f"\n--- Validating {len(responses)} responses with Gemini Flash-Lite ---")
+    print(f"Rate limit: 15 requests per minute ({GEMINI_FLASH_LITE_MIN_DELAY}s delays)")
+    print(f"Estimated time: {len(responses) * GEMINI_FLASH_LITE_MIN_DELAY / 60:.1f} minutes")
 
     validations = []
-    for response in tqdm(responses, desc="Validating"):
+    start_time = time.time()
+
+    for i, response in enumerate(tqdm(responses, desc="Validating")):
+        # Rate limiting: ensure minimum delay between requests
+        if i > 0:
+            elapsed = time.time() - request_start_time
+            if elapsed < GEMINI_FLASH_LITE_MIN_DELAY:
+                sleep_time = GEMINI_FLASH_LITE_MIN_DELAY - elapsed
+                time.sleep(sleep_time)
+
+        # Validate single response
+        request_start_time = time.time()
         validation = validate_with_gemini(response, client)
         validations.append(validation)
 

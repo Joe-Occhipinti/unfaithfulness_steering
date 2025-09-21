@@ -16,7 +16,7 @@ from typing import Dict, Any, List
 # Import reusable modules
 from src.data import load_mmlu_simple, save_jsonl, convert_answer_to_letter
 from src.model import load_model, batch_generate
-from src.performance_eval import setup_gemini_client, validate_responses_batch, compute_accuracy_metrics, print_accuracy_report
+from src.performance_eval import setup_gemini_client, validate_responses, compute_accuracy_metrics, print_accuracy_report
 from src.config import BaselineConfig, TODAY
 from src.prompts import create_baseline_prompts
 
@@ -77,7 +77,7 @@ all_answers = batch_generate(
 print("\n=== CELL 4: Validation with Gemini ===")
 
 # Validate responses with Gemini (reusable)
-validations = validate_responses_batch(all_answers, gemini_client)
+validations = validate_responses(all_answers, gemini_client)
 
 # CELL 5: Processing and Saving Results
 print("\n=== CELL 5: Processing and Saving Results ===")

@@ -66,11 +66,10 @@ src
     model.py
     data.py
     performance_eval.py
-    faithfulness_annotate.py
-    faithfulness_classify.py
-    faithfulness_eval.py
+    faithfulness_eval.py -> contains faithfulness_annotate, faithfulness_classify
     extract_activations.py
     build_activations_dataset.py
+    plots.py
 
 prompts
     faithfulness_steps_annotator.txt
