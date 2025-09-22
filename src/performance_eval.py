@@ -159,7 +159,7 @@ def validate_with_deepseek(response: str, client_config: Dict[str, str], max_ret
                 f"{client_config['base_url']}/v1/chat/completions",
                 headers=client_config['headers'],
                 json=payload,
-                timeout=30
+                timeout=None  # No timeout - let DeepSeek-Reasoner take its time
             )
 
             response_obj.raise_for_status()
@@ -185,18 +185,22 @@ def validate_with_deepseek(response: str, client_config: Dict[str, str], max_ret
 
         except requests.exceptions.RequestException as e:
             error_msg = str(e)
-            if "429" in error_msg:
-                print(f"DeepSeek rate limit hit (attempt {attempt + 1}/{max_retries}). Waiting...")
-                time.sleep(10)
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                print(f"DeepSeek rate limit hit (attempt {attempt + 1}/{max_retries}). Waiting generously...")
+                time.sleep(120)  # Very generous wait for rate limits - 2 minutes
+            elif "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                print(f"DeepSeek timeout (attempt {attempt + 1}/{max_retries}). Waiting and retrying...")
+                if attempt < max_retries - 1:
+                    time.sleep(60)  # Generous wait for timeouts - 1 minute
             else:
                 print(f"DeepSeek API error (attempt {attempt + 1}/{max_retries}): {error_msg}")
                 if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
+                    time.sleep(30 + (10 * attempt))  # Conservative backoff: 30s, 40s, 50s
 
         except Exception as e:
             print(f"DeepSeek validation error: {e}")
             if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(30 + (10 * attempt))  # Conservative backoff: 30s, 40s, 50s
 
     # Fallback - assume validation failed
     return {
@@ -311,7 +315,7 @@ def validate_responses(responses: List[str], client: genai.Client) -> List[Dict[
 
 
 def validate_responses_deepseek(responses: List[str], client_config: Dict[str, str],
-                               min_delay: float = 1.0) -> List[Dict[str, Any]]:
+                               min_delay: float = 5.0) -> List[Dict[str, Any]]:
     """
     Validate multiple responses with DeepSeek-Reasoner with rate limiting and progress tracking.
     Reusable across all evaluation scripts.
