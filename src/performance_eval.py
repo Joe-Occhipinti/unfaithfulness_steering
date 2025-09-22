@@ -159,7 +159,7 @@ def validate_with_deepseek(response: str, client_config: Dict[str, str], max_ret
                 f"{client_config['base_url']}/v1/chat/completions",
                 headers=client_config['headers'],
                 json=payload,
-                timeout=None  # No timeout - let DeepSeek-Reasoner take its time
+                timeout=(30, 300)  # (connection, read) - 5 minutes read timeout
             )
 
             response_obj.raise_for_status()
@@ -189,9 +189,9 @@ def validate_with_deepseek(response: str, client_config: Dict[str, str], max_ret
                 print(f"DeepSeek rate limit hit (attempt {attempt + 1}/{max_retries}). Waiting generously...")
                 time.sleep(120)  # Very generous wait for rate limits - 2 minutes
             elif "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-                print(f"DeepSeek timeout (attempt {attempt + 1}/{max_retries}). Waiting and retrying...")
+                print(f"DeepSeek timeout after 5 minutes (attempt {attempt + 1}/{max_retries}). This request is taking too long...")
                 if attempt < max_retries - 1:
-                    time.sleep(60)  # Generous wait for timeouts - 1 minute
+                    time.sleep(30)  # Wait before retry for timeouts
             else:
                 print(f"DeepSeek API error (attempt {attempt + 1}/{max_retries}): {error_msg}")
                 if attempt < max_retries - 1:
