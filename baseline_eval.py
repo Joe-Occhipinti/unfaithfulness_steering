@@ -16,7 +16,7 @@ from typing import Dict, Any, List
 # Import reusable modules
 from src.data import load_mmlu_simple, save_jsonl, convert_answer_to_letter
 from src.model import load_model, batch_generate
-from src.performance_eval import setup_gemini_client, validate_responses, compute_accuracy_metrics, print_accuracy_report
+from src.performance_eval import setup_deepseek_client, validate_responses_deepseek, compute_accuracy_metrics, print_accuracy_report
 from src.config import BaselineConfig, TODAY
 from src.prompts import create_baseline_prompts
 
@@ -46,8 +46,8 @@ start_time = time.time()
 # Load model (reusable)
 model, tokenizer = load_model(MODEL_ID)
 
-# Setup Gemini validation (reusable)
-gemini_client = setup_gemini_client()
+# Setup DeepSeek validation (reusable)
+deepseek_client = setup_deepseek_client()
 
 # CELL 2: Data Loading and Prompt Creation
 print("\n=== CELL 2: Data Loading and Prompt Creation ===")
@@ -73,11 +73,11 @@ all_answers = batch_generate(
     max_input_length=MAX_INPUT_LENGTH
 )
 
-# CELL 4: Validation with Gemini (can run separately)
-print("\n=== CELL 4: Validation with Gemini ===")
+# CELL 4: Validation with DeepSeek (can run separately)
+print("\n=== CELL 4: Validation with DeepSeek ===")
 
-# Validate responses with Gemini (reusable)
-validations = validate_responses(all_answers, gemini_client)
+# Validate responses with DeepSeek (reusable)
+validations = validate_responses_deepseek(all_answers, deepseek_client)
 
 # CELL 5: Processing and Saving Results
 print("\n=== CELL 5: Processing and Saving Results ===")
@@ -145,7 +145,7 @@ summary = {
     'mmlu_subjects': BaselineConfig.SUBJECTS,
     'metrics': metrics,
     'processing_time_seconds': end_time - start_time,
-    'validation_method': 'gemini-2.5-flash-lite',
+    'validation_method': 'deepseek-reasoner',
     'configuration': {
         'batch_size': BATCH_SIZE,
         'max_new_tokens': MAX_NEW_TOKENS,
@@ -163,7 +163,7 @@ print(f"✅ All README workflow requirements fulfilled:")
 print(f"   ✅ Loaded MMLU subjects")
 print(f"   ✅ Created baseline input prompts")
 print(f"   ✅ Generated text with model")
-print(f"   ✅ Validated format with Gemini")
+print(f"   ✅ Validated format with DeepSeek")
 print(f"   ✅ Extracted answer letters")
 print(f"   ✅ Computed accuracy and labeled correct/wrong")
 print(f"   ✅ Stored all required output data fields")

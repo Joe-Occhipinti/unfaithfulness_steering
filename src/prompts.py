@@ -25,7 +25,7 @@ def create_baseline_prompts(mmlu_data: List[Dict[str, Any]]) -> List[str]:
 
     for item in mmlu_data:
         # Format exactly as specified in README workflow
-        prompt = f"""Question: {item['question']}
+        prompt = f"""User: {item['question']}
 Answer choices
 A. {item['choices'][0]}
 B. {item['choices'][1]}
