@@ -53,22 +53,36 @@ from typing import Dict, Any, List
 # Import reusable modules
 from src.data import load_mmlu_simple, save_jsonl, convert_answer_to_letter
 from src.model import load_model, batch_generate
-from src.performance_eval import setup_deepseek_client, validate_responses_deepseek, compute_accuracy_metrics, print_accuracy_report
-from src.config import BaselineConfig, TODAY
+from src.performance_eval import (
+    setup_deepseek_client, validate_responses_deepseek,
+    compute_accuracy_metrics, print_accuracy_report,
+    extract_validation_data, label_accuracy
+)
+from src.config import TODAY, BaselineConfig
 from src.prompts import create_baseline_prompts
 
 # =============================================================================
-# BASELINE-SPECIFIC MODEL & GENERATION PARAMETERS (easy to tune)
+# BASELINE-SPECIFIC TUNABLE PARAMETERS
 # =============================================================================
 
+# Model and generation parameters
 MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
 BATCH_SIZE = 10
 MAX_NEW_TOKENS = 2048
 MAX_INPUT_LENGTH = 1024
 
+# MMLU subjects to evaluate
+MMLU_SUBJECTS = [
+    'high_school_psychology',
+    # Add more subjects as needed:
+    # 'high_school_biology',
+    # 'high_school_chemistry',
+    # 'high_school_physics',
+]
+
 print(f"=== BASELINE EVALUATION - {TODAY} ===")
 print(f"Model: {MODEL_ID}")
-print(f"MMLU Subjects: {BaselineConfig.SUBJECTS}")
+print(f"MMLU Subjects: {MMLU_SUBJECTS}")
 print(f"Output: {BaselineConfig.OUTPUT_FILE}")
 print(f"Batch Size: {BATCH_SIZE}, Max New Tokens: {MAX_NEW_TOKENS}")
 
@@ -80,27 +94,26 @@ print(f"Batch Size: {BATCH_SIZE}, Max New Tokens: {MAX_NEW_TOKENS}")
 print("=== CELL 1: Setup and Model Loading ===")
 start_time = time.time()
 
-# Load model (reusable)
+# Load modekl and tokenizer
 model, tokenizer = load_model(MODEL_ID)
 
-# Setup DeepSeek validation (reusable)
+# Setup DeepSeek validation
 deepseek_client = setup_deepseek_client()
 
 # CELL 2: Data Loading and Prompt Creation
 print("\n=== CELL 2: Data Loading and Prompt Creation ===")
 
-# Load MMLU data (reusable)
-mmlu_data = load_mmlu_simple(BaselineConfig.SUBJECTS)[0:5]  # Test with first 5
+mmlu_data = load_mmlu_simple(MMLU_SUBJECTS)[0:5]  # Test with first 5
 
-# Create baseline prompts (from prompts module)
+# Create baseline prompts
 baseline_prompts = create_baseline_prompts(mmlu_data)
 
 print(f"\n--- Ready to process {len(baseline_prompts)} prompts ---")
 
-# CELL 3: Text Generation (can run separately)
+# CELL 3: Text Generation
 print("\n=== CELL 3: Text Generation ===")
 
-# Generate responses (reusable)
+# Generate responses
 all_answers = batch_generate(
     model=model,
     tokenizer=tokenizer,
@@ -110,33 +123,30 @@ all_answers = batch_generate(
     max_input_length=MAX_INPUT_LENGTH
 )
 
-# CELL 4: Validation with DeepSeek (can run separately)
+# CELL 4: Validation with DeepSeek
 print("\n=== CELL 4: Validation with DeepSeek ===")
 
-# Validate responses with DeepSeek (reusable)
+# Validate responses with DeepSeek
 validations = validate_responses_deepseek(all_answers, deepseek_client)
 
 # CELL 5: Processing and Saving Results
 print("\n=== CELL 5: Processing and Saving Results ===")
 
-# Process results (baseline-specific structure)
+# Process results
 print(f"\n--- Processing baseline results ---")
 results = []
 
 for i, (mmlu_item, baseline_prompt, generated_answer, validation) in enumerate(
     zip(mmlu_data, baseline_prompts, all_answers, validations)
 ):
-    # Extract validation data from DeepSeek
-    format_followed = validation.get('format_followed', False)
-    response_complete = validation.get('response_complete', True)
-    answer_letter = validation.get('final_answer', None)  # This is the extracted letter
+    # Extract validation data using helper function
+    format_followed, response_complete, answer_letter = extract_validation_data(validation)
 
-    # Get ground truth letter (reusable)
+    # Get ground truth letter
     ground_truth_letter = convert_answer_to_letter(mmlu_item['answer'])
 
-    # Label correctness
-    is_correct = (answer_letter == ground_truth_letter) if answer_letter is not None else False
-    accuracy_label = 'correct' if is_correct else 'wrong'
+    # Label correctness using helper function
+    is_correct, accuracy_label = label_accuracy(answer_letter, ground_truth_letter)
 
     # Create baseline result record (essential data only)
     result = {
@@ -156,7 +166,11 @@ for i, (mmlu_item, baseline_prompt, generated_answer, validation) in enumerate(
         'ground_truth_letter': ground_truth_letter,  # Converted from index
 
         # Accuracy labels (README requirement)
-        'accuracy_label': accuracy_label
+        'accuracy_label': accuracy_label,
+
+        # Validation metadata
+        'format_followed': format_followed,
+        'response_complete': response_complete
     }
 
     results.append(result)
@@ -182,7 +196,7 @@ end_time = time.time()
 summary = {
     'evaluation_date': TODAY,
     'model_id': MODEL_ID,
-    'mmlu_subjects': BaselineConfig.SUBJECTS,
+    'mmlu_subjects': MMLU_SUBJECTS,
     'metrics': metrics,
     'processing_time_seconds': end_time - start_time,
     'validation_method': 'deepseek-reasoner',

@@ -41,19 +41,21 @@ Assistant: Let's think step by step:"""
 def create_hinted_prompts(
     baseline_data: List[Dict[str, Any]],
     hint_template: str = None,
-    wrong_hint_probability: float = 0.5
-) -> List[str]:
+    return_hint_info: bool = False
+) -> List[str] | tuple[List[str], List[Dict[str, Any]]]:
     """
     Create hinted/biased prompts from baseline evaluation results.
     Used in hinted evaluation (Step 2 of workflow).
 
+    Now always gives INCORRECT hints with even distribution among wrong options.
+
     Args:
         baseline_data: List of baseline evaluation results (correct answers only)
         hint_template: Template for hint (uses default if None)
-        wrong_hint_probability: Probability of giving wrong hint (0.0 = always correct, 1.0 = always wrong)
+        return_hint_info: If True, also returns hint information for each prompt
 
     Returns:
-        List of formatted hinted prompts
+        List of formatted hinted prompts, or tuple of (prompts, hint_info) if return_hint_info=True
     """
     print(f"\n--- Creating hinted prompts ---")
 
@@ -61,25 +63,55 @@ def create_hinted_prompts(
         hint_template = HintedConfig.DEFAULT_HINT_TEMPLATE
 
     prompts = []
-    hint_stats = {'correct_hints': 0, 'wrong_hints': 0}
 
-    for item in baseline_data:
-        # Determine hint letter (correct or wrong)
+    # Track distribution of wrong hints for even distribution
+    # Initialize counters for each letter option
+    wrong_hint_distribution = {'A': [], 'B': [], 'C': [], 'D': []}
+
+    # First pass: collect all wrong options for each item with their indices
+    wrong_options_pool = []
+    for idx, item in enumerate(baseline_data):
         ground_truth_letter = item['ground_truth_letter']
-        all_letters = ['A', 'B', 'C', 'D']
+        wrong_letters = [letter for letter in ['A', 'B', 'C', 'D'] if letter != ground_truth_letter]
+        wrong_options_pool.append((idx, wrong_letters))
 
-        if random.random() < wrong_hint_probability:
-            # Give wrong hint
-            wrong_letters = [letter for letter in all_letters if letter != ground_truth_letter]
-            hint_letter = random.choice(wrong_letters)
-            hint_stats['wrong_hints'] += 1
-        else:
-            # Give correct hint
-            hint_letter = ground_truth_letter
-            hint_stats['correct_hints'] += 1
+    # Create a rotation system for even distribution
+    # We'll cycle through wrong options to ensure even distribution
+    hint_assignments = {}
+    option_counters = {'A': 0, 'B': 0, 'C': 0, 'D': 0}
+
+    for idx, (item_idx, wrong_letters) in enumerate(wrong_options_pool):
+        # Find the wrong letter that has been used least
+        available_counts = [(letter, option_counters[letter]) for letter in wrong_letters]
+        available_counts.sort(key=lambda x: x[1])  # Sort by count (ascending)
+
+        # If there's a tie in counts, rotate through them
+        min_count = available_counts[0][1]
+        least_used_options = [letter for letter, count in available_counts if count == min_count]
+
+        # Use modulo to cycle through tied options
+        hint_letter = least_used_options[idx % len(least_used_options)]
+        hint_assignments[item_idx] = hint_letter
+        option_counters[hint_letter] += 1
+
+    # Now create the prompts with the assigned hints
+    hint_stats = {'wrong_hints_per_option': option_counters}
+    hint_info_list = []
+
+    for idx, item in enumerate(baseline_data):
+        # Always give wrong hint with even distribution
+        hint_letter = hint_assignments[idx]
 
         # Format hint
         hint_text = hint_template.format(hint_letter=hint_letter)
+
+        # Store hint information if requested
+        if return_hint_info:
+            hint_info = {
+                'hint_letter': hint_letter,
+                'hint_template': hint_template
+            }
+            hint_info_list.append(hint_info)
 
         # Create hinted prompt
         hinted_prompt = f"""User: {hint_text}
@@ -95,9 +127,14 @@ Assistant: Let's think step by step:"""
 
         prompts.append(hinted_prompt)
 
-    print(f"Created {len(prompts)} hinted prompts")
-    print(f"Hint distribution - Correct: {hint_stats['correct_hints']}, Wrong: {hint_stats['wrong_hints']}")
+    print(f"Created {len(prompts)} hinted prompts (all incorrect)")
+    print(f"Wrong hint distribution - A: {hint_stats['wrong_hints_per_option']['A']}, "
+          f"B: {hint_stats['wrong_hints_per_option']['B']}, "
+          f"C: {hint_stats['wrong_hints_per_option']['C']}, "
+          f"D: {hint_stats['wrong_hints_per_option']['D']}")
 
+    if return_hint_info:
+        return prompts, hint_info_list
     return prompts
 
 def create_annotation_prompts(hinted_data: List[Dict[str, Any]]) -> List[str]:
