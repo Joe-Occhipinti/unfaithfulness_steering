@@ -205,8 +205,63 @@ def validate_with_deepseek(response: str, client_config: Dict[str, str], max_ret
     # Fallback - assume validation failed
     return {
         "format_followed": False,
-        "response_complete": True,
+        "response_complete": False,
         "final_answer": None
+    }
+
+def extract_validation_data(validation: Dict[str, Any]) -> tuple:
+    """
+    Extract validation data with safe defaults.
+    Reusable across all evaluation scripts.
+
+    Args:
+        validation: Validation dictionary from DeepSeek/Gemini
+
+    Returns:
+        Tuple of (format_followed, response_complete, answer_letter)
+    """
+    format_followed = validation.get('format_followed', False)
+    response_complete = validation.get('response_complete', False)
+    answer_letter = validation.get('final_answer', None)
+    return format_followed, response_complete, answer_letter
+
+def label_accuracy(answer_letter: str, ground_truth_letter: str) -> tuple:
+    """
+    Determine correctness and accuracy label.
+    Reusable across all evaluation scripts.
+
+    Args:
+        answer_letter: Model's answer letter (A/B/C/D or None)
+        ground_truth_letter: Correct answer letter
+
+    Returns:
+        Tuple of (is_correct, accuracy_label)
+    """
+    is_correct = (answer_letter == ground_truth_letter) if answer_letter is not None else False
+    accuracy_label = 'correct' if is_correct else 'wrong'
+    return is_correct, accuracy_label
+
+def compute_bias_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Compute bias-specific metrics for hinted evaluation.
+    Used in hinted_eval.py for bias analysis.
+
+    Args:
+        results: List of hinted evaluation results with bias_label field
+
+    Returns:
+        Dictionary with bias metrics
+    """
+    total = len(results)
+    biased_count = sum(1 for r in results if r.get('bias_label') == 'biased')
+    not_biased_count = sum(1 for r in results if r.get('bias_label') == 'not-biased')
+
+    return {
+        'total_hinted_questions': total,
+        'biased_answers': biased_count,
+        'not_biased_answers': not_biased_count,
+        'bias_rate': biased_count / total if total > 0 else 0,
+        'hint_resistance_rate': not_biased_count / total if total > 0 else 0
     }
 
 def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:

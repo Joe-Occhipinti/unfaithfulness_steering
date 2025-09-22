@@ -3,6 +3,7 @@
 This research project aims to investigate Chain-of-Thought Unfaithfulness in reasoning models. After eliciting faithful and unfaithful behaviours with biasing hints in the prompts (similar to Turpin et al., 2023), we want to test if the acts of being faithful and unfaithful are linearly encoded in the model's activations. We want to test if we can isolate a "direction towards faithfulness" and compute a steering vector out of it using methods like contrastive activation addition (similar to Rimsky et al., 2024).
 
 # Workflow
+We need to build the main scripts and sub modules to recreate this workflow. In order to test the entire pipeline end to end while we build it, we will use small amounts of syntethic data with the right jsonl schemes. 
 
 1. Baseline run: get baseline performance on MCQs loaded from MMLU (2-3 domains) --> main script is a colab notebook cloning the repo from github and importing scripts
      └→ input data: load N MMLU subjects, create baseline input prompts from the MMLU MCQs.
@@ -10,29 +11,36 @@ This research project aims to investigate Chain-of-Thought Unfaithfulness in rea
      └→ generate: get the model performance generating text continuing the baseline input prompts.
      └→ eval: validate response format following, extract answer letter, compute accuracy, label them (correct, wrong)
      └→ output data: store question, baseline input prompts + baseline generated text (= baseline output prompt) + answer letter + ground truth letter (converting from number to letters like in 0->A) + accuracy labels (correct, wrong).
+
 2. Hinted run: get performance on baseline correct answers, but now the prompts have a hint. --> main script is a colab notebook cloning the repo from github and importing scripts
      └→ data: load baseline input prompts that were labeled as correct in the baseline run, modify them adding a hint at the start of the prompt to create biased input prompts.
      └→ model: load the model with the setup to generate text performing multiple forward passes.
      └→ generate: get the model performance generating text continuing the biased input prompts.
      └→ eval: validate response format following, extract answer letter, compute accuracy, label them (correct, wrong), label them also as biased if wrong, not-biased if correct.
-     └→ output data: store the hint verbatim, hinted input prompts and hinted generated texts (= hinted output prompts), answer letter, ground truth letter, hinted letter, accuracy labels (correct, wrong), bias labels ("biased" if wrong, "not-biased" if still correct).
-3. Eval faithfulness of hinted run: Annotate and classify for faithfulness hinted biased prompts with a LLM-annotator + rule table --> main script is a colab notebook cloning the repo from github and importing scripts
-     └→ input data: load hinted generated texts and hinted input prompts that were labeled as biased in the previous step. For each couple, combine them in a single text named "biased prompt". Keep track of their answer letters, ground truth letter and hinted letter (with idx)
-     └→ model: set up a proprietary model API and parameters. 
-     └→ annotate: call the model with a annotatation prompt in the system prompt and the biased prompt to annotate in the user query. Get the annotated text from the called model output.
-     └→ classify: using a rule-table that processes the annotated biase prompt, and looking at the combination of tags, answer letter, hinted letter, label each annotated biased prompt with the corresponding resulting label
-     └→ eval at the prompt-level: count and display distribution across rule-table labels. 
-     └→ eval at the reasoning step level: count and display distribution across labels (per layer)
-     └→ output data: store input hinted prompts that were labeled as biased not annotated, corresponding hinted output prompts not annotated, full biased prompts non annotated (hinted input/generated output), annotated biased prompts, with their answer letter, hinted letter, the ground truth letter, their prompt-level classification ("faithful", "unfaithful", other labels). This dataset must be divided in train, split, val.
-4. Extract hidden state activations from annotated biased prompts that were labeled as faithful and unfaithful, and store them in a dataset of activations.  The dataset must still be divided in train, val, test respecting the splits from the annotated biased prompts dataset (so, maintaining a prompt-wise hierarchy: for every prompt --> for every layer --> for every label --> every activations) --> main script is a colab notebook cloning the repo from github and importing scripts
+     └→ intermediate output data in hinted_[date]: store the hint verbatim, the hinted input prompts, the hinted generated texts, the merged of the two = biased prompts, answer letter, ground truth letter, hinted letter, accuracy labels (correct, wrong), bias labels ("biased" if wrong, "not-biased" if still correct).
+     └→ eval faithfulness: Annotate and classify for faithfulness biased prompts with a LLM-annotator + rule table to classify for faithfulness/unfaithfulness/other global labels of the CoT.
+        └→ input data: load biased prompts (hinted input prompts + hinted generated texts) from the intermediate output of the hinted_eval.py run
+        └→ model: set up a proprietary model API and parameters. gemini 2.5 pro
+        └→ annotate: call the model with a annotatation prompt in the system prompt and the biased prompt to annotate in the user query. Get the annotated text from the called model output.
+        └→ classify: using a rule-table that processes the annotated biase prompt, and looking at the combination of tags, answer letter, hinted letter, label each annotated biased prompt with the corresponding resulting label
+        └→ eval at the prompt-level: count and save distribution across rule-table labels. 
+        └→ eval at the reasoning step level: count and save distribution across labels (per prompt)
+        └→ output data in annotated biased [date]: store input hinted prompts that were labeled as biased not annotated, corresponding hinted generated texts not annotated, biased prompts non annotated (hinted input + hinted generated output), annotated biased prompts, with their answer letter, hinted letter, the ground truth letter, their prompt-level classification ("faithful", "unfaithful", other labels). This dataset must be divided in train, split, val.
+
+3. Extract hidden state activations from annotated biased prompts at the level of specific locations marked by closing tags (look at legacy code to how to do that), in prompts in annotated biased [date] that were labeled as faithful and unfaithful, and store them in a dataset of activations. The dataset must still be divided in train, val, test respecting the splits from the annotated biased prompts dataset (so, maintaining a prompt-wise hierarchy: for every prompt --> for every layer --> for every label --> every activations) --> main script is a colab notebook cloning the repo from github and importing scripts
     └→ input data: load annoated biased prompts
     └→ model: load model to perform one single forward pass (not generate text).
     └→ extraction loop: extract activations at the level of specific locations of selectable tags in the annotated prompts.
     └→ store activations in dataset of activations splitted in train val test, maintaining a prompt-based organization.
-5. eval separability --> main script is a colab notebook cloning the repo from github and importing scripts
-     └→ compute cosine similarity and norm changes/distribution across layer of specific positive and negative activations labels from the dataset of activations. Where positive and negative are tunable parameters corresponding to the set of labels from the dataset we group in each category. (e.g., positive = F vs negative = U, positive = F_final vs. negative = U_final, positive = F + F_final vs. negative = U + U_final, positive = F + F_wk vs negative = U etc.)
+    This function was well implemented in the legacy code so look at it. just extracting parts that can constitute reusable modules to put in src.
+    
+4. eval separability: basically a main script aggregating some core logic behind testing separability, so the correlation with linearly encodedness (not causation, that is steering). In the main script, the positive and negative activations are tunable parameters, and basically we should put in these variables the labels from the annotation that we want to consider positive and negative for that run of analysis. The same thing will apply to computing steering vectors.
+     └→ compute cosine similarity distribution across layer of specific positive and negative activations labels from the dataset of activations. Where positive and negative are tunable parameters corresponding to the set of labels from the dataset we group in each category. (e.g., positive = F vs negative = U, positive = F_final vs. negative = U_final, positive = F + F_final vs. negative = U + U_final, positive = F + F_wk vs negative = U etc.)
+     Same thing but for norm changes distribution.
      └→ training and testing linear probes with linear regression for every layer, to classify different combinations of positive and negative activations from the activation dataset. plotting layer-wise the accuracy or AUC. Where positive and negative are tunable parameters based on the set of labels from the activation dataset we group in each category. Must be trained on train + val splits, tested on test split? Do we need the val set for something in this case? I don't know.
-8. compute steering vectors from the mean difference between positive and negative activations, where positive and negative are tunable parameters based on the set of labels from the activation dataset we group in each category. (e.g., F vs U, F_final vs. U_final, F + F_final vs. U + U_final, F + F_wk vs U etc.) --> main script is a colab notebook cloning the repo from github and importing scripts
+     
+5. compute steering vectors from the mean difference between positive and negative activations, where positive and negative are tunable parameters based on the set of labels from the activation dataset we group in each category. (e.g., F vs U, F_final vs. U_final, F + F_final vs. U + U_final, F + F_wk vs U etc.)
+
 9. tune_steering_vectors --> main script is a colab notebook cloning the repo from github and importing scripts
     └→ input data: load hinted input prompts not annotated from the annotated biased prompt dataset, val split.
     └→ model: load model to generate text and be steered during inference with activation addition.
@@ -41,6 +49,7 @@ This research project aims to investigate Chain-of-Thought Unfaithfulness in rea
     └→ eval: validate response format following, extract answer letter.
     └→ eval faithfulness entire pipeline (from annotation, to classifation, to visualization) on steered prompts (hinted input prompts + steered generated output). This should show us which combination of layer-coefficient is the best to turn unfaithful prompts to faithful.
     └→ output: save hinted input prompt, unsteered biased prompt, steered biased prompt, unsteered answerletter, hinted letter, ground truth, steered answer letter, old faithfulness classification, new faithfulness classification
+
 10. test_final_performance --> main script is a colab notebook cloning the repo from github and importing scripts
     └→ input data: load hinted input prompts not annotated from the annotated biased prompt dataset, test split.
     └→ model: load model to generate text and be steered during inference with activation addition.
@@ -56,7 +65,6 @@ This research project aims to investigate Chain-of-Thought Unfaithfulness in rea
 workflow_notebooks (we will write them as py files for now)
     baseline_eval.py
     hinted_eval.py
-    faithfulness_hinted_eval.py
     activations.py
     separability.py
     steering_vectors.py
@@ -64,12 +72,15 @@ workflow_notebooks (we will write them as py files for now)
     test_steering_vectors.py
 src
     model.py
+    config.py
     data.py
     performance_eval.py
-    faithfulness_eval.py -> contains faithfulness_annotate, faithfulness_classify
+    faithfulness_eval.py
+    separability_analysis.py
     extract_activations.py
-    build_activations_dataset.py
+    prompts.py
     plots.py
+    steering.py
 
 prompts
     faithfulness_steps_annotator.txt
