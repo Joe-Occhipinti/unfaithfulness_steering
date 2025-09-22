@@ -13,18 +13,19 @@ from typing import Dict, Any, List
 from google import genai
 from google.genai import types
 from tqdm import tqdm
+import requests
 
 from .config import GEMINI_FLASH_LITE_MIN_DELAY
 
 def load_validation_prompt() -> str:
     """
-    Load Gemini validation prompt from prompts folder.
+    Load validation prompt from prompts folder.
     Reusable across all evaluation scripts.
 
     Returns:
         Validation prompt template string
     """
-    prompt_path = os.path.join("prompts", "gemini_validation_prompt.txt")
+    prompt_path = os.path.join("prompts", "validation_prompt.txt")
     with open(prompt_path, 'r', encoding='utf-8') as f:
         return f.read().strip()
 
@@ -40,6 +41,35 @@ def setup_gemini_client() -> genai.Client:
     client = genai.Client(api_key=os.environ.get("GOOGLE_API_KEY"))
     print("Gemini 2.5 Flash-Lite client ready")
     return client
+
+
+def setup_deepseek_client() -> Dict[str, str]:
+    """
+    Setup DeepSeek client configuration for validation.
+    Reusable across all evaluation scripts.
+
+    Returns:
+        Dictionary with DeepSeek API configuration
+    """
+    print(f"\n--- Setting up DeepSeek validation ---")
+
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+
+    if not api_key:
+        raise ValueError("DEEPSEEK_API_KEY environment variable must be set")
+
+    config = {
+        "api_key": api_key,
+        "base_url": base_url,
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+    }
+
+    print("DeepSeek-Reasoner client ready")
+    return config
 
 def validate_with_gemini(response: str, client: genai.Client) -> Dict[str, Any]:
     """
@@ -89,6 +119,91 @@ def validate_with_gemini(response: str, client: genai.Client) -> Dict[str, Any]:
             "response_complete": True,
             "final_answer": None
         }
+
+
+def validate_with_deepseek(response: str, client_config: Dict[str, str], max_retries: int = 3) -> Dict[str, Any]:
+    """
+    Use DeepSeek-Reasoner to validate format and extract final answer.
+    Reusable across all evaluation scripts.
+
+    Args:
+        response: Model response to validate
+        client_config: DeepSeek client configuration
+        max_retries: Number of retry attempts
+
+    Returns:
+        Dictionary with format_followed, response_complete, final_answer
+    """
+
+    # Load validation prompt from prompts folder
+    validation_prompt_template = load_validation_prompt()
+    validation_prompt = validation_prompt_template.format(response=response)
+
+    payload = {
+        "model": "deepseek-reasoner",
+        "messages": [
+            {
+                "role": "user",
+                "content": validation_prompt
+            }
+        ],
+        "temperature": 0.0,
+        "max_tokens": 2048,
+        "stream": False
+    }
+
+    # Retry logic for API calls
+    for attempt in range(max_retries):
+        try:
+            response_obj = requests.post(
+                f"{client_config['base_url']}/v1/chat/completions",
+                headers=client_config['headers'],
+                json=payload,
+                timeout=30
+            )
+
+            response_obj.raise_for_status()
+            result = response_obj.json()
+
+            if 'choices' in result and len(result['choices']) > 0:
+                content = result['choices'][0]['message']['content'].strip()
+
+                # Parse JSON response
+                try:
+                    parsed_result = json.loads(content)
+                    return parsed_result
+                except json.JSONDecodeError:
+                    # Fallback - try to extract from text if JSON parsing fails
+                    print(f"JSON parsing failed, content: {content}")
+                    return {
+                        "format_followed": False,
+                        "response_complete": True,
+                        "final_answer": None
+                    }
+            else:
+                raise ValueError("No valid response from DeepSeek API")
+
+        except requests.exceptions.RequestException as e:
+            error_msg = str(e)
+            if "429" in error_msg:
+                print(f"DeepSeek rate limit hit (attempt {attempt + 1}/{max_retries}). Waiting...")
+                time.sleep(10)
+            else:
+                print(f"DeepSeek API error (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+
+        except Exception as e:
+            print(f"DeepSeek validation error: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+
+    # Fallback - assume validation failed
+    return {
+        "format_followed": False,
+        "response_complete": True,
+        "final_answer": None
+    }
 
 def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
@@ -190,6 +305,43 @@ def validate_responses(responses: List[str], client: genai.Client) -> List[Dict[
         # Validate single response
         request_start_time = time.time()
         validation = validate_with_gemini(response, client)
+        validations.append(validation)
+
+    return validations
+
+
+def validate_responses_deepseek(responses: List[str], client_config: Dict[str, str],
+                               min_delay: float = 1.0) -> List[Dict[str, Any]]:
+    """
+    Validate multiple responses with DeepSeek-Reasoner with rate limiting and progress tracking.
+    Reusable across all evaluation scripts.
+
+    Args:
+        responses: List of responses to validate
+        client_config: DeepSeek client configuration
+        min_delay: Minimum delay between requests in seconds
+
+    Returns:
+        List of validation results
+    """
+    print(f"\n--- Validating {len(responses)} responses with DeepSeek-Reasoner ---")
+    print(f"Rate limit: {min_delay}s delays between requests")
+    print(f"Estimated time: {len(responses) * min_delay / 60:.1f} minutes")
+
+    validations = []
+    start_time = time.time()
+
+    for i, response in enumerate(tqdm(responses, desc="Validating")):
+        # Rate limiting: ensure minimum delay between requests
+        if i > 0:
+            elapsed = time.time() - request_start_time
+            if elapsed < min_delay:
+                sleep_time = min_delay - elapsed
+                time.sleep(sleep_time)
+
+        # Validate single response
+        request_start_time = time.time()
+        validation = validate_with_deepseek(response, client_config)
         validations.append(validation)
 
     return validations
