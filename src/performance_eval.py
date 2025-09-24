@@ -314,7 +314,11 @@ def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         subject_stats[subject]['total'] += 1
         if result['accuracy_label'] == 'correct':
             subject_stats[subject]['correct'] += 1
-        if result.get('answer_letter') is None:  # Changed from 'final_answer'
+        # Check for answer_letter (baseline), hinted_answer_letter (hinted eval), or steered_answer_letter (steered eval)
+        extracted_answer = (result.get('answer_letter') or
+                          result.get('hinted_answer_letter') or
+                          result.get('steered_answer_letter'))
+        if extracted_answer is None:
             subject_stats[subject]['extraction_failed'] += 1
         if not result.get('format_followed', True):
             subject_stats[subject]['format_violations'] += 1
@@ -331,7 +335,10 @@ def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         'total_questions': total,
         'correct_answers': correct,
         'wrong_answers': total - correct,
-        'extraction_failures': sum(1 for r in results if r.get('answer_letter') is None),
+        'extraction_failures': sum(1 for r in results
+                                  if not any([r.get('answer_letter'),
+                                             r.get('hinted_answer_letter'),
+                                             r.get('steered_answer_letter')])),
         'format_violations': sum(1 for r in results if not r.get('format_followed', True)),
         'incomplete_responses': sum(1 for r in results if not r.get('response_complete', True)),
         'subject_breakdown': subject_stats
