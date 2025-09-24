@@ -111,3 +111,10 @@ data
         ...
 
 plots
+
+
+# TIMES
+
+30 prompts, deepseek-r1-distill-llama-8b
+
+baseline_eval.py = generation(8.30')  + parsing(15')
