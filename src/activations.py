@@ -494,8 +494,21 @@ def print_dataset_summary(dataset: Dict[str, Any]) -> None:
         print(f"  Layer {layer_idx}:")
         for tag in info['tags']:
             count = info['layer_stats'][layer_idx][tag]
-            shape = data[layer_idx][tag].shape
-            print(f"    {tag}: {count} activations, tensor shape: {shape}")
+            # For prompt-wise data, we need to check actual data from prompts
+            if count > 0:
+                # Find a prompt that has data for this layer/tag combination
+                sample_shape = None
+                for prompt_idx in data.keys():
+                    if layer_idx in data[prompt_idx] and tag in data[prompt_idx][layer_idx]:
+                        if data[prompt_idx][layer_idx][tag].numel() > 0:  # Non-empty tensor
+                            sample_shape = data[prompt_idx][layer_idx][tag].shape
+                            break
+                if sample_shape is not None:
+                    print(f"    {tag}: {count} activations, sample tensor shape: {sample_shape}")
+                else:
+                    print(f"    {tag}: {count} activations (shape unavailable)")
+            else:
+                print(f"    {tag}: 0 activations")
 
-    print(f"\nDataset structure: dataset['data'][layer_idx][tag] = tensor([num_activations, {info['hidden_dim']}])")
+    print(f"\nDataset structure: dataset['data'][prompt_idx][layer_idx][tag] = tensor([num_activations, {info['hidden_dim']}])")
     print(f"\n--- Dataset building complete! ---")
