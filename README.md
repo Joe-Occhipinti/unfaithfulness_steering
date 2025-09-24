@@ -115,6 +115,13 @@ plots
 
 # TIMES
 
-30 prompts, deepseek-r1-distill-llama-8b
 
-baseline_eval.py = generation(8.30')  + parsing(15')
+
+1. baseline_eval.py, 30 prompts, deepseek-r1-distill-llama-8b, colab, A100 80GB = generation(8.30')  + parsing(15')
+2. hinted_eval.py, 25 prompts, deepseek-r1-distill-llama-8b, colab, A100 40GB = generation(2.30') + parsing(14'), faithfulness_eval (3 prompts, gemini 2.5 pro, 2')
+3. extraction_activation.py, IDE, local machine = instant
+4. separability_analysis.py, IDE, local machine = instant
+5. compute_steering_vectors.py, IDE, local machine = instant
+6. tune_steering_vectors.py, 
+
+
