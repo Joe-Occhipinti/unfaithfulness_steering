@@ -244,32 +244,32 @@ with open(HintedConfig.SUMMARY_FILE, 'w', encoding='utf-8') as f:
 
 print(f"Summary saved to {HintedConfig.SUMMARY_FILE}")
 
-print(f"\n=== HINTED EVALUATION COMPLETE ===")
-print(f"✅ All README workflow requirements fulfilled:")
+print(f"\n=== HINTED EVALUATION COMPLETE (Phase 1) ===")
+print(f"✅ Hinted evaluation requirements fulfilled:")
 print(f"   ✅ Loaded baseline correct answers")
 print(f"   ✅ Created hinted input prompts with bias")
 print(f"   ✅ Generated text with model")
-print(f"   ✅ Validated format with Gemini")
+print(f"   ✅ Validated format with DeepSeek")
 print(f"   ✅ Extracted answer letters")
 print(f"   ✅ Computed accuracy and labeled correct/wrong")
 print(f"   ✅ Labeled bias: biased (wrong) vs not-biased (still correct)")
 print(f"   ✅ Stored all required output from the hinted run")
-print(f"   ✅ Annotated and classified biased prompts for faithfulness")
-print(f"   ✅ Computed faithfulness metrics")
-print(f"   ✅ Created accuracy comparison plot")
-print(f"   ✅ Created faithfulness distribution plot")
-print(f"   ✅ Stored all required output from the faithfulness evaluation pipeline")
-print(f"\nReady for Step 4: activation extraction")
-print(f"Use hinted data: {HintedConfig.OUTPUT_FILE}")
+print(f"\nHinted data saved to: {HintedConfig.OUTPUT_FILE}")
+print(f"Ready for Cell 7: Faithfulness Evaluation (can be run independently)")
 
-# CELL 7: Faithfulness Evaluation
+# CELL 7: Faithfulness Evaluation (Independent - can be run separately)
 print("\n=== CELL 7: Faithfulness Evaluation ===")
+print("Loading saved hinted evaluation results for faithfulness annotation...")
+
+# Load the saved hinted results from file
+hinted_results = load_jsonl(HintedConfig.OUTPUT_FILE)
+print(f"Loaded {len(hinted_results)} hinted evaluation results")
 
 # Setup Gemini client for annotation
 gemini_client = setup_gemini_client()
 
 # Filter for biased results only (where model followed the hint)
-biased_results = [r for r in results if r['bias_label'] == 'biased']
+biased_results = [r for r in hinted_results if r['bias_label'] == 'biased']
 print(f"\nFound {len(biased_results)} biased results to annotate for faithfulness")
 
 if len(biased_results) > 0:
@@ -324,6 +324,18 @@ else:
     print("No biased results to annotate - all models resisted the hints!")
     faithfulness_metrics = None
     annotated_results = []
+
+print(f"\n=== FAITHFULNESS EVALUATION COMPLETE (Phase 2) ===")
+if faithfulness_metrics:
+    print(f"✅ Faithfulness evaluation completed:")
+    print(f"   ✅ Loaded hinted results from: {HintedConfig.OUTPUT_FILE}")
+    print(f"   ✅ Filtered {len(biased_results)} biased results")
+    print(f"   ✅ Annotated biased prompts with Gemini")
+    print(f"   ✅ Classified faithfulness (correct/faithful/unfaithful/hint-induced error)")
+    print(f"   ✅ Saved annotated results to: {annotated_output_file}")
+    print(f"   ✅ Saved faithfulness summary")
+else:
+    print("No biased results to evaluate for faithfulness")
 
 # CELL 8: Create Accuracy Comparison Plot
 print("\n=== CELL 8: Creating Accuracy Comparison Plot ===")
