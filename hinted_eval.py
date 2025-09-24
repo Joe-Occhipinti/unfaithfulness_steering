@@ -56,7 +56,7 @@ from src.data import load_jsonl, save_jsonl
 from src.model import load_model, batch_generate
 from src.performance_eval import (
     setup_deepseek_client, validate_responses_deepseek,
-    compute_accuracy_metrics, print_accuracy_report,
+    compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy, compute_bias_metrics
 )
 from src.faithfulness_eval import (
@@ -197,6 +197,7 @@ for i, (baseline_item, hinted_prompt, generated_answer, validation, hint_info) i
 # Compute accuracy and bias metrics using helper functions
 metrics = compute_accuracy_metrics(results)
 bias_metrics = compute_bias_metrics(results)
+completeness_metrics = compute_completeness_metrics(results)
 
 # Print reports
 print_accuracy_report(metrics)
@@ -205,6 +206,10 @@ print(f"\n=== BIAS ANALYSIS ===")
 print(f"Bias Rate: {bias_metrics['bias_rate']:.3f}")
 print(f"Hint Resistance Rate: {bias_metrics['hint_resistance_rate']:.3f}")
 print(f"Biased: {bias_metrics['biased_answers']}, Not-Biased: {bias_metrics['not_biased_answers']}")
+
+print(f"\n=== COMPLETENESS ANALYSIS ===")
+print(f"Completeness Rate: {completeness_metrics['completeness_rate']:.3f}")
+print(f"Complete: {completeness_metrics['complete_responses']}, Incomplete: {completeness_metrics['incomplete_responses']}")
 
 # CELL 6: Saving Results
 print("\n=== CELL 6: Saving Results ===") 
@@ -224,8 +229,9 @@ summary = {
     'baseline_input_file': BASELINE_INPUT_FILE,
     'metrics': metrics,
     'bias_metrics': bias_metrics,
+    'completeness_metrics': completeness_metrics,
     'processing_time_seconds': end_time - start_time,
-    'validation_method': 'gemini-2.5-flash-lite',
+    'validation_method': 'deepseek-reasoner',
     'configuration': {
         'batch_size': BATCH_SIZE,
         'max_new_tokens': MAX_NEW_TOKENS,

@@ -55,7 +55,7 @@ from src.data import load_mmlu_simple, save_jsonl, convert_answer_to_letter
 from src.model import load_model, batch_generate
 from src.performance_eval import (
     setup_deepseek_client, validate_responses_deepseek,
-    compute_accuracy_metrics, print_accuracy_report,
+    compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy
 )
 from src.config import TODAY, BaselineConfig
@@ -178,8 +178,15 @@ for i, (mmlu_item, baseline_prompt, generated_answer, validation) in enumerate(
 # Compute accuracy metrics (reusable)
 metrics = compute_accuracy_metrics(results)
 
-# Print report (reusable)
+# Compute completeness metrics (reusable)
+completeness_metrics = compute_completeness_metrics(results)
+
+# Print reports (reusable)
 print_accuracy_report(metrics)
+
+print(f"\n=== COMPLETENESS ANALYSIS ===")
+print(f"Completeness Rate: {completeness_metrics['completeness_rate']:.3f}")
+print(f"Complete: {completeness_metrics['complete_responses']}, Incomplete: {completeness_metrics['incomplete_responses']}")
 
 # CELL 6: Saving Results
 print(f"\n--- Saving baseline results ---")
@@ -198,6 +205,7 @@ summary = {
     'model_id': MODEL_ID,
     'mmlu_subjects': MMLU_SUBJECTS,
     'metrics': metrics,
+    'completeness_metrics': completeness_metrics,
     'processing_time_seconds': end_time - start_time,
     'validation_method': 'deepseek-reasoner',
     'configuration': {

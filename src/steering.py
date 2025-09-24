@@ -346,3 +346,257 @@ def save_steering_summary_json(
         json.dump(summary, f, indent=2, ensure_ascii=False)
 
     print(f"Steering summary saved to: {output_file}")
+
+
+# =============================================================================
+# STEERING APPLICATION FUNCTIONS
+# =============================================================================
+
+import gc
+from typing import Any
+from tqdm import tqdm
+
+
+class LayerSteeringWrapper(torch.nn.Module):
+    """
+    Wrapper for model layers to apply steering vectors during generation.
+    Adds steering vector to the last token at each forward pass.
+    """
+
+    def __init__(self, block: torch.nn.Module, layer_idx: int):
+        super().__init__()
+        self.block = block
+        self.layer_idx = layer_idx
+        self.steering_vector = None
+        self.coefficient = 0.0
+        self.active = False
+
+    def forward(self, *args, **kwargs):
+        """Forward pass with optional steering applied to last token."""
+        output = self.block(*args, **kwargs)
+
+        if self.active and self.steering_vector is not None and output is not None:
+            try:
+                # Handle both tuple and tensor outputs
+                if isinstance(output, tuple):
+                    hidden_states = output[0]
+                else:
+                    hidden_states = output
+
+                if hidden_states.dim() == 3:  # [batch_size, seq_len, hidden_dim]
+                    batch_size = hidden_states.shape[0]
+                    modified_hidden_states = hidden_states.clone()
+
+                    # Add steering to last token
+                    steering_addition = self.steering_vector * self.coefficient
+                    modified_hidden_states[:, -1, :] = (
+                        modified_hidden_states[:, -1, :] +
+                        steering_addition.unsqueeze(0).expand(batch_size, -1)
+                    )
+
+                    # Return in the same format as input
+                    if isinstance(output, tuple):
+                        output = (modified_hidden_states,) + output[1:]
+                    else:
+                        output = modified_hidden_states
+
+            except Exception as e:
+                print(f"Error in layer {self.layer_idx} steering: {e}")
+
+        return output
+
+    def set_steering(self, vector: torch.Tensor, coefficient: float):
+        """Set steering vector and coefficient for this layer."""
+        self.steering_vector = vector.to(self.block.weight.device if hasattr(self.block, 'weight') else 'cuda')
+        self.coefficient = coefficient
+        self.active = True
+
+    def reset(self):
+        """Reset steering to inactive state."""
+        self.active = False
+        self.steering_vector = None
+        self.coefficient = 0.0
+
+
+def apply_steering_to_model(
+    model: Any,
+    steering_vectors: Dict[int, torch.Tensor],
+    layers_to_wrap: Optional[List[int]] = None
+) -> Dict[int, LayerSteeringWrapper]:
+    """
+    Apply steering wrappers to specified model layers.
+
+    Args:
+        model: The HuggingFace model
+        steering_vectors: Dict of layer_idx -> steering_vector
+        layers_to_wrap: List of layer indices to wrap (None = all layers with vectors)
+
+    Returns:
+        Dict of layer_idx -> wrapper instance
+    """
+    if layers_to_wrap is None:
+        layers_to_wrap = list(steering_vectors.keys())
+
+    wrapped_layers = {}
+
+    for layer_idx in layers_to_wrap:
+        if layer_idx not in steering_vectors:
+            print(f"Warning: No steering vector for layer {layer_idx}, skipping")
+            continue
+
+        original_layer = model.model.layers[layer_idx]
+        wrapped_layer = LayerSteeringWrapper(original_layer, layer_idx)
+        model.model.layers[layer_idx] = wrapped_layer
+        wrapped_layers[layer_idx] = wrapped_layer
+
+    print(f"Applied steering wrappers to {len(wrapped_layers)} layers")
+    return wrapped_layers
+
+
+def generate_steered_batch(
+    model: Any,
+    tokenizer: Any,
+    prompts: List[str],
+    wrapped_layers: Dict[int, LayerSteeringWrapper],
+    layer_idx: int,
+    coefficient: float,
+    steering_vectors: Dict[int, torch.Tensor],
+    batch_size: int = 5,
+    max_new_tokens: int = 2048,
+    max_input_length: int = 1024
+) -> List[str]:
+    """
+    Generate steered responses for a batch of prompts.
+
+    Args:
+        model: The model with steering wrappers applied
+        tokenizer: Model tokenizer
+        prompts: List of input prompts
+        wrapped_layers: Dict of wrapped layer instances
+        layer_idx: Layer to apply steering to
+        coefficient: Steering coefficient strength
+        steering_vectors: Dict of steering vectors
+        batch_size: Batch size for generation
+        max_new_tokens: Max tokens to generate
+        max_input_length: Max input sequence length
+
+    Returns:
+        List of generated responses
+    """
+    # Reset all wrappers
+    for wrapper in wrapped_layers.values():
+        wrapper.reset()
+
+    # Set up steering for target layer
+    if layer_idx in wrapped_layers and layer_idx in steering_vectors:
+        wrapped_layers[layer_idx].set_steering(
+            steering_vectors[layer_idx],
+            coefficient
+        )
+
+    all_responses = []
+
+    # Process prompts in batches
+    for i in tqdm(range(0, len(prompts), batch_size), desc=f"Generating (layer={layer_idx}, coeff={coefficient:.1f})"):
+        batch_prompts = prompts[i:i+batch_size]
+
+        # Tokenize batch
+        inputs = tokenizer(
+            batch_prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=max_input_length
+        )
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+        # Generate with steering
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,  # Deterministic
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id
+            )
+
+        # Decode responses (skip input portion)
+        input_length = inputs['input_ids'].shape[1]
+        batch_responses = tokenizer.batch_decode(
+            outputs[:, input_length:],
+            skip_special_tokens=True
+        )
+
+        all_responses.extend([resp.strip() for resp in batch_responses])
+
+        # Memory cleanup
+        del inputs, outputs
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    # Reset wrapper after generation
+    if layer_idx in wrapped_layers:
+        wrapped_layers[layer_idx].reset()
+
+    return all_responses
+
+
+def sweep_coefficients(
+    model: Any,
+    tokenizer: Any,
+    prompts: List[str],
+    steering_vectors: Dict[int, torch.Tensor],
+    layers_to_test: List[int],
+    coefficients: List[float],
+    batch_size: int = 5,
+    max_new_tokens: int = 2048
+) -> Dict[Tuple[int, float], List[str]]:
+    """
+    Sweep through different layers and coefficients to find optimal steering.
+
+    Args:
+        model: The model
+        tokenizer: Model tokenizer
+        prompts: Input prompts to test
+        steering_vectors: Dict of steering vectors
+        layers_to_test: List of layer indices to test
+        coefficients: List of coefficient values to test
+        batch_size: Batch size for generation
+        max_new_tokens: Max tokens to generate
+
+    Returns:
+        Dict mapping (layer_idx, coefficient) -> list of generated responses
+    """
+    print(f"\n=== COEFFICIENT SWEEP ===")
+    print(f"Testing {len(layers_to_test)} layers with {len(coefficients)} coefficients")
+    print(f"Total configurations: {len(layers_to_test) * len(coefficients)}")
+
+    # Apply steering wrappers to model
+    wrapped_layers = apply_steering_to_model(model, steering_vectors, layers_to_test)
+
+    results = {}
+
+    for layer_idx in layers_to_test:
+        for coeff in coefficients:
+            print(f"\nTesting layer {layer_idx} with coefficient {coeff:.2f}")
+
+            responses = generate_steered_batch(
+                model=model,
+                tokenizer=tokenizer,
+                prompts=prompts,
+                wrapped_layers=wrapped_layers,
+                layer_idx=layer_idx,
+                coefficient=coeff,
+                steering_vectors=steering_vectors,
+                batch_size=batch_size,
+                max_new_tokens=max_new_tokens
+            )
+
+            results[(layer_idx, coeff)] = responses
+
+            # Memory cleanup between sweeps
+            gc.collect()
+            torch.cuda.empty_cache()
+
+    print(f"\nCompleted coefficient sweep: {len(results)} configurations tested")
+    return results
