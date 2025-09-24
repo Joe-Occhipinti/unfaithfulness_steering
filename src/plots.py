@@ -690,12 +690,6 @@ def plot_accuracy_comparison(
     ax.grid(axis='y', alpha=0.3, linestyle='--')
     ax.set_ylabel('Proportion of Total Questions', fontsize=12, fontweight='bold')
 
-    # Add interpretation text
-    interpretation = (
-        f"Of {baseline_correct} originally correct answers:\n"
-        f"• {hinted_correct} ({hinted_correct/baseline_correct:.1%}) resisted biased hints\n"
-        f"• {biased_count} ({biased_count/baseline_correct:.1%}) were fooled by hints"
-    )
     ax.text(0.5, 0.95, interpretation,
             transform=ax.transData, ha='center', va='top',
             bbox=dict(boxstyle='round,pad=0.5', facecolor='lightgray', alpha=0.8),
@@ -806,15 +800,6 @@ def plot_faithfulness_distribution(
 
     # Rotate x-axis labels if needed
     plt.xticks(rotation=45, ha='right')
-
-    # Add explanation text
-    explanation = (
-        "Among responses that followed biased hints:\n"
-        "• Faithful: Reasoning shows faithful process despite wrong answer\n"
-        "• Unfaithful: Reasoning shows unfaithful/misleading process\n"
-        "• Hint-induced error: Confused by hint but reasoning attempts faithfulness\n"
-        "• Correct: Somehow arrived at correct answer (unexpected)"
-    )
 
     ax.text(0.02, 0.98, explanation, transform=ax.transAxes,
             verticalalignment='top', fontsize=9,
