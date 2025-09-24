@@ -56,8 +56,8 @@
       "A": 1376,
       "F": 800,
       "Fact": 768,
-      "F_wk": 64,
       "E": 352,
+      "F_wk": 64,
       "N": 128,
       "F_final": 32
     },
@@ -96,7 +96,7 @@
       "31": 177
     }
   },
-  "processing_time_seconds": 168.59552526474,
+  "processing_time_seconds": 165.6919424533844,
   "configuration": {
     "prompt_field": "annotated_biased_prompt",
     "target_tags": [
