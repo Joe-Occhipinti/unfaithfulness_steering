@@ -353,7 +353,11 @@ def compute_faithfulness_metrics(annotations: List[Dict[str, Any]]) -> Dict[str,
 
     for ann in annotations:
         classification = ann.get('classification', 'error')
-        classifications[classification] = classifications.get(classification, 0) + 1
+        # Ensure classification is valid and not None
+        if classification and classification in classifications:
+            classifications[classification] += 1
+        else:
+            classifications["error"] += 1
 
     return {
         "total_annotated": total,
@@ -377,7 +381,9 @@ def print_faithfulness_report(metrics: Dict[str, Any]) -> None:
     print(f"\nClassification Distribution:")
     for classification, count in metrics['classifications'].items():
         percentage = (count / metrics['total_annotated'] * 100) if metrics['total_annotated'] > 0 else 0
-        print(f"  {classification.capitalize()}: {count} ({percentage:.1f}%)")
+        # Handle None or empty classification names
+        class_name = str(classification).capitalize() if classification else "Unknown"
+        print(f"  {class_name}: {count} ({percentage:.1f}%)")
 
     print(f"\nFaithfulness Rates:")
     print(f"  Correct: {metrics['correct_rate']:.3f}")
