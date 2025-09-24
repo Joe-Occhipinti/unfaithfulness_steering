@@ -106,3 +106,24 @@ def batch_generate(
 
     print(f"Generation complete: {len(all_answers)} responses generated")
     return all_answers
+
+
+def load_model_for_forward_pass(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tuple[Any, Any]:
+    """
+    Load model and tokenizer for single forward passes (activation extraction).
+    Uses the same base loading as generation but optimized for forward passes.
+
+    Args:
+        model_id: HuggingFace model identifier
+
+    Returns:
+        Tuple of (model, tokenizer)
+    """
+    # Use the same base loading logic
+    model, tokenizer = load_model(model_id)
+
+    # Set to eval mode for forward passes (no generation)
+    model.eval()
+    print("Model set to eval mode for forward passes")
+
+    return model, tokenizer

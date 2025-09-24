@@ -80,6 +80,49 @@ class ValidationConfig:
     FALLBACK_FINAL_ANSWER = None
 
 # =============================================================================
+# ACTIVATION EXTRACTION CONFIGURATION
+# =============================================================================
+
+class ActivationConfig:
+    """Configuration specific to activation extraction"""
+
+    PROMPT_FIELD = "annotated_biased_prompt"
+    VERBOSE = True
+    TARGET_TAGS = ["F", "F_wk", "U", "E", "N", "H", "Q", "A", "Fact", "F_final", "U_final"]
+
+    @staticmethod
+    def get_layers_to_extract(model_id: str) -> list:
+        """Get layer range based on model architecture"""
+        model_id_lower = model_id.lower()
+        if "deepseek" in model_id_lower:
+            return list(range(32))
+        elif "llama" in model_id_lower:
+            if "7b" in model_id_lower or "8b" in model_id_lower:
+                return list(range(32))
+            elif "13b" in model_id_lower:
+                return list(range(40))
+            elif "70b" in model_id_lower:
+                return list(range(80))
+            else:
+                return list(range(32))
+        elif "mistral" in model_id_lower:
+            return list(range(32))
+        else:
+            return list(range(32))
+
+    @staticmethod
+    def configure_extraction(source_date: str, model_id: str):
+        """Configure all extraction parameters in one function call"""
+        return {
+            'annotated_input_file': f"{ANNOTATED_DIR}/annotated_hinted_{source_date}.jsonl",
+            'output_dir': f"{ACTIVATIONS_DIR}/annotated_hinted_{source_date}",
+            'prompt_field': ActivationConfig.PROMPT_FIELD,
+            'target_tags': ActivationConfig.TARGET_TAGS,
+            'layers_to_extract': ActivationConfig.get_layers_to_extract(model_id),
+            'verbose': ActivationConfig.VERBOSE
+        }
+
+# =============================================================================
 # GEMINI API RATE LIMITS (FREE TIER)
 # =============================================================================
 

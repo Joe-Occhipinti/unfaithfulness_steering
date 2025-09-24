@@ -63,8 +63,9 @@ from src.faithfulness_eval import (
     setup_gemini_client, annotate_batch,
     compute_faithfulness_metrics, print_faithfulness_report
 )
-from src.config import HintedConfig, TODAY, ANNOTATED_DIR
+from src.config import HintedConfig, BaselineConfig, TODAY, ANNOTATED_DIR
 from src.prompts import create_hinted_prompts
+from src.plots import plot_accuracy_comparison, plot_faithfulness_distribution
 
 # =============================================================================
 # HINTED-SPECIFIC MODEL & GENERATION PARAMETERS (easy to tune)
@@ -249,6 +250,8 @@ print(f"   ✅ Labeled bias: biased (wrong) vs not-biased (still correct)")
 print(f"   ✅ Stored all required output from the hinted run")
 print(f"   ✅ Annotated and classified biased prompts for faithfulness")
 print(f"   ✅ Computed faithfulness metrics")
+print(f"   ✅ Created accuracy comparison plot")
+print(f"   ✅ Created faithfulness distribution plot")
 print(f"   ✅ Stored all required output from the faithfulness evaluation pipeline")
 print(f"\nReady for Step 4: activation extraction")
 print(f"Use hinted data: {HintedConfig.OUTPUT_FILE}")
@@ -305,14 +308,55 @@ else:
     print("No biased results to annotate - all models resisted the hints!")
     faithfulness_metrics = None
 
-# CELL 8: Push results to GitHub
+# CELL 8: Create Accuracy Comparison Plot
+print("\n=== CELL 8: Creating Accuracy Comparison Plot ===")
+
+# Create plot comparing baseline vs hinted accuracy
+try:
+    plot_save_path = f"plots/accuracy_comparison_{TODAY}.png"
+    os.makedirs("plots", exist_ok=True)
+
+    plot_accuracy_comparison(
+        baseline_summary_file=BaselineConfig.SUMMARY_FILE,
+        hinted_summary_file=HintedConfig.SUMMARY_FILE,
+        save_path=plot_save_path,
+        show_plot=False  # Set to False for Colab environment
+    )
+
+    print(f"Accuracy comparison plot saved to {plot_save_path}")
+
+except Exception as e:
+    print(f"Warning: Could not create accuracy comparison plot: {e}")
+    print("This might be because baseline evaluation hasn't been run yet.")
+
+# Create faithfulness distribution plot (if we have faithfulness data)
+if faithfulness_metrics:
+    try:
+        faithfulness_plot_path = f"plots/faithfulness_distribution_{TODAY}.png"
+
+        plot_faithfulness_distribution(
+            hinted_results=results,
+            save_path=faithfulness_plot_path,
+            show_plot=False  # Set to False for Colab environment
+        )
+
+        print(f"Faithfulness distribution plot saved to {faithfulness_plot_path}")
+
+    except Exception as e:
+        print(f"Warning: Could not create faithfulness distribution plot: {e}")
+else:
+    print("No faithfulness data available for plotting (no biased responses found)")
+
+# CELL 9: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
 
 # Add the generated files
 !git add data/behavioural/hinted_{TODAY}.jsonl
 !git add data/summaries/hinted_summary_{TODAY}.json
+!git add plots/accuracy_comparison_{TODAY}.png
 if faithfulness_metrics:
     !git add data/annotated/annotated_hinted_{TODAY}.jsonl
+    !git add plots/faithfulness_distribution_{TODAY}.png
 !git status
 
 # Commit and push
