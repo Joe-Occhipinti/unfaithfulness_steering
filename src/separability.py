@@ -210,13 +210,13 @@ def compute_cosine_similarity_by_layer(
     return cosine_similarities
 
 
-def compute_norm_distributions_by_layer(
+def compute_mean_differences_by_layer(
     dataset: Dict[str, Any],
     positive_tags: List[str],
     negative_tags: List[str]
 ) -> Dict[int, Dict[str, Any]]:
     """
-    Compute norm distributions and mean norm differences for each layer.
+    Compute distance between positive and negative means for each layer.
     Uses full dataset for better statistical estimates.
 
     Args:
@@ -226,43 +226,33 @@ def compute_norm_distributions_by_layer(
 
     Returns:
         Dictionary: {layer_idx: {
-            'positive_norms': List[float],
-            'negative_norms': List[float],
-            'mean_norm_diff': float  # ||mean_positive|| - ||mean_negative||
+            'mean_diff_norm': float  # ||mean_positive - mean_negative||
         }}
     """
     positive_by_layer, negative_by_layer = extract_tag_activations(dataset, positive_tags, negative_tags)
 
-    norm_distributions = {}
+    mean_differences = {}
 
     for layer_idx in positive_by_layer:
         positive_acts = positive_by_layer[layer_idx]
         negative_acts = negative_by_layer[layer_idx]
 
         if positive_acts.numel() == 0 or negative_acts.numel() == 0:
-            norm_distributions[layer_idx] = {
-                'positive_norms': [],
-                'negative_norms': [],
-                'mean_norm_diff': 0.0
+            mean_differences[layer_idx] = {
+                'mean_diff_norm': 0.0
             }
             continue
 
-        # Compute individual norms
-        positive_norms = torch.norm(positive_acts, dim=1).tolist()
-        negative_norms = torch.norm(negative_acts, dim=1).tolist()
-
-        # Compute means and their norm difference
+        # Compute means and distance between them
         positive_mean = positive_acts.mean(dim=0)
         negative_mean = negative_acts.mean(dim=0)
-        mean_norm_diff = torch.norm(positive_mean).item() - torch.norm(negative_mean).item()
+        mean_diff_norm = torch.norm(positive_mean - negative_mean).item()
 
-        norm_distributions[layer_idx] = {
-            'positive_norms': positive_norms,
-            'negative_norms': negative_norms,
-            'mean_norm_diff': mean_norm_diff
+        mean_differences[layer_idx] = {
+            'mean_diff_norm': mean_diff_norm
         }
 
-    return norm_distributions
+    return mean_differences
 
 
 def train_linear_probes_by_layer(
@@ -452,7 +442,7 @@ def compute_pca_analysis_by_layer(
 
 def print_separability_summary(
     cosine_similarities: Dict[int, float],
-    norm_distributions: Dict[int, Dict[str, Any]],
+    mean_differences: Dict[int, Dict[str, Any]],
     probe_results: Dict[int, Dict[str, Any]],
     positive_tags: List[str],
     negative_tags: List[str]
@@ -462,7 +452,7 @@ def print_separability_summary(
 
     Args:
         cosine_similarities: Results from compute_cosine_similarity_by_layer
-        norm_distributions: Results from compute_norm_distributions_by_layer
+        mean_differences: Results from compute_mean_differences_by_layer
         probe_results: Results from train_linear_probes_by_layer
         positive_tags: Positive class tags
         negative_tags: Negative class tags
@@ -477,10 +467,10 @@ def print_separability_summary(
     print(f"Range: {min(cos_values):.3f} to {max(cos_values):.3f}")
     print(f"Mean: {np.mean(cos_values):.3f}")
 
-    print(f"\n--- Norm Differences (||mean_pos|| - ||mean_neg||) ---")
-    norm_diffs = [norm_distributions[layer]['mean_norm_diff'] for layer in norm_distributions]
-    print(f"Range: {min(norm_diffs):.3f} to {max(norm_diffs):.3f}")
-    print(f"Mean: {np.mean(norm_diffs):.3f}")
+    print(f"\n--- Distance Between Means (||mean_pos - mean_neg||) ---")
+    mean_diffs = [mean_differences[layer]['mean_diff_norm'] for layer in mean_differences]
+    print(f"Range: {min(mean_diffs):.3f} to {max(mean_diffs):.3f}")
+    print(f"Mean: {np.mean(mean_diffs):.3f}")
 
     print(f"\n--- Linear Probe Performance ---")
     valid_results = [r for r in probe_results.values() if 'error' not in r]

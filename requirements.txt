@@ -1,0 +1,22 @@
+# Core ML libraries
+torch>=2.0.0
+transformers>=4.35.0
+accelerate>=0.24.0
+bitsandbytes>=0.41.0
+datasets
+
+# API clients
+google-generativeai
+requests>=2.28.0
+python-dotenv>=1.0.0
+
+# Data processing
+numpy
+tqdm
+
+# Visualization
+matplotlib
+seaborn
+
+# ML utilities
+scikit-learn

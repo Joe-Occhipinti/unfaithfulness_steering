@@ -1,0 +1,277 @@
+{
+  "computation_info": {
+    "positive_tags": [
+      "F"
+    ],
+    "negative_tags": [
+      "U"
+    ],
+    "layers_computed": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "total_layers": 32
+  },
+  "statistics": {
+    "vector_dimension": 4096,
+    "average_vector_norm": 7.018951416015625,
+    "min_vector_norm": 0.1396484375,
+    "max_vector_norm": 21.25
+  },
+  "layer_details": {
+    "0": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 0.765625,
+      "negative_mean_norm": 0.78515625,
+      "steering_vector_norm": 0.1396484375
+    },
+    "1": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 1.125,
+      "negative_mean_norm": 1.1328125,
+      "steering_vector_norm": 0.458984375
+    },
+    "2": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 1.484375,
+      "negative_mean_norm": 1.4921875,
+      "steering_vector_norm": 0.6171875
+    },
+    "3": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 1.96875,
+      "negative_mean_norm": 1.890625,
+      "steering_vector_norm": 1.078125
+    },
+    "4": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 2.4375,
+      "negative_mean_norm": 2.265625,
+      "steering_vector_norm": 1.5234375
+    },
+    "5": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 2.90625,
+      "negative_mean_norm": 2.859375,
+      "steering_vector_norm": 1.8984375
+    },
+    "6": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 3.1875,
+      "negative_mean_norm": 3.0625,
+      "steering_vector_norm": 2.3125
+    },
+    "7": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 3.65625,
+      "negative_mean_norm": 3.5,
+      "steering_vector_norm": 2.671875
+    },
+    "8": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 4.15625,
+      "negative_mean_norm": 3.921875,
+      "steering_vector_norm": 3.015625
+    },
+    "9": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 4.53125,
+      "negative_mean_norm": 4.25,
+      "steering_vector_norm": 3.140625
+    },
+    "10": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 4.9375,
+      "negative_mean_norm": 4.5625,
+      "steering_vector_norm": 3.453125
+    },
+    "11": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 5.375,
+      "negative_mean_norm": 5.125,
+      "steering_vector_norm": 3.640625
+    },
+    "12": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 7.15625,
+      "negative_mean_norm": 6.5,
+      "steering_vector_norm": 4.46875
+    },
+    "13": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 7.53125,
+      "negative_mean_norm": 6.9375,
+      "steering_vector_norm": 4.9375
+    },
+    "14": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 8.0625,
+      "negative_mean_norm": 7.375,
+      "steering_vector_norm": 5.21875
+    },
+    "15": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 8.5,
+      "negative_mean_norm": 8.375,
+      "steering_vector_norm": 5.40625
+    },
+    "16": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 9.5625,
+      "negative_mean_norm": 9.375,
+      "steering_vector_norm": 6.0
+    },
+    "17": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 10.25,
+      "negative_mean_norm": 10.25,
+      "steering_vector_norm": 6.53125
+    },
+    "18": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 11.5625,
+      "negative_mean_norm": 11.5,
+      "steering_vector_norm": 7.0
+    },
+    "19": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 12.25,
+      "negative_mean_norm": 12.125,
+      "steering_vector_norm": 7.46875
+    },
+    "20": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 13.0625,
+      "negative_mean_norm": 12.9375,
+      "steering_vector_norm": 8.0625
+    },
+    "21": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 14.3125,
+      "negative_mean_norm": 13.9375,
+      "steering_vector_norm": 8.75
+    },
+    "22": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 15.75,
+      "negative_mean_norm": 15.375,
+      "steering_vector_norm": 9.25
+    },
+    "23": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 17.375,
+      "negative_mean_norm": 16.75,
+      "steering_vector_norm": 10.0
+    },
+    "24": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 19.375,
+      "negative_mean_norm": 18.75,
+      "steering_vector_norm": 10.6875
+    },
+    "25": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 21.125,
+      "negative_mean_norm": 20.125,
+      "steering_vector_norm": 11.625
+    },
+    "26": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 23.625,
+      "negative_mean_norm": 22.375,
+      "steering_vector_norm": 12.4375
+    },
+    "27": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 26.125,
+      "negative_mean_norm": 24.25,
+      "steering_vector_norm": 13.3125
+    },
+    "28": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 29.75,
+      "negative_mean_norm": 27.375,
+      "steering_vector_norm": 14.8125
+    },
+    "29": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 33.25,
+      "negative_mean_norm": 30.375,
+      "steering_vector_norm": 15.8125
+    },
+    "30": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 39.5,
+      "negative_mean_norm": 37.75,
+      "steering_vector_norm": 17.625
+    },
+    "31": {
+      "positive_samples": 16,
+      "negative_samples": 21,
+      "positive_mean_norm": 53.25,
+      "negative_mean_norm": 53.0,
+      "steering_vector_norm": 21.25
+    }
+  }
+}

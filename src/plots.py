@@ -86,92 +86,50 @@ def plot_cosine_similarity_by_layer(
         plt.close()
 
 
-def plot_norm_distributions_by_layer(
-    norm_distributions: Dict[int, Dict[str, Any]],
+def plot_mean_differences_by_layer(
+    mean_differences: Dict[int, Dict[str, Any]],
     positive_tags: List[str],
     negative_tags: List[str],
-    layers_to_plot: Optional[List[int]] = None,
     save_path: Optional[str] = None,
     show_plot: bool = True
 ) -> None:
     """
-    Plot norm distributions for selected layers and mean norm differences across all layers.
+    Plot distance between positive and negative means across all layers.
 
     Args:
-        norm_distributions: Results from compute_norm_distributions_by_layer
+        mean_differences: Results from compute_mean_differences_by_layer
         positive_tags: Positive class tags for title
         negative_tags: Negative class tags for title
-        layers_to_plot: Specific layers to show distributions for (default: [15, 25, 31])
         save_path: Optional path to save the plot
         show_plot: Whether to display the plot
     """
     setup_plot_style()
 
-    if layers_to_plot is None:
-        # Default to some interesting layers
-        all_layers = sorted(norm_distributions.keys())
-        layers_to_plot = [all_layers[len(all_layers)//2-1],
-                         all_layers[3*len(all_layers)//4],
-                         all_layers[-1]]
+    fig, ax = plt.subplots(figsize=(12, 6))
 
-    # Create subplots: distributions for selected layers + mean norm difference plot
-    fig = plt.figure(figsize=(16, 10))
+    layers = sorted(mean_differences.keys())
+    mean_diff_norms = [mean_differences[layer]['mean_diff_norm'] for layer in layers]
 
-    # Top row: norm distributions for selected layers
-    n_dist_plots = len(layers_to_plot)
-    for i, layer in enumerate(layers_to_plot):
-        ax = plt.subplot(2, n_dist_plots, i + 1)
+    ax.plot(layers, mean_diff_norms, marker='o', linewidth=2, markersize=4, color='purple')
+    ax.axhline(y=0, color='black', linestyle='--', alpha=0.5)
 
-        pos_norms = norm_distributions[layer]['positive_norms']
-        neg_norms = norm_distributions[layer]['negative_norms']
-
-        if pos_norms and neg_norms:
-            # Plot histograms
-            ax.hist(pos_norms, bins=30, alpha=0.7, label=f'Positive ({len(pos_norms)})',
-                   density=True, color='blue')
-            ax.hist(neg_norms, bins=30, alpha=0.7, label=f'Negative ({len(neg_norms)})',
-                   density=True, color='red')
-
-            ax.set_xlabel('Activation Norm')
-            ax.set_ylabel('Density')
-            ax.set_title(f'Layer {layer} Norm Distributions')
-            ax.legend()
-            ax.grid(True, alpha=0.3)
-
-            # Add statistics
-            pos_mean, neg_mean = np.mean(pos_norms), np.mean(neg_norms)
-            ax.axvline(pos_mean, color='blue', linestyle='--', alpha=0.8)
-            ax.axvline(neg_mean, color='red', linestyle='--', alpha=0.8)
-        else:
-            ax.text(0.5, 0.5, 'No data', ha='center', va='center', transform=ax.transAxes)
-            ax.set_title(f'Layer {layer} - No Data')
-
-    # Bottom row: mean norm differences across all layers
-    ax_diff = plt.subplot(2, 1, 2)
-
-    layers = sorted(norm_distributions.keys())
-    mean_norm_diffs = [norm_distributions[layer]['mean_norm_diff'] for layer in layers]
-
-    ax_diff.plot(layers, mean_norm_diffs, marker='o', linewidth=2, markersize=4, color='purple')
-    ax_diff.axhline(y=0, color='black', linestyle='--', alpha=0.5)
-
-    ax_diff.set_xlabel('Layer Index')
-    ax_diff.set_ylabel('Mean Norm Difference')
-    ax_diff.set_title(f'Mean Norm Difference (||mean_pos|| - ||mean_neg||): {positive_tags} vs {negative_tags}')
-    ax_diff.grid(True, alpha=0.3)
+    ax.set_xlabel('Layer Index')
+    ax.set_ylabel('Distance Between Means')
+    ax.set_title(f'Distance Between Means (||mean_pos - mean_neg||): {positive_tags} vs {negative_tags}')
+    ax.grid(True, alpha=0.3)
 
     # Add statistics annotation
-    mean_diff = np.mean(mean_norm_diffs)
-    std_diff = np.std(mean_norm_diffs)
-    ax_diff.text(0.02, 0.98, f'Mean: {mean_diff:.3f}\nStd: {std_diff:.3f}',
-                transform=ax_diff.transAxes, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    mean_diff = np.mean(mean_diff_norms)
+    std_diff = np.std(mean_diff_norms)
+    ax.text(0.02, 0.98, f'Mean: {mean_diff:.3f}\nStd: {std_diff:.3f}',
+            transform=ax.transAxes, verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
     plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"Norm distributions plot saved to {save_path}")
+        print(f"Mean differences plot saved to {save_path}")
 
     if show_plot:
         plt.show()
@@ -419,7 +377,7 @@ def plot_pca_explained_variance(
 
 def plot_separability_summary(
     cosine_similarities: Dict[int, float],
-    norm_distributions: Dict[int, Dict[str, Any]],
+    mean_differences: Dict[int, Dict[str, Any]],
     probe_results: Dict[int, Dict[str, Any]],
     positive_tags: List[str],
     negative_tags: List[str],
@@ -431,7 +389,7 @@ def plot_separability_summary(
 
     Args:
         cosine_similarities: Results from compute_cosine_similarity_by_layer
-        norm_distributions: Results from compute_norm_distributions_by_layer
+        mean_differences: Results from compute_mean_differences_by_layer
         probe_results: Results from train_linear_probes_by_layer
         positive_tags: Positive class tags for title
         negative_tags: Negative class tags for title
@@ -454,12 +412,12 @@ def plot_separability_summary(
     ax1.grid(True, alpha=0.3)
 
     # Top right: Mean norm differences
-    mean_norm_diffs = [norm_distributions[layer]['mean_norm_diff'] for layer in layers]
-    ax2.plot(layers, mean_norm_diffs, marker='s', linewidth=2, markersize=4, color='green')
+    mean_diff_norms = [mean_differences[layer]['mean_diff_norm'] for layer in layers]
+    ax2.plot(layers, mean_diff_norms, marker='s', linewidth=2, markersize=4, color='green')
     ax2.axhline(y=0, color='black', linestyle='--', alpha=0.5)
     ax2.set_xlabel('Layer Index')
-    ax2.set_ylabel('Mean Norm Difference')
-    ax2.set_title('Mean Norm Difference')
+    ax2.set_ylabel('Distance Between Means')
+    ax2.set_title('Distance Between Means')
     ax2.grid(True, alpha=0.3)
 
     # Bottom left: Linear probe performance
