@@ -182,9 +182,16 @@ print(f"Use activation dataset: {dataset_file}")
 # CELL 6: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
 
-# Add the generated files (dataset, archive and summary)
-!git add {config['output_dir']}/extraction_summary_{TODAY}.json
-!git add {dataset_file}
+# Add all activation .pt files from the output directory
+!git add "{config['output_dir']}"/*.pt
+
+# Add the extraction summary
+!git add "{config['output_dir']}/extraction_summary_{TODAY}.json"
+
+# Add the dataset file (path has spaces, needs quotes)
+!git add "{dataset_file}"
+
+# Check what will be committed
 !git status
 
 # Commit and push
