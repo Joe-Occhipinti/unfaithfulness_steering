@@ -1,0 +1,472 @@
+{
+  "computation_date": "2025-09-23",
+  "dataset_file": "legacy code/sprint 2.2 (17-09)/contrastive datasets/contr_train_val_strong_faithful_unfaithful_2025-09-14.pkl",
+  "configuration": {
+    "positive_tags": [
+      "F",
+      "F_final"
+    ],
+    "negative_tags": [
+      "U",
+      "U_final"
+    ],
+    "layers_to_compute": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "save_results": true,
+    "save_json_summary": true
+  },
+  "dataset_info": {
+    "tags": [
+      "F",
+      "U",
+      "U_final",
+      "F_final"
+    ],
+    "num_layers": 32,
+    "splits": [
+      "train",
+      "val"
+    ],
+    "train_stats": {
+      "total_stats": {
+        "F": 576,
+        "U": 1344,
+        "U_final": 736,
+        "F_final": 160
+      },
+      "layer_stats": {
+        "0": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "1": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "2": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "3": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "4": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "5": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "6": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "7": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "8": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "9": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "10": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "11": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "12": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "13": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "14": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "15": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "16": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "17": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "18": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "19": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "20": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "21": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "22": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "23": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "24": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "25": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "26": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "27": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "28": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "29": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "30": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        },
+        "31": {
+          "F": 18,
+          "U": 42,
+          "U_final": 23,
+          "F_final": 5
+        }
+      }
+    },
+    "val_stats": {
+      "total_stats": {
+        "F": 32,
+        "U": 256,
+        "U_final": 160,
+        "F_final": 0
+      },
+      "layer_stats": {
+        "0": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "1": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "2": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "3": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "4": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "5": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "6": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "7": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "8": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "9": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "10": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "11": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "12": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "13": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "14": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "15": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "16": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "17": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "18": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "19": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "20": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "21": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "22": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "23": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "24": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "25": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "26": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "27": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "28": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "29": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "30": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        },
+        "31": {
+          "F": 1,
+          "U": 8,
+          "U_final": 5,
+          "F_final": 0
+        }
+      }
+    }
+  },
+  "results_summary": {
+    "vectors_computed": 0,
+    "layers_computed": [],
+    "processing_time_seconds": 0.08799457550048828
+  }
+}
