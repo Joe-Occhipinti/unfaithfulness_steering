@@ -593,8 +593,9 @@ def plot_accuracy_comparison(
     """
     Plot accuracy comparison between baseline and hinted evaluations.
 
-    Shows hinted accuracy as base bar with bias rate stacked on top,
-    demonstrating that hinted_accuracy + bias_rate = baseline_accuracy.
+    Shows correct representation accounting for different denominators:
+    - Baseline: accuracy out of all prompts
+    - Hinted: shows breakdown of originally correct prompts
 
     Args:
         baseline_summary_file: Path to baseline evaluation summary JSON
@@ -608,70 +609,94 @@ def plot_accuracy_comparison(
     with open(baseline_summary_file, 'r', encoding='utf-8') as f:
         baseline_data = json.load(f)
     baseline_accuracy = baseline_data['metrics']['overall_accuracy']
+    baseline_total = baseline_data['metrics']['total_questions']
+    baseline_correct = baseline_data['metrics']['correct_answers']
 
     # Load hinted metrics
     with open(hinted_summary_file, 'r', encoding='utf-8') as f:
         hinted_data = json.load(f)
-    hinted_accuracy = hinted_data['metrics']['overall_accuracy']
-    bias_rate = hinted_data['bias_metrics']['bias_rate']
 
-    # Verify the relationship (should be approximately equal)
-    reconstructed_baseline = hinted_accuracy + bias_rate
-    print(f"Baseline accuracy: {baseline_accuracy:.3f}")
-    print(f"Hinted accuracy: {hinted_accuracy:.3f}")
-    print(f"Bias rate: {bias_rate:.3f}")
-    print(f"Reconstructed baseline: {reconstructed_baseline:.3f}")
-    print(f"Difference: {abs(baseline_accuracy - reconstructed_baseline):.3f}")
+    # Get hinted evaluation counts
+    hinted_total = hinted_data['metrics']['total_questions']  # Should equal baseline_correct
+    hinted_correct = hinted_data['metrics']['correct_answers']  # Still correct despite hints
+    biased_count = hinted_data['bias_metrics']['biased_answers']  # Fooled by hints
+
+    # Calculate rates based on original total for fair comparison
+    still_correct_rate = hinted_correct / baseline_total
+    biased_rate = biased_count / baseline_total
+    originally_wrong_rate = (baseline_total - baseline_correct) / baseline_total
+
+    # Print detailed breakdown
+    print(f"\n=== Accuracy Breakdown ===")
+    print(f"Baseline: {baseline_correct}/{baseline_total} = {baseline_accuracy:.3f}")
+    print(f"Hinted evaluation tested: {hinted_total} prompts (the originally correct ones)")
+    print(f"  - Still correct: {hinted_correct}/{baseline_total} = {still_correct_rate:.3f}")
+    print(f"  - Biased (fooled): {biased_count}/{baseline_total} = {biased_rate:.3f}")
+    print(f"  - Originally wrong: {baseline_total - baseline_correct}/{baseline_total} = {originally_wrong_rate:.3f}")
+    print(f"Total: {still_correct_rate:.3f} + {biased_rate:.3f} + {originally_wrong_rate:.3f} = {still_correct_rate + biased_rate + originally_wrong_rate:.3f}")
 
     # Create the plot
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    fig, ax = plt.subplots(1, 1, figsize=(12, 7))
 
     # Define categories and data
-    categories = ['Baseline\n(No Hints)', 'Hinted\n(With Bias)']
+    categories = ['Baseline\n(No Hints)', 'After Hints\n(Breakdown)']
 
-    # Baseline - single bar
+    # Baseline - single bar showing overall accuracy
     baseline_bar = ax.bar(categories[0], baseline_accuracy,
-                         color='#2E86AB', alpha=0.8, label='Baseline Accuracy')
+                         color='#2E86AB', alpha=0.8, label='Correct Answers')
 
-    # Hinted - stacked bars
-    hinted_bar = ax.bar(categories[1], hinted_accuracy,
-                       color='#A23B72', alpha=0.8, label='Hinted Accuracy (Correct despite bias)')
+    # After hints - stacked bars showing breakdown
+    # Bottom: Still correct despite hints
+    still_correct_bar = ax.bar(categories[1], still_correct_rate,
+                              color='#2E86AB', alpha=0.8, label='Still Correct (Resisted Hints)')
 
-    bias_bar = ax.bar(categories[1], bias_rate, bottom=hinted_accuracy,
-                     color='#F18F01', alpha=0.8, label='Bias Rate (Fooled by hints)')
+    # Middle: Biased by hints
+    biased_bar = ax.bar(categories[1], biased_rate, bottom=still_correct_rate,
+                       color='#F18F01', alpha=0.8, label='Biased (Fooled by Hints)')
+
+    # Top: Originally wrong (not tested with hints)
+    originally_wrong_bar = ax.bar(categories[1], originally_wrong_rate,
+                                 bottom=still_correct_rate + biased_rate,
+                                 color='#888888', alpha=0.6, label='Originally Wrong (Not Re-tested)')
 
     # Customize the plot
     ax.set_ylabel('Accuracy Rate', fontsize=12, fontweight='bold')
-    ax.set_title('Accuracy Comparison: Baseline vs Hinted Evaluation\n'
-                'Hinted Accuracy + Bias Rate = Baseline Accuracy',
+    ax.set_title('Accuracy Breakdown: Effect of Biased Hints on Model Performance\n'
+                f'Testing {baseline_total} Questions Total',
                 fontsize=14, fontweight='bold', pad=20)
 
     # Add value labels on bars
-    ax.text(0, baseline_accuracy + 0.01, f'{baseline_accuracy:.3f}',
-            ha='center', va='bottom', fontweight='bold', fontsize=11)
-
-    ax.text(1, hinted_accuracy/2, f'{hinted_accuracy:.3f}',
+    # Baseline bar
+    ax.text(0, baseline_accuracy/2, f'{baseline_correct}/{baseline_total}\n({baseline_accuracy:.1%})',
             ha='center', va='center', fontweight='bold', fontsize=11, color='white')
 
-    ax.text(1, hinted_accuracy + bias_rate/2, f'{bias_rate:.3f}',
-            ha='center', va='center', fontweight='bold', fontsize=11, color='white')
+    # After hints bars
+    # Still correct
+    ax.text(1, still_correct_rate/2, f'{hinted_correct}/{baseline_total}\n({still_correct_rate:.1%})',
+            ha='center', va='center', fontweight='bold', fontsize=10, color='white')
 
-    # Add total for hinted stack
-    total_height = hinted_accuracy + bias_rate
-    ax.text(1, total_height + 0.01, f'{total_height:.3f}',
-            ha='center', va='bottom', fontweight='bold', fontsize=11)
+    # Biased
+    ax.text(1, still_correct_rate + biased_rate/2, f'{biased_count}/{baseline_total}\n({biased_rate:.1%})',
+            ha='center', va='center', fontweight='bold', fontsize=10, color='white')
+
+    # Originally wrong
+    ax.text(1, still_correct_rate + biased_rate + originally_wrong_rate/2,
+            f'{baseline_total - baseline_correct}/{baseline_total}\n({originally_wrong_rate:.1%})',
+            ha='center', va='center', fontweight='bold', fontsize=10, color='white')
 
     # Formatting
-    ax.set_ylim(0, max(baseline_accuracy, total_height) * 1.1)
+    ax.set_ylim(0, 1.1)
     ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
     ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.set_ylabel('Proportion of Total Questions', fontsize=12, fontweight='bold')
 
     # Add interpretation text
     interpretation = (
-        f"Model maintains {hinted_accuracy:.1%} accuracy despite biased hints.\n"
-        f"Bias affects {bias_rate:.1%} of responses, bringing total to {baseline_accuracy:.1%}."
+        f"Of {baseline_correct} originally correct answers:\n"
+        f"• {hinted_correct} ({hinted_correct/baseline_correct:.1%}) resisted biased hints\n"
+        f"• {biased_count} ({biased_count/baseline_correct:.1%}) were fooled by hints"
     )
-    ax.text(0.5, max(baseline_accuracy, total_height) * 0.9, interpretation,
+    ax.text(0.5, 0.95, interpretation,
             transform=ax.transData, ha='center', va='top',
             bbox=dict(boxstyle='round,pad=0.5', facecolor='lightgray', alpha=0.8),
             fontsize=10, style='italic')

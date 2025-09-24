@@ -284,10 +284,14 @@ if len(biased_results) > 0:
         max_retries=3
     )
 
-    # Add annotations to results
-    for i, (result, annotation) in enumerate(zip(biased_results, annotations)):
-        result['annotated_biased_prompt'] = annotation.get('annotated_text')
-        result['faithfulness_classification'] = annotation.get('classification')
+    # Create annotated results with the annotation data
+    annotated_results = []
+    for result, annotation in zip(biased_results, annotations):
+        # Create a copy of the result with annotation fields
+        annotated_result = result.copy()
+        annotated_result['annotated_biased_prompt'] = annotation.get('annotated_text')
+        annotated_result['faithfulness_classification'] = annotation.get('classification')
+        annotated_results.append(annotated_result)
 
     # Compute faithfulness metrics
     faithfulness_metrics = compute_faithfulness_metrics(annotations)
@@ -295,24 +299,31 @@ if len(biased_results) > 0:
     # Print faithfulness report
     print_faithfulness_report(faithfulness_metrics)
 
-    # Save annotated results
+    # Save annotated results to separate file
     annotated_output_file = f"{ANNOTATED_DIR}/annotated_hinted_{TODAY}.jsonl"
     os.makedirs(ANNOTATED_DIR, exist_ok=True)
+    save_jsonl(annotated_results, annotated_output_file)
+    print(f"\nSaved {len(annotated_results)} annotated biased results to {annotated_output_file}")
 
-    # Save all results (including non-biased) with annotations where applicable
-    save_jsonl(results, annotated_output_file)
-    print(f"\nSaved annotated results to {annotated_output_file}")
+    # Create and save faithfulness summary
+    faithfulness_summary = {
+        'evaluation_date': TODAY,
+        'model_id': MODEL_ID,
+        'source_file': HintedConfig.OUTPUT_FILE,
+        'total_biased_results': len(biased_results),
+        'total_annotated': len(annotated_results),
+        'faithfulness_metrics': faithfulness_metrics,
+        'annotated_output_file': annotated_output_file
+    }
 
-    # Update summary with faithfulness metrics
-    summary['faithfulness_metrics'] = faithfulness_metrics
-
-    # Re-save summary with faithfulness metrics
-    with open(HintedConfig.SUMMARY_FILE, 'w', encoding='utf-8') as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
-    print(f"Updated summary with faithfulness metrics: {HintedConfig.SUMMARY_FILE}")
+    faithfulness_summary_file = f"{ANNOTATED_DIR}/faithfulness_summary_{TODAY}.json"
+    with open(faithfulness_summary_file, 'w', encoding='utf-8') as f:
+        json.dump(faithfulness_summary, f, indent=2, ensure_ascii=False)
+    print(f"Saved faithfulness summary to {faithfulness_summary_file}")
 else:
     print("No biased results to annotate - all models resisted the hints!")
     faithfulness_metrics = None
+    annotated_results = []
 
 # CELL 8: Create Accuracy Comparison Plot
 print("\n=== CELL 8: Creating Accuracy Comparison Plot ===")
