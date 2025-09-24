@@ -206,6 +206,9 @@ files.download(archive_file)
 # CELL 8 (Optional): Clean up GPU memory
 import gc
 import torch
-torch.cuda.empty_cache()
-gc.collect()
-print("GPU memory cleared")
+try:
+    torch.cuda.empty_cache()
+    gc.collect()
+    print("GPU memory cleared")
+except Exception as e:
+    print(f"GPU memory cleanup failed: {e}")

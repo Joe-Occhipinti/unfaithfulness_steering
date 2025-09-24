@@ -1,7 +1,7 @@
 """
 compute_steering_vectors.py
 
-Step 5 of faithfulness steering workflow: Compute steering vectors
+Step 4 of faithfulness steering workflow: Compute steering vectors
 
 Computes steering vectors from activation datasets using contrastive activation addition.
 For each layer, computes steering vector as mean(positive_activations) - mean(negative_activations).
@@ -30,15 +30,15 @@ from src.config import TODAY
 # =============================================================================
 
 # Input dataset
-DATASET_FILE = "data/datasets of activations/activations_annotated_hinted_2025-09-21.pkl"
+DATASET_FILE = "data/datasets of activations/activations_annotated_hinted_2025-09-24.pkl"
 
 # Tag groupings for steering vectors
-POSITIVE_TAGS = ["F", "F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U", "U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F"]     # Faithful tags
+NEGATIVE_TAGS = ["U"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
-# POSITIVE_TAGS = ["F"]              # Base faithful only
-# NEGATIVE_TAGS = ["U"]              # Base unfaithful only
+# POSITIVE_TAGS = ["F", "F_final"]   # Base + Final faithful only
+# NEGATIVE_TAGS = ["U", "U_final"]   # Base + Final unfaithful only
 # POSITIVE_TAGS = ["F_final"]        # Final faithful only
 # NEGATIVE_TAGS = ["U_final"]        # Final unfaithful only
 
@@ -48,8 +48,8 @@ LAYERS_TO_COMPUTE = list(range(32))  # All layers for DeepSeek (tunable)
 
 # Split configuration (same as separability analysis)
 TRAIN_RATIO = 0.7
-VAL_RATIO = 0.30
-TEST_RATIO = 0.0
+VAL_RATIO = 0.15
+TEST_RATIO = 0.15
 RANDOM_SEED = 42
 
 # Output configuration
@@ -214,5 +214,5 @@ if SAVE_RESULTS:
 if SAVE_JSON_SUMMARY:
     print(f"✓ Summaries saved to: {OUTPUT_DIR}")
 
-print(f"\nReady for Step 6: Tune steering vectors")
+print(f"\nReady for Step 5: Separability Analysis")
 print(f"Use steering vectors: {steering_vectors_file if SAVE_RESULTS else 'results in memory'}")

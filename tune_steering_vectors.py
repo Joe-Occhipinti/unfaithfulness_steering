@@ -58,12 +58,12 @@ import pickle
 from datetime import datetime
 from typing import Dict, Any, List, Tuple
 from tqdm import tqdm
+import random
 
 # Import reusable modules
 from src.data import load_jsonl, save_jsonl
 from src.model import load_model
 from src.steering import (
-    load_activation_dataset,
     apply_steering_to_model,
     generate_steered_batch,
     sweep_coefficients
@@ -80,7 +80,7 @@ from src.performance_eval import (
     compute_accuracy_metrics
     setup_deepseek_client,
 )
-from src.config import TODAY
+from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, STEERING_VECTORS_DIR
 
 # =============================================================================
 # TUNABLE PARAMETERS
@@ -93,20 +93,16 @@ MAX_NEW_TOKENS = 2048
 MAX_INPUT_LENGTH = 1024
 
 # Input files
-ANNOTATED_BIASED_FILE = "data/annotated/annotated_hinted_2025-09-21.jsonl"  # Update with actual date
-STEERING_VECTORS_FILE = "data/steering_vectors/steering_vector_F_vs_U_2025-09-21.pkl"  # Update with actual
+ANNOTATED_BIASED_FILE = f"{ANNOTATED_DIR}/annotated_hinted_2025-09-24.jsonl"  # Update with actual date
+STEERING_VECTORS_FILE = "results\steering_vectors_2025-09-24\F_vs_U\steering_vector_2025-09-24.pkl"  # Update with actual steering vector file
 
 # Steering sweep configuration
-LAYERS_TO_TEST = [20, 21, 22, 23, 24, 25, 26, 27]  # Middle-to-late layers typically work best
-COEFFICIENTS = [0.5, 0.75, 1.0, -0.5, -0.75, -1.0]  # Positive and negative coefficients
+LAYERS_TO_TEST = [15, 25]  # Middle-to-late layers typically work best
+COEFFICIENTS = [0.75, -0.75, 5, -5]  # Positive and negative coefficients
 
 # Output configuration
-OUTPUT_DIR = "data/behavioural"
-OUTPUT_FILE = f"{OUTPUT_DIR}/steered_val_{TODAY}.jsonl"
-SUMMARY_FILE = f"{OUTPUT_DIR}/steered_val_summary_{TODAY}.json"
-
-# Validation split configuration
-VAL_SPLIT = "val"  # Use validation split for tuning
+OUTPUT_FILE = f"{BEHAVIOURAL_DIR}/steered_val_{TODAY}.jsonl"
+SUMMARY_FILE = f"{SUMMARIES_DIR}/steered_val_summary_{TODAY}.json"
 
 print(f"=== TUNE STEERING VECTORS - {TODAY} ===")
 print(f"Model: {MODEL_ID}")
@@ -127,7 +123,7 @@ start_time = time.time()
 # Load model
 model, tokenizer = load_model(MODEL_ID)
 
-# Setup Gemini client for faithfulness evaluation
+# Setup Gemini and DeepSeek client for (1) faithfulness evaluation, (2) format validation
 gemini_client = setup_gemini_client()
 deepseek_client = setup_deepseek_client()
 
@@ -141,8 +137,7 @@ print(f"Loading annotated data from {ANNOTATED_BIASED_FILE}...")
 annotated_data = load_jsonl(ANNOTATED_BIASED_FILE)
 print(f"Loaded {len(annotated_data)} annotated examples")
 
-# Apply same randomization and splitting as separability analysis (seed 42, 70% train / 30% val)
-import random
+# Apply same randomization and splitting as separability analysis (seed 42, 70% train / 30% val + test)
 random.seed(42)
 shuffled_indices = list(range(len(annotated_data)))
 random.shuffle(shuffled_indices)
@@ -198,115 +193,98 @@ steered_results = sweep_coefficients(
 
 print(f"Generated steered responses for {len(steered_results)} configurations")
 
-# CELL 4: Evaluate Faithfulness of Steered Outputs
-print("\n=== CELL 5: Evaluate Faithfulness ===")
+# CELL 4: Process Steered Results
+print("\n=== CELL 4: Process Steered Results ===")
 
 evaluation_results = {}
 
-# Evaluate each steering configuration
-for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc="Evaluating configurations"):
-    print(f"\nEvaluating layer {layer_idx}, coefficient {coeff:+.1f}")
+for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc="Processing steering configs"):
+    print(f"\nProcessing layer {layer_idx}, coefficient {coeff:+.1f}")
 
-    # Create steered biased prompts
+    # Create steered biased prompts (prompt + steered response)
     steered_biased_prompts = [
         prompt + response
         for prompt, response in zip(hinted_prompts, steered_responses)
     ]
 
-    # Prepare input data for annotate_batch
-    batch_data = []
-    for i, (biased_prompt, orig_item) in enumerate(zip(steered_biased_prompts, val_unfaithful)):
-        batch_data.append({
-            'biased_prompt': biased_prompt,
-            'correct_answer': orig_item.get('ground_truth_letter'),
-            'hint_letter': orig_item.get('hint_letter')
-            'model_answer': extract_answer_letter(biased_prompt).
-        })
+    # Extract answer letters from steered responses
+    steered_answers = [extract_answer_letter(response) for response in steered_responses]
 
-        correct_answer = result.get('ground_truth_letter', result.get('correct_answer'))
-        hint_letter = result.get('hint_letter', result.get('hinted_answer'))
-        model_answer = result.get('hinted_answer_letter', result.get('answer_letter'))
-
-    # Annotate steered prompts (this returns classification results)
-    annotations = annotate_batch(
-        results=batch_data,
-        client_config=gemini_client
-    )
-
-    # Validate steered responses with DeepSeek (same process as hinted_eval.py)
-    validations = validate_responses_deepseek(steered_responses, deepseek_client)
-
-    # Process validation results
-    steered_validation_data = []
-    for validation in validations:
-        format_followed, response_complete, answer_letter = extract_validation_data(validation)
-        steered_validation_data.append({
-            'format_followed': format_followed,
-            'response_complete': response_complete,
-            'answer_letter': answer_letter
-        })
-
-    # Extract classifications and answers
-    steered_faithfulness = [ann.get('classification', 'error') for ann in annotations]
-    steered_answers = [val_data['answer_letter'] for val_data in steered_validation_data]
-
-    # Compute metrics
-    metrics = compute_faithfulness_metrics(steered_faithfulness)
-
-    # Compare faithfulness distributions: steered vs original hinted
-    # Original hinted prompts were all unfaithful (that's why we selected them)
-    original_faithful_count = 0  # All selected prompts were unfaithful
-    steered_faithful_count = sum(1 for label in steered_faithfulness if label == 'faithful')
-
-    # Compute faithfulness improvement rate
-    faithfulness_improvement_rate = steered_faithful_count / len(steered_faithfulness) if steered_faithfulness else 0
-
-    # Compute completeness metrics for steered responses
-    steered_completeness_metrics = compute_completeness_metrics(steered_validation_data)
-
-    # Store results
+    # Store results for this configuration
     evaluation_results[(layer_idx, coeff)] = {
-        'faithfulness_improvement_rate': faithfulness_improvement_rate,
-        'original_faithful_count': original_faithful_count,
-        'steered_faithful_count': steered_faithful_count,
-        'total_prompts': len(steered_faithfulness),
         'steered_responses': steered_responses,
         'steered_biased_prompts': steered_biased_prompts,
-        'steered_annotations': steered_annotations,
-        'steered_faithfulness_labels': steered_faithfulness,
-        'steered_answers': steered_answers,
-        'steered_validation_data': steered_validation_data,
-        'completeness_metrics': steered_completeness_metrics
+        'steered_answers': steered_answers
     }
 
-    print(f"  Faithfulness improvement: {faithfulness_improvement_rate:.1%} ({steered_faithful_count}/{len(steered_faithfulness)} became faithful)")
-    print(f"  Completeness rate: {steered_completeness_metrics['completeness_rate']:.1%} ({steered_completeness_metrics['complete_responses']}/{steered_completeness_metrics['total_responses']})")
+print(f"Processed results for {len(evaluation_results)} steering configurations")
 
-# CELL 6: Find Best Configuration and Generate Plots
-print("\n=== CELL 6: Find Best Configuration and Generate Plots ===")
+# CELL 5: Faithfulness Evaluation
+print("\n=== CELL 5: Faithfulness Evaluation ===")
 
-# Sort by faithfulness improvement rate
+for (layer_idx, coeff), results in evaluation_results.items():
+    print(f"\nEvaluating faithfulness: layer {layer_idx}, coeff {coeff:+.1f}")
+
+    # Prepare data for faithfulness annotation (Gemini)
+    batch_data = []
+    for i, (biased_prompt, orig_item) in enumerate(zip(results['steered_biased_prompts'], val_unfaithful)):
+        batch_data.append({
+            'biased_prompt': biased_prompt,
+            'ground_truth_letter': orig_item.get('ground_truth_letter'),
+            'hint_letter': orig_item.get('hint_letter'),
+            'model_answer': results['steered_answers'][i]
+        })
+
+    # Get faithfulness annotations from Gemini
+    annotations = annotate_batch(batch_data, gemini_client)
+
+    # Extract faithfulness labels
+    faithfulness_labels = [ann.get('classification', 'error') for ann in annotations]
+
+    # Compute improvement metrics
+    original_faithful_count = 0  # All val_unfaithful were unfaithful
+    steered_faithful_count = sum(1 for label in faithfulness_labels if label == 'faithful')
+    improvement_rate = steered_faithful_count / len(faithfulness_labels) if faithfulness_labels else 0
+
+    # Store evaluation results
+    results.update({
+        'annotations': annotations,
+        'faithfulness_labels': faithfulness_labels,
+        'improvement_rate': improvement_rate,
+        'steered_faithful_count': steered_faithful_count,
+        'total_prompts': len(faithfulness_labels)
+    })
+
+    print(f"  Improvement: {improvement_rate:.1%} ({steered_faithful_count}/{len(faithfulness_labels)} became faithful)")
+
+print(f"Completed faithfulness evaluation for {len(evaluation_results)} configurations")
+
+# CELL 6: Find Best Configuration
+print("\n=== CELL 6: Find Best Configuration ===")
+
+# Sort by improvement rate
 sorted_configs = sorted(
     evaluation_results.items(),
-    key=lambda x: x[1]['faithfulness_improvement_rate'],
+    key=lambda x: x[1]['improvement_rate'],
     reverse=True
 )
 
-print("\nTop 5 configurations by faithfulness improvement:")
-for (layer_idx, coeff), metrics in sorted_configs[:5]:
-    print(f"  Layer {layer_idx}, Coeff {coeff:+.1f}: "
-          f"Improvement={metrics['faithfulness_improvement_rate']:.1%}")
+print("\nTop configurations by faithfulness improvement:")
+for (layer_idx, coeff), results in sorted_configs[:5]:
+    print(f"  Layer {layer_idx}, Coeff {coeff:+.1f}: {results['improvement_rate']:.1%}")
 
 best_config = sorted_configs[0]
 best_layer, best_coeff = best_config[0]
-best_metrics = best_config[1]
+best_results = best_config[1]
 
 print(f"\n*** BEST CONFIGURATION ***")
 print(f"Layer: {best_layer}")
 print(f"Coefficient: {best_coeff:+.2f}")
-print(f"Faithfulness Improvement: {best_metrics['faithfulness_improvement_rate']:.1%}")
+print(f"Improvement Rate: {best_results['improvement_rate']:.1%}")
 
-# Generate plots
+# CELL 7: Generate Plots
+print("\n=== CELL 7: Generate Plots ===")
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -317,75 +295,79 @@ neg_coeffs = [c for c in COEFFICIENTS if c < 0]
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
 # Plot positive coefficients
-for coeff in pos_coeffs:
-    faithfulness_rates = []
-    for layer in layers_to_test:
-        if (layer, coeff) in evaluation_results:
-            faithfulness_rates.append(evaluation_results[(layer, coeff)]['faithfulness_rate'])
-        else:
-            faithfulness_rates.append(0)
-    ax1.plot(layers_to_test, faithfulness_rates, marker='o', label=f'Coeff +{coeff:.1f}')
+if pos_coeffs:
+    for coeff in pos_coeffs:
+        improvement_rates = []
+        for layer in layers_to_test:
+            if (layer, coeff) in evaluation_results:
+                improvement_rates.append(evaluation_results[(layer, coeff)]['improvement_rate'])
+            else:
+                improvement_rates.append(0)
+        ax1.plot(layers_to_test, improvement_rates, marker='o', label=f'Coeff +{coeff:.1f}')
 
-ax1.set_xlabel('Layer')
-ax1.set_ylabel('Faithfulness Rate')
-ax1.set_title('Faithfulness Rate vs Layer (Positive Coefficients)')
-ax1.legend()
-ax1.grid(True, alpha=0.3)
-ax1.set_ylim(0, 1)
+    ax1.set_xlabel('Layer')
+    ax1.set_ylabel('Improvement Rate')
+    ax1.set_title('Faithfulness Improvement vs Layer (Positive Coefficients)')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    ax1.set_ylim(0, 1)
 
 # Plot negative coefficients
-for coeff in neg_coeffs:
-    faithfulness_rates = []
-    for layer in layers_to_test:
-        if (layer, coeff) in evaluation_results:
-            faithfulness_rates.append(evaluation_results[(layer, coeff)]['faithfulness_rate'])
-        else:
-            faithfulness_rates.append(0)
-    ax2.plot(layers_to_test, faithfulness_rates, marker='o', label=f'Coeff {coeff:.1f}')
+if neg_coeffs:
+    for coeff in neg_coeffs:
+        improvement_rates = []
+        for layer in layers_to_test:
+            if (layer, coeff) in evaluation_results:
+                improvement_rates.append(evaluation_results[(layer, coeff)]['improvement_rate'])
+            else:
+                improvement_rates.append(0)
+        ax2.plot(layers_to_test, improvement_rates, marker='o', label=f'Coeff {coeff:.1f}')
 
-ax2.set_xlabel('Layer')
-ax2.set_ylabel('Faithfulness Rate')
-ax2.set_title('Faithfulness Rate vs Layer (Negative Coefficients)')
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-ax2.set_ylim(0, 1)
+    ax2.set_xlabel('Layer')
+    ax2.set_ylabel('Improvement Rate')
+    ax2.set_title('Faithfulness Improvement vs Layer (Negative Coefficients)')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    ax2.set_ylim(0, 1)
 
-plt.suptitle(f'Steering Tuning Results - Faithfulness Rate by Layer and Coefficient', fontsize=14)
+plt.suptitle(f'Steering Tuning Results - Faithfulness Improvement by Layer and Coefficient', fontsize=14)
 plt.tight_layout()
 
 # Save plot
-plot_file = f"plots/steering_tuning_faithfulness_{TODAY}.png"
+import os
 os.makedirs('plots', exist_ok=True)
+plot_file = f"plots/steering_tuning_faithfulness_{TODAY}.png"
 plt.savefig(plot_file, dpi=150, bbox_inches='tight')
 plt.show()
-print(f"Saved plot to {plot_file}")
+print(f"Plot saved to {plot_file}")
 
-# CELL 7: Save Results
-print("\n=== CELL 7: Save Results ===")
+# CELL 8: Save Results
+print("\n=== CELL 8: Save Results ===")
 
-# Save detailed results organized by layer*coefficient
+# Save detailed results
 detailed_results = {}
 for (layer_idx, coeff), results in evaluation_results.items():
     key = f"layer_{layer_idx}_coeff_{coeff:+.1f}"
     detailed_results[key] = {
         'layer': layer_idx,
         'coefficient': coeff,
-        'faithfulness_rate': results['faithfulness_rate'],
-        'became_faithful_count': results['became_faithful_count'],
+        'improvement_rate': results['improvement_rate'],
+        'steered_faithful_count': results['steered_faithful_count'],
         'total_prompts': results['total_prompts'],
         'steered_responses': results['steered_responses'],
         'steered_answers': results['steered_answers'],
-        'steered_faithfulness_labels': results['steered_faithfulness_labels'],
-        'completeness_metrics': results['completeness_metrics']
+        'faithfulness_labels': results['faithfulness_labels']
     }
 
 # Save detailed results
-detailed_file = f"{OUTPUT_DIR}/steered_detailed_{TODAY}.json"
+os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+detailed_file = OUTPUT_FILE.replace('.jsonl', '_detailed.json')
 with open(detailed_file, 'w', encoding='utf-8') as f:
     json.dump(detailed_results, f, indent=2, ensure_ascii=False)
-print(f"Saved detailed results to {detailed_file}")
+print(f"Detailed results saved to {detailed_file}")
 
 # Save summary
+end_time = time.time()
 summary = {
     'date': TODAY,
     'model': MODEL_ID,
@@ -397,30 +379,29 @@ summary = {
     'best_configuration': {
         'layer': best_layer,
         'coefficient': best_coeff,
-        'faithfulness_rate': best_metrics['faithfulness_rate'],
-        'became_faithful_count': best_metrics['became_faithful_count']
+        'improvement_rate': best_results['improvement_rate'],
+        'steered_faithful_count': best_results['steered_faithful_count']
     },
     'all_results': {
         f"layer_{layer}_coeff_{coeff:.1f}": {
-            'faithfulness_rate': results['faithfulness_rate'],
-            'became_faithful_count': results['became_faithful_count'],
+            'improvement_rate': results['improvement_rate'],
+            'steered_faithful_count': results['steered_faithful_count'],
             'total_prompts': results['total_prompts']
         }
         for (layer, coeff), results in evaluation_results.items()
-    }
+    },
+    'processing_time_seconds': end_time - start_time
 }
 
 with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
     json.dump(summary, f, indent=2, ensure_ascii=False)
-print(f"Saved summary to {SUMMARY_FILE}")
+print(f"Summary saved to {SUMMARY_FILE}")
 
-# CELL 8: Save Best Configuration Outputs
-print("\n=== CELL 8: Save Best Configuration Outputs ===")
+# CELL 9: Save Best Configuration Outputs
+print("\n=== CELL 9: Save Best Configuration Outputs ===")
 
 # Save full output data for best configuration
 output_data = []
-best_results = evaluation_results[(best_layer, best_coeff)]
-
 for i, orig_item in enumerate(val_unfaithful):
     record = {
         'question_id': orig_item.get('question_id', i),
@@ -436,20 +417,16 @@ for i, orig_item in enumerate(val_unfaithful):
         'steered_output': best_results['steered_responses'][i],
         'steered_biased_prompt': best_results['steered_biased_prompts'][i],
         'steered_answer_letter': best_results['steered_answers'][i],
-        'steered_faithfulness_label': best_results['steered_faithfulness_labels'][i],
+        'steered_faithfulness_label': best_results['faithfulness_labels'][i],
         'steering_layer': best_layer,
         'steering_coefficient': best_coeff,
 
         # Ground truth
         'ground_truth_letter': orig_item.get('ground_truth_letter'),
-        'hinted_letter': orig_item.get('hinted_letter'),
-
-        # Validation metadata (same as hinted_eval.py)
-        'format_followed': best_results['steered_validation_data'][i]['format_followed'],
-        'response_complete': best_results['steered_validation_data'][i]['response_complete'],
+        'hint_letter': orig_item.get('hint_letter'),
 
         # Changes
-        'became_faithful': best_results['steered_faithfulness_labels'][i] == 'faithful',
+        'became_faithful': best_results['faithfulness_labels'][i] == 'faithful',
 
         # Metadata
         'split': 'val',
@@ -461,31 +438,14 @@ for i, orig_item in enumerate(val_unfaithful):
 save_jsonl(output_data, OUTPUT_FILE)
 print(f"Saved {len(output_data)} best configuration records to {OUTPUT_FILE}")
 
-
-
-# CELL 9: Push Results to GitHub
-print("\n=== CELL 9: Push Results to GitHub ===")
-
-# Add files
-!git add {OUTPUT_FILE} {SUMMARY_FILE} {detailed_file} {plot_file}
-
-# Commit
-commit_message = f"Steering tuning results - {TODAY}"
-!git commit -m "{commit_message}"
-
-# Push to GitHub
-!git push {repo_url} main
-
-print(f"Results pushed to GitHub successfully!")
-
-# CELL 10: Final Summary
-print("\n=== FINAL SUMMARY ===")
-print(f"Tuning completed in {(time.time() - start_time) / 60:.2f} minutes")
+print(f"\n=== STEERING TUNING COMPLETE ===")
+print(f"Processing time: {(end_time - start_time) / 60:.2f} minutes")
 print(f"\nBest steering configuration:")
 print(f"  Layer: {best_layer}")
 print(f"  Coefficient: {best_coeff:+.2f}")
-print(f"  Faithfulness improvement: {best_metrics['faithfulness_rate'] - baseline_metrics['faithfulness_rate']:.1%}")
+print(f"  Faithfulness improvement: {best_results['improvement_rate']:.1%}")
 print(f"\nResults saved to:")
 print(f"  Data: {OUTPUT_FILE}")
 print(f"  Summary: {SUMMARY_FILE}")
+print(f"  Plot: {plot_file}")
 print(f"\nUse these parameters in test_steering_vectors.py for final evaluation.")

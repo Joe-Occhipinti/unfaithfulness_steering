@@ -1,0 +1,386 @@
+{
+  "0": {
+    "explained_variance": [
+      0.333933562040329,
+      0.09592035412788391
+    ],
+    "explained_variance_cumulative": [
+      0.333933562040329,
+      0.4298539161682129
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "1": {
+    "explained_variance": [
+      0.18302063643932343,
+      0.14862217009067535
+    ],
+    "explained_variance_cumulative": [
+      0.18302063643932343,
+      0.3316428065299988
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "2": {
+    "explained_variance": [
+      0.20108874142169952,
+      0.14433351159095764
+    ],
+    "explained_variance_cumulative": [
+      0.20108874142169952,
+      0.34542226791381836
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "3": {
+    "explained_variance": [
+      0.20345692336559296,
+      0.1196802631020546
+    ],
+    "explained_variance_cumulative": [
+      0.20345692336559296,
+      0.32313719391822815
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "4": {
+    "explained_variance": [
+      0.1930902600288391,
+      0.11504661291837692
+    ],
+    "explained_variance_cumulative": [
+      0.1930902600288391,
+      0.30813688039779663
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "5": {
+    "explained_variance": [
+      0.1906251460313797,
+      0.11317171156406403
+    ],
+    "explained_variance_cumulative": [
+      0.1906251460313797,
+      0.3037968575954437
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "6": {
+    "explained_variance": [
+      0.1932068020105362,
+      0.11465747654438019
+    ],
+    "explained_variance_cumulative": [
+      0.1932068020105362,
+      0.3078642785549164
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "7": {
+    "explained_variance": [
+      0.17226028442382812,
+      0.11552375555038452
+    ],
+    "explained_variance_cumulative": [
+      0.17226028442382812,
+      0.28778403997421265
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "8": {
+    "explained_variance": [
+      0.163082093000412,
+      0.11262927949428558
+    ],
+    "explained_variance_cumulative": [
+      0.163082093000412,
+      0.2757113575935364
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "9": {
+    "explained_variance": [
+      0.1577814668416977,
+      0.1132083535194397
+    ],
+    "explained_variance_cumulative": [
+      0.1577814668416977,
+      0.2709898352622986
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "10": {
+    "explained_variance": [
+      0.15901461243629456,
+      0.116923026740551
+    ],
+    "explained_variance_cumulative": [
+      0.15901461243629456,
+      0.27593764662742615
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "11": {
+    "explained_variance": [
+      0.16390946507453918,
+      0.11837556958198547
+    ],
+    "explained_variance_cumulative": [
+      0.16390946507453918,
+      0.28228503465652466
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "12": {
+    "explained_variance": [
+      0.17623087763786316,
+      0.11978469043970108
+    ],
+    "explained_variance_cumulative": [
+      0.17623087763786316,
+      0.29601556062698364
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "13": {
+    "explained_variance": [
+      0.19443699717521667,
+      0.1188817173242569
+    ],
+    "explained_variance_cumulative": [
+      0.19443699717521667,
+      0.31331872940063477
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "14": {
+    "explained_variance": [
+      0.2038363665342331,
+      0.11961428821086884
+    ],
+    "explained_variance_cumulative": [
+      0.2038363665342331,
+      0.32345065474510193
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "15": {
+    "explained_variance": [
+      0.21751901507377625,
+      0.12809421122074127
+    ],
+    "explained_variance_cumulative": [
+      0.21751901507377625,
+      0.3456132411956787
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "16": {
+    "explained_variance": [
+      0.21707558631896973,
+      0.13381370902061462
+    ],
+    "explained_variance_cumulative": [
+      0.21707558631896973,
+      0.35088929533958435
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "17": {
+    "explained_variance": [
+      0.2282140702009201,
+      0.13968314230442047
+    ],
+    "explained_variance_cumulative": [
+      0.2282140702009201,
+      0.3678972125053406
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "18": {
+    "explained_variance": [
+      0.22856582701206207,
+      0.13936473429203033
+    ],
+    "explained_variance_cumulative": [
+      0.22856582701206207,
+      0.3679305613040924
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "19": {
+    "explained_variance": [
+      0.23289525508880615,
+      0.13946844637393951
+    ],
+    "explained_variance_cumulative": [
+      0.23289525508880615,
+      0.3723636865615845
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "20": {
+    "explained_variance": [
+      0.2287425696849823,
+      0.13569416105747223
+    ],
+    "explained_variance_cumulative": [
+      0.2287425696849823,
+      0.3644367456436157
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "21": {
+    "explained_variance": [
+      0.22228111326694489,
+      0.13121189177036285
+    ],
+    "explained_variance_cumulative": [
+      0.22228111326694489,
+      0.35349300503730774
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "22": {
+    "explained_variance": [
+      0.22153925895690918,
+      0.12141121178865433
+    ],
+    "explained_variance_cumulative": [
+      0.22153925895690918,
+      0.3429504632949829
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "23": {
+    "explained_variance": [
+      0.21242213249206543,
+      0.11757615953683853
+    ],
+    "explained_variance_cumulative": [
+      0.21242213249206543,
+      0.32999828457832336
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "24": {
+    "explained_variance": [
+      0.21296635270118713,
+      0.11250888556241989
+    ],
+    "explained_variance_cumulative": [
+      0.21296635270118713,
+      0.3254752457141876
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "25": {
+    "explained_variance": [
+      0.2213239073753357,
+      0.10966137796640396
+    ],
+    "explained_variance_cumulative": [
+      0.2213239073753357,
+      0.33098527789115906
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "26": {
+    "explained_variance": [
+      0.21567948162555695,
+      0.10596242547035217
+    ],
+    "explained_variance_cumulative": [
+      0.21567948162555695,
+      0.3216419219970703
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "27": {
+    "explained_variance": [
+      0.21113352477550507,
+      0.10321245342493057
+    ],
+    "explained_variance_cumulative": [
+      0.21113352477550507,
+      0.31434598565101624
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "28": {
+    "explained_variance": [
+      0.20185142755508423,
+      0.10022842884063721
+    ],
+    "explained_variance_cumulative": [
+      0.20185142755508423,
+      0.30207985639572144
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "29": {
+    "explained_variance": [
+      0.20533524453639984,
+      0.09742122888565063
+    ],
+    "explained_variance_cumulative": [
+      0.20533524453639984,
+      0.30275648832321167
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "30": {
+    "explained_variance": [
+      0.20899957418441772,
+      0.09712986648082733
+    ],
+    "explained_variance_cumulative": [
+      0.20899957418441772,
+      0.30612945556640625
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  },
+  "31": {
+    "explained_variance": [
+      0.22035227715969086,
+      0.08666058629751205
+    ],
+    "explained_variance_cumulative": [
+      0.22035227715969086,
+      0.3070128560066223
+    ],
+    "n_positive": 25,
+    "n_negative": 24
+  }
+}

@@ -22,14 +22,14 @@ from src.separability import (
     load_activation_dataset,
     split_dataset_by_prompts,
     compute_cosine_similarity_by_layer,
-    compute_norm_distributions_by_layer,
+    compute_mean_differences_by_layer,
     train_linear_probes_by_layer,
     compute_pca_analysis_by_layer,
     print_separability_summary
 )
 from src.plots import (
     plot_cosine_similarity_by_layer,
-    plot_norm_distributions_by_layer,
+    plot_mean_differences_by_layer,
     plot_linear_probe_performance,
     plot_pca_separability,
     plot_pca_explained_variance,
@@ -42,25 +42,25 @@ from src.config import TODAY, PLOTS_DIR
 # =============================================================================
 
 # Input dataset
-DATASET_FILE = "data/datasets of activations/activations_annotated_hinted_2025-09-21.pkl"
+DATASET_FILE = "data/datasets of activations/activations_annotated_hinted_2025-09-24.pkl"
 
 # Tag groupings for analysis
-POSITIVE_TAGS = ["F", "F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U", "U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F"]     # Faithful tags
+NEGATIVE_TAGS = ["U"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F"]              # Base faithful only
 # NEGATIVE_TAGS = ["U"]              # Base unfaithful only
-# POSITIVE_TAGS = ["F_wk"]  # Just weakly faithful variants to test correlations with Faithfulness
+# POSITIVE_TAGS = ["F"]  # Just weakly faithful variants to test correlations with Faithfulness
 # POSITIVE_TAGS = ["Fact"]           # Factually correct only, to test correlations with Faithfulness
 
 # Split configuration for linear probes
 TRAIN_RATIO = 0.7
-VAL_RATIO = 0.30
-TEST_RATIO = 0.0
-
-# Analysis configuration
+VAL_RATIO = 0.15
+TEST_RATIO = 0.15
 RANDOM_SEED = 42
+
+# Layers to test
 LAYERS_TO_ANALYZE = list(range(32))  # All layers for DeepSeek
 
 # PCA configuration
@@ -132,22 +132,22 @@ cosine_similarities = compute_cosine_similarity_by_layer(
 print(f"Computed cosine similarities for {len(cosine_similarities)} layers")
 print(f"Range: {min(cosine_similarities.values()):.3f} to {max(cosine_similarities.values()):.3f}")
 
-# STEP 4: Investigation 2 - Norm Distribution Analysis
-print("\n=== STEP 4: Norm Distribution Analysis ===")
-print("Computing norm distributions and mean norm differences per layer...")
+# STEP 4: Investigation 2 - Mean Difference Analysis
+print("\n=== STEP 4: Mean Difference Analysis ===")
+print("Computing distance between positive and negative means per layer...")
 
-norm_distributions = compute_norm_distributions_by_layer(
+mean_differences = compute_mean_differences_by_layer(
     dataset=dataset,
     positive_tags=POSITIVE_TAGS,
     negative_tags=NEGATIVE_TAGS
 )
 
-print(f"Computed norm distributions for {len(norm_distributions)} layers")
+print(f"Computed mean differences for {len(mean_differences)} layers")
 
-# Extract mean norm differences for quick overview
-mean_norm_diffs = {layer: norm_distributions[layer]['mean_norm_diff']
-                   for layer in norm_distributions}
-print(f"Mean norm differences range: {min(mean_norm_diffs.values()):.3f} to {max(mean_norm_diffs.values()):.3f}")
+# Extract mean difference norms for quick overview
+mean_diff_norms = {layer: mean_differences[layer]['mean_diff_norm']
+                   for layer in mean_differences}
+print(f"Mean difference norms range: {min(mean_diff_norms.values()):.3f} to {max(mean_diff_norms.values()):.3f}")
 
 # STEP 5: Investigation 3 - PCA Analysis
 print("\n=== STEP 5: PCA Analysis ===")
@@ -195,7 +195,7 @@ print("\n=== STEP 7: Results Summary ===")
 # Print comprehensive summary
 print_separability_summary(
     cosine_similarities=cosine_similarities,
-    norm_distributions=norm_distributions,
+    mean_differences=mean_differences,
     probe_results=probe_results,
     positive_tags=POSITIVE_TAGS,
     negative_tags=NEGATIVE_TAGS
@@ -249,7 +249,7 @@ if SAVE_RESULTS:
         'dataset_info': dataset['info'],
         'results': {
             'cosine_similarities': cosine_similarities,
-            'norm_distributions': norm_distributions,
+            'mean_differences': mean_differences,
             'pca_analysis': pca_results_serializable,
             'probe_results': probe_results_serializable
         },
@@ -268,9 +268,9 @@ if SAVE_RESULTS:
     with open(cosine_file, 'w') as f:
         json.dump(cosine_similarities, f, indent=2)
 
-    norms_file = os.path.join(OUTPUT_DIR, f"norm_distributions_{TODAY}.json")
-    with open(norms_file, 'w') as f:
-        json.dump(norm_distributions, f, indent=2)
+    means_file = os.path.join(OUTPUT_DIR, f"mean_differences_{TODAY}.json")
+    with open(means_file, 'w') as f:
+        json.dump(mean_differences, f, indent=2)
 
     probes_file = os.path.join(OUTPUT_DIR, f"probe_results_{TODAY}.json")
     with open(probes_file, 'w') as f:
@@ -305,12 +305,12 @@ if CREATE_PLOTS:
         show_plot=False
     )
 
-    print("Creating norm distributions plot...")
-    plot_norm_distributions_by_layer(
-        norm_distributions=norm_distributions,
+    print("Creating mean differences plot...")
+    plot_mean_differences_by_layer(
+        mean_differences=mean_differences,
         positive_tags=POSITIVE_TAGS,
         negative_tags=NEGATIVE_TAGS,
-        save_path=os.path.join(plot_dir, f"norm_distributions_{TODAY}.png"),
+        save_path=os.path.join(plot_dir, f"mean_differences_{TODAY}.png"),
         show_plot=False
     )
 
@@ -343,7 +343,7 @@ if CREATE_PLOTS:
     print("Creating separability summary plot...")
     plot_separability_summary(
         cosine_similarities=cosine_similarities,
-        norm_distributions=norm_distributions,
+        mean_differences=mean_differences,
         probe_results=probe_results,
         positive_tags=POSITIVE_TAGS,
         negative_tags=NEGATIVE_TAGS,
@@ -357,7 +357,7 @@ if CREATE_PLOTS:
 print(f"\n=== SEPARABILITY ANALYSIS COMPLETE ===")
 print(f"Processing time: {processing_time/60:.1f} minutes")
 print(f"✅ Cosine similarity analysis: {len(cosine_similarities)} layers")
-print(f"✅ Norm distribution analysis: {len(norm_distributions)} layers")
+print(f"✅ Mean difference analysis: {len(mean_differences)} layers")
 print(f"✅ PCA analysis: {len(valid_pca)} valid layers")
 print(f"✅ Linear probe analysis: {len(valid_probes)} valid probes")
 
