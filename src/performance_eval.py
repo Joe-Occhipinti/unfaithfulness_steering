@@ -264,6 +264,29 @@ def compute_bias_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         'hint_resistance_rate': not_biased_count / total if total > 0 else 0
     }
 
+def compute_completeness_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Compute response completeness metrics from evaluation results.
+    Reusable across all evaluation scripts.
+
+    Args:
+        results: List of evaluation result dictionaries with 'response_complete' field
+
+    Returns:
+        Dictionary with completeness metrics
+    """
+    total = len(results)
+    complete = sum(1 for r in results if r.get('response_complete', False))
+    incomplete = total - complete
+
+    return {
+        'completeness_rate': complete / total if total > 0 else 0.0,
+        'complete_responses': complete,
+        'incomplete_responses': incomplete,
+        'total_responses': total
+    }
+
+
 def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Compute detailed accuracy metrics from evaluation results.

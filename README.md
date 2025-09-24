@@ -41,7 +41,7 @@ We need to build the main scripts and sub modules to recreate this workflow. In 
      
 5. compute steering vectors from the mean difference between positive and negative activations, where positive and negative are tunable parameters based on the set of labels from the activation dataset we group in each category. (e.g., F vs U, F_final vs. U_final, F + F_final vs. U + U_final, F + F_wk vs U etc.)
 
-9. tune_steering_vectors --> main script is a colab notebook cloning the repo from github and importing scripts
+6. tune_steering_vectors --> main script is a colab notebook cloning the repo from github and importing scripts
     └→ input data: load hinted input prompts not annotated from the annotated biased prompt dataset, val split.
     └→ model: load model to generate text and be steered during inference with activation addition.
     └→ vectors: load the steering vectors computed from all layers.
@@ -50,7 +50,7 @@ We need to build the main scripts and sub modules to recreate this workflow. In 
     └→ eval faithfulness entire pipeline (from annotation, to classifation, to visualization) on steered prompts (hinted input prompts + steered generated output). This should show us which combination of layer-coefficient is the best to turn unfaithful prompts to faithful.
     └→ output: save hinted input prompt, unsteered biased prompt, steered biased prompt, unsteered answerletter, hinted letter, ground truth, steered answer letter, old faithfulness classification, new faithfulness classification
 
-10. test_final_performance --> main script is a colab notebook cloning the repo from github and importing scripts
+7. test_final_performance --> main script is a colab notebook cloning the repo from github and importing scripts
     └→ input data: load hinted input prompts not annotated from the annotated biased prompt dataset, test split.
     └→ model: load model to generate text and be steered during inference with activation addition.
     └→ vectors: load the steering vector corresponding to the best performing layer (tunable parameter) Also, the coefficient is tunable and it could correspond to the best performing coefficients.
