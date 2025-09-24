@@ -364,7 +364,7 @@ if faithfulness_metrics:
         faithfulness_plot_path = f"plots/faithfulness_distribution_{TODAY}.png"
 
         plot_faithfulness_distribution(
-            hinted_results=results,
+            hinted_results=annotated_results,
             save_path=faithfulness_plot_path,
             show_plot=False  # Set to False for Colab environment
         )
