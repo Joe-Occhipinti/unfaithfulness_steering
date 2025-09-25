@@ -76,11 +76,13 @@ from src.faithfulness_eval import (
     print_faithfulness_report
 )
 from src.performance_eval import (
-    extract_answer_letter,
-    compute_accuracy_metrics
+    extract_validation_data,
+    compute_accuracy_metrics,
     setup_deepseek_client,
+    validate_responses_deepseek,
+    compute_completeness_metrics
 )
-from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, STEERING_VECTORS_DIR
+from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR
 
 # =============================================================================
 # TUNABLE PARAMETERS
@@ -94,7 +96,7 @@ MAX_INPUT_LENGTH = 1024
 
 # Input files
 ANNOTATED_BIASED_FILE = f"{ANNOTATED_DIR}/annotated_hinted_2025-09-24.jsonl"  # Update with actual date
-STEERING_VECTORS_FILE = "results\steering_vectors_2025-09-24\F_vs_U\steering_vector_2025-09-24.pkl"  # Update with actual steering vector file
+STEERING_VECTORS_FILE = "results/steering_vectors_2025-09-24/F_vs_U/steering_vectors_2025-09-24.pkl"  # Update with actual steering vector file
 
 # Steering sweep configuration
 LAYERS_TO_TEST = [15, 25]  # Middle-to-late layers typically work best
@@ -124,8 +126,8 @@ start_time = time.time()
 model, tokenizer = load_model(MODEL_ID)
 
 # Setup Gemini and DeepSeek client for (1) faithfulness evaluation, (2) format validation
-gemini_client = setup_gemini_client()
-deepseek_client = setup_deepseek_client()
+gemini_client_config = setup_gemini_client()
+deepseek_client_config = setup_deepseek_client()
 
 print(f"Setup completed in {time.time() - start_time:.2f} seconds")
 
@@ -159,8 +161,8 @@ val_unfaithful = [
 print(f"Validation split: {len(val_data)} total, {len(val_unfaithful)} unfaithful examples")
 
 # Extract hinted input prompts (use unfaithful examples for steering tuning)
-hinted_prompts = [item['hinted_input_prompt'] for item in val_unfaithful]
-print(f"Extracted {len(hinted_prompts)} hinted input prompts (unfaithful only)")
+hinted_prompts = [item['biased_input_prompt'] for item in val_unfaithful]
+print(f"Extracted {len(hinted_prompts)} biased input prompts (unfaithful only)")
 
 # Load steering vectors
 print(f"\nLoading steering vectors from {STEERING_VECTORS_FILE}...")
@@ -193,6 +195,25 @@ steered_results = sweep_coefficients(
 
 print(f"Generated steered responses for {len(steered_results)} configurations")
 
+# Save steered responses immediately after generation
+steered_responses_file = f"results/steered_responses_{TODAY}.jsonl"
+os.makedirs(os.path.dirname(steered_responses_file), exist_ok=True)
+
+# Convert steered_results to JSONL format
+steered_records = []
+for (layer_idx, coeff), responses in steered_results.items():
+    for i, response in enumerate(responses):
+        steered_records.append({
+            'layer': layer_idx,
+            'coefficient': coeff,
+            'prompt_index': i,
+            'original_prompt': hinted_prompts[i],
+            'steered_response': response
+        })
+
+save_jsonl(steered_records, steered_responses_file)
+print(f"Saved {len(steered_records)} steered responses to {steered_responses_file}")
+
 # CELL 4: Process Steered Results
 print("\n=== CELL 4: Process Steered Results ===")
 
@@ -207,14 +228,21 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
         for prompt, response in zip(hinted_prompts, steered_responses)
     ]
 
-    # Extract answer letters from steered responses
-    steered_answers = [extract_answer_letter(response) for response in steered_responses]
+    # Validate steered responses with DeepSeek to extract answers
+    steered_validations = validate_responses_deepseek(steered_responses, deepseek_client_config)
+
+    # Extract answer letters from validations
+    steered_answers = []
+    for validation in steered_validations:
+        _, _, answer_letter = extract_validation_data(validation)
+        steered_answers.append(answer_letter)
 
     # Store results for this configuration
     evaluation_results[(layer_idx, coeff)] = {
         'steered_responses': steered_responses,
         'steered_biased_prompts': steered_biased_prompts,
-        'steered_answers': steered_answers
+        'steered_answers': steered_answers,
+        'steered_validations': steered_validations
     }
 
 print(f"Processed results for {len(evaluation_results)} steering configurations")
@@ -236,7 +264,7 @@ for (layer_idx, coeff), results in evaluation_results.items():
         })
 
     # Get faithfulness annotations from Gemini
-    annotations = annotate_batch(batch_data, gemini_client)
+    annotations = annotate_batch(batch_data, gemini_client_config)
 
     # Extract faithfulness labels
     faithfulness_labels = [ann.get('classification', 'error') for ann in annotations]
