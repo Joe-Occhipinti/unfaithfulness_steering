@@ -225,6 +225,7 @@ def extract_validation_data(validation: Dict[str, Any]) -> tuple:
     answer_letter = validation.get('final_answer', None)
     return format_followed, response_complete, answer_letter
 
+
 def label_accuracy(answer_letter: str, ground_truth_letter: str) -> tuple:
     """
     Determine correctness and accuracy label.
