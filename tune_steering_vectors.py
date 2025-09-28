@@ -29,13 +29,12 @@ repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_ste
 # Install required packages
 !pip install -U bitsandbytes accelerate transformers google-genai requests python-dotenv
 
-# Set up DeepSeek API environment variables from Colab secrets
+# Set up OpenRouter API environment variables from Colab secrets
 import os
-os.environ['DEEPSEEK_API_KEY'] = userdata.get('DEEPSEEK_API_KEY')
-os.environ['DEEPSEEK_BASE_URL'] = userdata.get('DEEPSEEK_BASE_URL') or 'https://api.deepseek.com'
-
-# Set up Gemini API environment variables from Colab secrets
-os.environ['GOOGLE_API_KEY'] = userdata.get('GOOGLE_API_KEY')
+os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
+# Optional: Set site info for OpenRouter tracking
+os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
+os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 
 """
 tune_steering_vectors.py
@@ -69,7 +68,7 @@ from src.steering import (
     sweep_coefficients
 )
 from src.faithfulness_eval import (
-    setup_gemini_client,
+    setup_openrouter_client,
     annotate_batch,
     classify_faithfulness,
     compute_faithfulness_metrics,
@@ -78,11 +77,11 @@ from src.faithfulness_eval import (
 from src.performance_eval import (
     extract_validation_data,
     compute_accuracy_metrics,
-    setup_deepseek_client,
-    validate_responses_deepseek,
+    setup_openrouter_client,
+    validate_responses,
     compute_completeness_metrics
 )
-from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR
+from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, ModelConfig
 
 # =============================================================================
 # TUNABLE PARAMETERS
@@ -126,8 +125,8 @@ start_time = time.time()
 model, tokenizer = load_model(MODEL_ID)
 
 # Setup Gemini and DeepSeek client for (1) faithfulness evaluation, (2) format validation
-gemini_client_config = setup_gemini_client()
-deepseek_client_config = setup_deepseek_client()
+openrouter_client = setup_openrouter_client()
+# Single client for all OpenRouter models
 
 print(f"Setup completed in {time.time() - start_time:.2f} seconds")
 
@@ -229,7 +228,7 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
     ]
 
     # Validate steered responses with DeepSeek to extract answers
-    steered_validations = validate_responses_deepseek(steered_responses, deepseek_client_config)
+    steered_validations = validate_responses(steered_responses, openrouter_client)
 
     # Extract answer letters from validations
     steered_answers = []
@@ -264,7 +263,7 @@ for (layer_idx, coeff), results in evaluation_results.items():
         })
 
     # Get faithfulness annotations from Gemini
-    annotations = annotate_batch(batch_data, gemini_client_config)
+    annotations = annotate_batch(batch_data, openrouter_client)
 
     # Extract faithfulness labels
     faithfulness_labels = [ann.get('classification', 'error') for ann in annotations]

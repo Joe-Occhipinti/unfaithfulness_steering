@@ -29,10 +29,12 @@ repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_ste
 # Install required packages
 !pip install -U bitsandbytes accelerate transformers google-genai requests python-dotenv
 
-# Set up DeepSeek API environment variables from Colab secrets
+# Set up OpenRouter API environment variables from Colab secrets
 import os
-os.environ['DEEPSEEK_API_KEY'] = userdata.get('DEEPSEEK_API_KEY')
-os.environ['DEEPSEEK_BASE_URL'] = userdata.get('DEEPSEEK_BASE_URL') or 'https://api.deepseek.com'
+os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
+# Optional: Set site info for OpenRouter tracking
+os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
+os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 
 """
 hinted_eval.py
@@ -55,15 +57,15 @@ from typing import Dict, Any, List
 from src.data import load_jsonl, save_jsonl
 from src.model import load_model, batch_generate
 from src.performance_eval import (
-    setup_deepseek_client, validate_responses_deepseek,
+    setup_openrouter_client, validate_responses,
     compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy, compute_bias_metrics
 )
 from src.faithfulness_eval import (
-    setup_gemini_client, annotate_batch,
+    setup_openrouter_client as setup_gemini_client, annotate_batch,
     compute_faithfulness_metrics, print_faithfulness_report
 )
-from src.config import HintedConfig, BaselineConfig, TODAY, ANNOTATED_DIR
+from src.config import HintedConfig, BaselineConfig, TODAY, ANNOTATED_DIR, ModelConfig
 from src.prompts import create_hinted_prompts
 from src.plots import plot_accuracy_comparison, plot_faithfulness_distribution
 
@@ -97,7 +99,7 @@ start_time = time.time()
 model, tokenizer = load_model(MODEL_ID)
 
 # Setup Gemini validation (reusable)
-deepseek_client = setup_deepseek_client()
+openrouter_client = setup_openrouter_client()
 
 # CELL 2: Data Loading and Hinted Prompt Creation
 print("\n=== CELL 2: Data Loading and Hinted Prompt Creation ===")
@@ -132,7 +134,7 @@ all_answers = batch_generate(
 print("\n=== CELL 4: Validation with DeepSeek ===")
 
 # Validate responses with DeepSeek
-validations = validate_responses_deepseek(all_answers, deepseek_client)
+validations = validate_responses(all_answers, openrouter_client)
 
 # CELL 5: Processing Results
 print("\n=== CELL 5: Processing Results ===")
@@ -171,10 +173,10 @@ for i, (baseline_item, hinted_prompt, generated_answer, validation, hint_info) i
         'baseline_answer_letter': baseline_item['answer_letter'],  # Original correct answer
         'ground_truth_letter': baseline_item['ground_truth_letter'],
 
-        # Biased prompts and generation (README requirement)
-        'biased_input_prompt': hinted_prompt,
-        'biased_generated_text': generated_answer,
-        'biased_prompt': hinted_prompt + generated_answer,
+        # Hinted prompts and generation (README requirement)
+        'hinted_input_prompt': hinted_prompt,
+        'hinted_generated_text': generated_answer,
+        'hinted_prompt': hinted_prompt + generated_answer,
 
         # Hint information (what hint was given)
         'hint_letter': hint_info['hint_letter'],
@@ -266,7 +268,7 @@ hinted_results = load_jsonl(HintedConfig.OUTPUT_FILE)
 print(f"Loaded {len(hinted_results)} hinted evaluation results")
 
 # Setup Gemini client for annotation
-gemini_client = setup_gemini_client()
+gemini_client = setup_openrouter_client()
 
 # Filter for biased results only (where model followed the hint)
 biased_results = [r for r in hinted_results if r['bias_label'] == 'biased']
@@ -279,8 +281,7 @@ if len(biased_results) > 0:
     # Use tunable delay parameter (12s for free tier, can be reduced for paid tier)
     annotations = annotate_batch(
         results=biased_results,
-        client_config=gemini_client,
-        min_delay=12.0,
+        client=gemini_client,
         max_retries=3
     )
 
@@ -289,7 +290,7 @@ if len(biased_results) > 0:
     for result, annotation in zip(biased_results, annotations):
         # Create a copy of the result with annotation fields
         annotated_result = result.copy()
-        annotated_result['annotated_biased_prompt'] = annotation.get('annotated_text')
+        annotated_result['annotated_hinted_prompt'] = annotation.get('annotated_text')
         annotated_result['faithfulness_classification'] = annotation.get('classification')
         annotated_results.append(annotated_result)
 

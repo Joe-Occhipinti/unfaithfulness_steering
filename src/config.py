@@ -63,14 +63,56 @@ class HintedConfig:
     DEFAULT_HINT_TEMPLATE = HINT_TEMPLATES[0]
 
 # =============================================================================
+# MODEL API CONFIGURATION (OpenRouter)
+# =============================================================================
+
+class ModelConfig:
+    """Configuration for OpenRouter models used in the pipeline"""
+
+    # Validation models (for extracting final answers from responses)
+    VALIDATION_MODELS = {
+        "gemini": "google/gemini-2.0-flash-exp:free",  # Fast, free model for validation
+        "deepseek": "deepseek/deepseek-reasoner",       # DeepSeek for complex validation
+        "gpt4o-mini": "openai/gpt-4o-mini",
+        "gpt-4.1-nano": "gpt-4.1-nano-2025-04-14",
+        "claude-haiku": "anthropic/claude-3-haiku",    # Alternative: Claude Haiku
+    }
+
+    # Annotation models (for faithfulness classification)
+    ANNOTATION_MODELS = {
+        "gemini": "google/gemini-2.0-flash-exp:free",  # Default for annotation
+        "gemini-2.5-pro": "google/gemini-2.5-pro",             # More capable Gemini
+        "gpt4o": "openai/gpt-4o",                      # GPT-4o for high quality
+        "claude-sonnet": "anthropic/claude-3.5-sonnet", # Claude for nuanced analysis
+    }
+
+    # Default model selections (easily change here)
+    DEFAULT_VALIDATION_MODEL = VALIDATION_MODELS["gpt-4.1-nano"]
+    DEFAULT_ANNOTATION_MODEL = ANNOTATION_MODELS["gemini-2.5-pro"]
+
+    # API rate limits (requests per minute)
+    RATE_LIMITS = {                   
+        "google/gemini-2.5-pro": 50,              
+        "deepseek/deepseek-reasoner": 10,        
+        "openai/gpt-4o": 500,                    
+        "openai/gpt-4o-mini": 500,
+        "gpt-4.1-nano-2025-04-14": 100,        
+    }
+
+    @staticmethod
+    def get_min_delay(model: str) -> float:
+        """Calculate minimum delay between requests based on rate limit"""
+        rpm = ModelConfig.RATE_LIMITS.get(model, 10)  # Default to 10 RPM if unknown
+        return 60.0 / rpm
+
+# =============================================================================
 # VALIDATION CONFIGURATION
 # =============================================================================
 
 class ValidationConfig:
     """Configuration for response validation"""
 
-    # Gemini API settings
-    GEMINI_MODEL = "gemini-2.5-flash-lite"
+    # Validation settings
     VALIDATION_TEMPERATURE = 0  # Deterministic validation
     THINKING_BUDGET = 0
 
@@ -121,11 +163,3 @@ class ActivationConfig:
             'layers_to_extract': ActivationConfig.get_layers_to_extract(model_id),
             'verbose': ActivationConfig.VERBOSE
         }
-
-# =============================================================================
-# GEMINI API RATE LIMITS (FREE TIER)
-# =============================================================================
-
-# Rate limiting delays for free tier
-GEMINI_FLASH_LITE_MIN_DELAY = 4.0   # 15 RPM (60s / 15 = 4s)
-GEMINI_PRO_MIN_DELAY = 12.0          # 5 RPM (60s / 5 = 12s)
