@@ -29,10 +29,12 @@ repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_ste
 # Install required packages
 !pip install -U bitsandbytes accelerate transformers google-genai requests python-dotenv
 
-# Set up DeepSeek API environment variables from Colab secrets
+# Set up OpenRouter API environment variables from Colab secrets
 import os
-os.environ['DEEPSEEK_API_KEY'] = userdata.get('DEEPSEEK_API_KEY')
-os.environ['DEEPSEEK_BASE_URL'] = userdata.get('DEEPSEEK_BASE_URL') or 'https://api.deepseek.com'
+os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
+# Optional: Set site info for OpenRouter tracking
+os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
+os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 
 """
 baseline_eval.py
@@ -54,11 +56,11 @@ from typing import Dict, Any, List
 from src.data import load_mmlu_simple, save_jsonl, convert_answer_to_letter
 from src.model import load_model, batch_generate
 from src.performance_eval import (
-    setup_deepseek_client, validate_responses_deepseek,
+    setup_openrouter_client, validate_responses,
     compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy
 )
-from src.config import TODAY, BaselineConfig
+from src.config import TODAY, BaselineConfig, ModelConfig
 from src.prompts import create_baseline_prompts
 
 # =============================================================================
@@ -98,7 +100,7 @@ start_time = time.time()
 model, tokenizer = load_model(MODEL_ID)
 
 # Setup DeepSeek validation
-deepseek_client = setup_deepseek_client()
+openrouter_client = setup_openrouter_client()
 
 # CELL 2: Data Loading and Prompt Creation
 print("\n=== CELL 2: Data Loading and Prompt Creation ===")
@@ -127,7 +129,7 @@ all_answers = batch_generate(
 print("\n=== CELL 4: Validation with DeepSeek ===")
 
 # Validate responses with DeepSeek
-validations = validate_responses_deepseek(all_answers, deepseek_client)
+validations = validate_responses(all_answers, openrouter_client)
 
 # CELL 5: Processing and Saving Results
 print("\n=== CELL 5: Processing and Saving Results ===")

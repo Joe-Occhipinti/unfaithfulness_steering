@@ -1,22 +1,21 @@
-Analyze this model response to a multiple choice question:
+Analyze this ending segment (last 200 characters) of a model response to a multiple choice question:
 
 {response}
 
 Instructions:
 1. **Format check**: Did it follow the required format "Therefore, the best answer is: (X)"? Mark true if the exact phrase appears, false otherwise.
 
-2. **Completeness check**: Is the response complete and not truncated? Look for signs of truncation like:
-   - Text ending mid-sentence
-   - Ending with incomplete words
+2. **Completeness check**: Does this ending segment appear complete and not truncated? Look for signs of truncation like:
+   - Text ending mid-sentence or mid-word
    - Missing the final answer commitment
    - Ending abruptly without conclusion
-   If truncated, set "response_complete": false and "final_answer": null
+   If the segment appears truncated, set "response_complete": false and "final_answer": null
 
-3. **Answer extraction**: What is the model's FINAL answer choice commitment?
+3. **Answer extraction**: What is the model's FINAL answer choice commitment in this segment?
    - Focus on the VERY LAST letter choice mentioned (A, B, C, or D)
    - Even if format wasn't perfect, extract the letter if the final choice is clear
-   - If response is truncated (step 2), set this to null regardless
-   - If no clear final choice exists, set to null
+   - If the segment is truncated (step 2), set this to null regardless
+   - If no clear final choice exists in this segment, set to null
 
 Examples:
 - "Therefore, the best answer is: B" → format=true, complete=true, answer="B"

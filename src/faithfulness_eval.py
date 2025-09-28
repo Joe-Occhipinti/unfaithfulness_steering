@@ -12,8 +12,14 @@ import re
 import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-import requests
+from openai import OpenAI
 from tqdm import tqdm
+
+# Import model configuration from config
+try:
+    from .config import ModelConfig
+except ImportError:
+    from config import ModelConfig
 
 
 def load_annotation_prompt() -> str:
@@ -30,32 +36,35 @@ def load_annotation_prompt() -> str:
     except FileNotFoundError:
         raise FileNotFoundError(f"Annotation prompt not found at {prompt_path}")
 
-def setup_gemini_client(api_key: Optional[str] = None) -> Dict[str, Any]:
+def setup_openrouter_client(api_key: Optional[str] = None) -> OpenAI:
     """
-    Setup Gemini client configuration for annotation (legacy approach).
+    Setup OpenRouter client for all model interactions.
 
     Args:
         api_key: Optional API key, otherwise uses environment variable
 
     Returns:
-        Dictionary with Gemini API configuration
+        Configured OpenAI client for OpenRouter
     """
-    api_key = api_key or os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY environment variable must be set")
+        raise ValueError("OPENROUTER_API_KEY environment variable must be set")
 
-    return {
-        "api_key": api_key,
-        "base_url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
-        "headers": {"Content-Type": "application/json"}
-    }
+    return OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+
+# Backward compatibility alias (can be removed later)
+setup_gemini_client = setup_openrouter_client
 
 def annotate_single_prompt(
     biased_prompt: str,
     correct_answer: str,
     hinted_answer: str,
-    client_config: Dict[str, Any],
+    client: OpenAI,
     system_prompt: str,
+    model: str = None,
     max_retries: int = 3
 ) -> Dict[str, Any]:
     """
@@ -65,8 +74,9 @@ def annotate_single_prompt(
         biased_prompt: The full biased prompt to annotate
         correct_answer: The correct answer letter
         hinted_answer: The hinted answer letter
-        client_config: Gemini client configuration
+        client: OpenAI client configured for OpenRouter
         system_prompt: Annotation system prompt
+        model: Optional model to use, defaults to config
         max_retries: Number of retry attempts
 
     Returns:
@@ -77,112 +87,59 @@ def annotate_single_prompt(
 Hinted Option: {hinted_answer}
 Text to Annotate: {biased_prompt}"""
 
-    # Gemini API request payload (matching legacy approach)
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": f"{system_prompt}\n\n{user_prompt}"}
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.0,
-            "maxOutputTokens": 8192,
-            "topK": 1,
-            "topP": 0.1
-        },
-        "safetySettings": [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-        ]
-    }
+    # Combine system and user prompt
+    full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
     # Retry logic for API calls
     for attempt in range(max_retries):
         try:
-            response = requests.post(
-                f"{client_config['base_url']}?key={client_config['api_key']}",
-                headers=client_config['headers'],
-                json=payload,
-                timeout=120
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": os.environ.get("SITE_URL", "https://github.com"),
+                    "X-Title": os.environ.get("SITE_NAME", "Faithfulness Steering")
+                },
+                model=model or ModelConfig.DEFAULT_ANNOTATION_MODEL,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": full_prompt
+                    }
+                ],
+                temperature=0.0,
+                max_tokens=8192,
+                top_p=0.1
             )
-            response.raise_for_status()
 
-            result = response.json()
+            annotated_text = completion.choices[0].message.content.strip()
 
-            # Extract content from Gemini response (matching legacy approach)
-            if 'candidates' in result and len(result['candidates']) > 0:
-                candidate = result['candidates'][0]
-                if 'content' in candidate and 'parts' in candidate['content']:
-                    annotated_text = candidate['content']['parts'][0]['text'].strip()
-
-                    # Calculate token usage (approximation)
-                    usage_metadata = result.get('usageMetadata', {})
-
-                    return {
-                        "annotated_text": annotated_text,
-                        "success": True,
-                        "api_usage": {
-                            "prompt_tokens": usage_metadata.get('promptTokenCount', 0),
-                            "completion_tokens": usage_metadata.get('candidatesTokenCount', 0),
-                            "total_tokens": usage_metadata.get('totalTokenCount', 0)
-                        }
-                    }
-
-            # Handle blocked or filtered responses
-            if 'candidates' in result:
-                candidate = result['candidates'][0]
-                if 'finishReason' in candidate:
-                    reason = candidate['finishReason']
-                    return {
-                        "annotated_text": None,
-                        "success": False,
-                        "error": f"Response blocked: {reason}"
-                    }
+            # Extract token usage
+            usage = completion.usage if hasattr(completion, 'usage') else None
 
             return {
-                "annotated_text": None,
-                "success": False,
-                "error": "No valid response from Gemini API"
+                "annotated_text": annotated_text,
+                "success": True,
+                "api_usage": {
+                    "prompt_tokens": usage.prompt_tokens if usage else 0,
+                    "completion_tokens": usage.completion_tokens if usage else 0,
+                    "total_tokens": usage.total_tokens if usage else 0
+                }
             }
 
-        except requests.exceptions.HTTPError as e:
-            if response.status_code == 429:  # Rate limit exceeded
+        except Exception as e:
+            error_msg = str(e)
+            if "429" in error_msg or "rate limit" in error_msg.lower():
                 print(f"Rate limit exceeded (attempt {attempt + 1}/{max_retries}). Waiting 60s...")
                 time.sleep(60)
             else:
-                print(f"HTTP error (attempt {attempt + 1}/{max_retries}): {e}")
+                print(f"API error (attempt {attempt + 1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)
+                    time.sleep(2 ** attempt)  # Exponential backoff
                 else:
                     return {
                         "annotated_text": None,
                         "success": False,
-                        "error": f"HTTP error: {e}"
+                        "error": str(e)
                     }
-        except requests.exceptions.RequestException as e:
-            print(f"API request failed (attempt {attempt + 1}/{max_retries}): {e}")
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)  # Exponential backoff
-            else:
-                return {
-                    "annotated_text": None,
-                    "success": False,
-                    "error": str(e)
-                }
-        except Exception as e:
-            print(f"Unexpected error (attempt {attempt + 1}/{max_retries}): {e}")
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)
-            else:
-                return {
-                    "annotated_text": None,
-                    "success": False,
-                    "error": str(e)
-                }
 
     return {
         "annotated_text": None,
@@ -255,8 +212,8 @@ def classify_faithfulness(annotated_text: str, model_answer: str, hint_letter: s
 
 def annotate_batch(
     results: List[Dict[str, Any]],
-    client_config: Dict[str, Any],
-    min_delay: float = 12.0,
+    client: OpenAI,
+    model: str = None,
     max_retries: int = 3
 ) -> List[Dict[str, Any]]:
     """
@@ -264,15 +221,18 @@ def annotate_batch(
 
     Args:
         results: List of result dictionaries with biased prompts
-        client_config: Gemini client configuration
-        min_delay: Minimum delay between API calls (seconds)
+        client: OpenAI client configured for OpenRouter
+        model: Optional model to use, defaults to config
         max_retries: Maximum retry attempts per annotation
 
     Returns:
         List of annotation results
     """
-    print(f"\n--- Annotating {len(results)} prompts for faithfulness ---")
-    print(f"Rate limit: {min_delay}s between requests")
+    model = model or ModelConfig.DEFAULT_ANNOTATION_MODEL
+    min_delay = ModelConfig.get_min_delay(model)
+
+    print(f"\n--- Annotating {len(results)} prompts for faithfulness with {model} ---")
+    print(f"Rate limit: {min_delay:.1f}s between requests")
     print(f"Estimated time: {len(results) * min_delay / 60:.1f} minutes")
 
     # Load system prompt once
@@ -291,11 +251,16 @@ def annotate_batch(
 
         request_start_time = time.time()
 
-        # Prepare biased prompt (biased input + generated text)
-        if 'biased_prompt' in result:
-            biased_prompt = result['biased_prompt']
+        # Prepare biased prompt (hinted input + generated text)
+        if 'hinted_prompt' in result:
+            biased_prompt = result['hinted_prompt']
+        elif 'biased_prompt' in result:
+            biased_prompt = result['biased_prompt']  # Backward compatibility
         else:
-            biased_prompt = result['biased_input_prompt'] + result['biased_generated_text']
+            # Try new field names first, fall back to old ones
+            input_prompt = result.get('hinted_input_prompt', result.get('biased_input_prompt', ''))
+            generated_text = result.get('hinted_generated_text', result.get('biased_generated_text', ''))
+            biased_prompt = input_prompt + generated_text
 
         # Get answers
         correct_answer = result.get('ground_truth_letter', result.get('correct_answer'))
@@ -307,8 +272,9 @@ def annotate_batch(
             biased_prompt=biased_prompt,
             correct_answer=correct_answer,
             hinted_answer=hint_letter,
-            client_config=client_config,
+            client=client,
             system_prompt=system_prompt,
+            model=model,
             max_retries=max_retries
         )
 
