@@ -13,7 +13,7 @@ from typing import Dict, Any, List, Optional
 from openai import OpenAI
 from tqdm import tqdm
 
-from .config import ModelConfig, GEMINI_FLASH_LITE_MIN_DELAY
+from .config import ModelConfig
 
 def load_validation_prompt() -> str:
     """
