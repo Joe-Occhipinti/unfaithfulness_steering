@@ -195,7 +195,7 @@ def evaluate_hinted_faithfulness():
 def evaluate_steered_faithfulness():
     """
     Evaluate faithfulness of steered evaluation results.
-    Loads steered evaluation results from tune_steering_vectors.py
+    Loads steered evaluation results from eval_steering.py (JSONL format)
     and annotates them to measure steering effectiveness.
     """
     print(f"=== STEERED FAITHFULNESS EVALUATION - {TODAY} ===")
@@ -203,31 +203,25 @@ def evaluate_steered_faithfulness():
     # Check if input file exists
     if not os.path.exists(STEERED_INPUT_FILE):
         print(f"Error: Steered results file not found: {STEERED_INPUT_FILE}")
-        print("Please run tune_steering_vectors.py first to generate the evaluation results.")
-        print("Make sure to save evaluation_results to a pickle file after CELL 4.")
+        print("Please run eval_steering.py first to generate the evaluation results.")
         return
 
     print(f"Loading steered evaluation results from: {STEERED_INPUT_FILE}")
 
-    # Load the evaluation results (should be a pickle file with the evaluation_results dict)
-    with open(STEERED_INPUT_FILE, 'rb') as f:
-        data = pickle.load(f)
+    # Load the JSONL file with steered results
+    steered_data = load_jsonl(STEERED_INPUT_FILE)
+    print(f"Loaded {len(steered_data)} steered records")
 
-    # Handle different possible formats
-    if isinstance(data, dict):
-        if 'evaluation_results' in data:
-            evaluation_results = data['evaluation_results']
-            val_unfaithful = data.get('val_unfaithful', [])
-        else:
-            # Assume the dict is the evaluation_results itself
-            evaluation_results = data
-            val_unfaithful = []
-            print("Warning: val_unfaithful data not found in pickle file")
-    else:
-        print(f"Error: Unexpected data format in {STEERED_INPUT_FILE}")
-        return
+    # Group records by steering configuration (layer, coefficient)
+    from collections import defaultdict
+    evaluation_results = defaultdict(list)
 
-    print(f"Loaded results for {len(evaluation_results)} steering configurations")
+    for record in steered_data:
+        layer = record['steering_layer']
+        coeff = record['steering_coefficient']
+        evaluation_results[(layer, coeff)].append(record)
+
+    print(f"Grouped into {len(evaluation_results)} steering configurations")
 
     # Setup OpenRouter client for annotation
     try:
@@ -240,43 +234,18 @@ def evaluate_steered_faithfulness():
     # Process each steering configuration
     print("\n=== FAITHFULNESS EVALUATION ===")
 
-    for (layer_idx, coeff), results in evaluation_results.items():
+    for (layer_idx, coeff), records in evaluation_results.items():
         print(f"\nEvaluating faithfulness: layer {layer_idx}, coeff {coeff:+.1f}")
-
-        # Check if already annotated
-        if 'faithfulness_labels' in results and results['faithfulness_labels']:
-            print(f"  Already annotated, skipping...")
-            continue
-
-        # Get steered prompts and answers
-        steered_prompts = results.get('steered_prompts', results.get('steered_biased_prompts', []))
-        steered_answers = results.get('steered_answers', [])
-
-        if not steered_prompts:
-            print(f"  Warning: No steered prompts found for this configuration")
-            continue
 
         # Prepare data for faithfulness annotation
         batch_data = []
-
-        # If we have val_unfaithful data, use it for ground truth
-        if val_unfaithful and len(val_unfaithful) == len(steered_prompts):
-            for i, (steered_prompt, orig_item) in enumerate(zip(steered_prompts, val_unfaithful)):
-                batch_data.append({
-                    'hinted_prompt': steered_prompt,  # Use hinted_prompt key for compatibility
-                    'ground_truth_letter': orig_item.get('ground_truth_letter'),
-                    'hint_letter': orig_item.get('hint_letter'),
-                    'hinted_answer_letter': steered_answers[i] if i < len(steered_answers) else None
-                })
-        else:
-            # Fallback: just annotate the steered prompts without ground truth
-            for i, steered_prompt in enumerate(steered_prompts):
-                batch_data.append({
-                    'hinted_prompt': steered_prompt,
-                    'ground_truth_letter': None,
-                    'hint_letter': None,
-                    'hinted_answer_letter': steered_answers[i] if i < len(steered_answers) else None
-                })
+        for record in records:
+            batch_data.append({
+                'hinted_prompt': record['steered_prompt'],  # Use hinted_prompt key for compatibility
+                'ground_truth_letter': record['ground_truth_letter'],
+                'hint_letter': record['hint_letter'],
+                'hinted_answer_letter': record['steered_answer_letter']
+            })
 
         # Get faithfulness annotations
         annotations = annotate_batch(
@@ -285,22 +254,62 @@ def evaluate_steered_faithfulness():
             max_retries=3
         )
 
-        # Extract faithfulness labels
-        faithfulness_labels = [ann.get('classification', 'error') for ann in annotations]
+        # Compute full faithfulness metrics (like hinted mode)
+        faithfulness_metrics = compute_faithfulness_metrics(annotations)
 
-        # Compute improvement metrics
-        original_faithful_count = 0  # All val_unfaithful were unfaithful
-        steered_faithful_count = sum(1 for label in faithfulness_labels if label == 'faithful')
-        improvement_rate = steered_faithful_count / len(faithfulness_labels) if faithfulness_labels else 0
+        # Compute improvement metrics (unfaithful → faithful conversion)
+        # Count transitions for improvement rate calculation
+        improved_count = 0
+        stayed_unfaithful_count = 0
 
-        # Update results with annotations
-        results['annotations'] = annotations
-        results['faithfulness_labels'] = faithfulness_labels
-        results['improvement_rate'] = improvement_rate
-        results['steered_faithful_count'] = steered_faithful_count
-        results['total_prompts'] = len(faithfulness_labels)
+        for i, record in enumerate(records):
+            # Get pre-steering classification
+            pre_class = record.get('original_faithfulness_classification', 'unfaithful')
+            # Get post-steering classification
+            post_class = annotations[i].get('classification', 'error')
 
-        print(f"  Improvement: {improvement_rate:.1%} ({steered_faithful_count}/{len(faithfulness_labels)} became faithful)")
+            # Check if improved (unfaithful → faithful/correct)
+            pre_unfaithful = pre_class not in ['faithful', 'correct']
+            post_faithful = post_class in ['faithful', 'correct']
+
+            if pre_unfaithful and post_faithful:
+                improved_count += 1
+            elif pre_unfaithful and not post_faithful:
+                stayed_unfaithful_count += 1
+
+        original_unfaithful_count = improved_count + stayed_unfaithful_count
+        steered_faithful_count = faithfulness_metrics['classifications']['faithful']
+        steered_correct_count = faithfulness_metrics['classifications']['correct']
+        steered_unfaithful_count = faithfulness_metrics['classifications']['unfaithful']
+
+        # Improvement rate: how many originally unfaithful became faithful
+        improvement_rate = improved_count / original_unfaithful_count if original_unfaithful_count > 0 else 0
+
+        # Persistence rate: how many stayed unfaithful
+        persistence_rate = stayed_unfaithful_count / original_unfaithful_count if original_unfaithful_count > 0 else 0
+
+        # Store results for this configuration
+        evaluation_results[(layer_idx, coeff)] = {
+            'records': records,
+            'annotations': annotations,
+            'faithfulness_metrics': faithfulness_metrics,
+            'improvement_metrics': {
+                'original_unfaithful_count': original_unfaithful_count,
+                'steered_faithful_count': steered_faithful_count,
+                'steered_correct_count': steered_correct_count,
+                'steered_unfaithful_count': steered_unfaithful_count,
+                'improvement_rate': improvement_rate,
+                'persistence_rate': persistence_rate
+            }
+        }
+
+        print(f"  Faithfulness distribution:")
+        print(f"    Correct: {faithfulness_metrics['classifications']['correct']} ({faithfulness_metrics['correct_rate']:.1%})")
+        print(f"    Faithful: {steered_faithful_count} ({faithfulness_metrics['faithful_rate']:.1%})")
+        print(f"    Unfaithful: {steered_unfaithful_count} ({faithfulness_metrics['unfaithful_rate']:.1%})")
+        print(f"    Hint-induced error: {faithfulness_metrics['classifications']['hint-induced error']} ({faithfulness_metrics['hint_induced_error_rate']:.1%})")
+        print(f"  Improvement: {improvement_rate:.1%} (originally unfaithful → faithful)")
+        print(f"  Persistence: {persistence_rate:.1%} (stayed unfaithful)")
 
     print(f"\nCompleted faithfulness evaluation for {len(evaluation_results)} configurations")
 
@@ -309,40 +318,119 @@ def evaluate_steered_faithfulness():
 
     sorted_configs = sorted(
         evaluation_results.items(),
-        key=lambda x: x[1].get('improvement_rate', 0),
+        key=lambda x: x[1]['improvement_metrics']['improvement_rate'],
         reverse=True
     )
 
     print("\nTop configurations by faithfulness improvement:")
     for (layer_idx, coeff), results in sorted_configs[:5]:
-        print(f"  Layer {layer_idx}, Coeff {coeff:+.1f}: {results.get('improvement_rate', 0):.1%}")
+        improvement = results['improvement_metrics']['improvement_rate']
+        print(f"  Layer {layer_idx}, Coeff {coeff:+.1f}: {improvement:.1%}")
 
     best_layer, best_coeff = sorted_configs[0][0]
     best_results = sorted_configs[0][1]
 
     print(f"\nBest configuration: Layer {best_layer}, Coefficient {best_coeff:+.1f}")
-    print(f"Improvement rate: {best_results.get('improvement_rate', 0):.1%}")
+    print(f"Improvement rate: {best_results['improvement_metrics']['improvement_rate']:.1%}")
 
-    # Save updated evaluation results with annotations
-    # Save to proper annotated directory
-    annotated_output_file = STEERED_OUTPUT_FILE
+    # Compute McNemar's test for the best configuration only
+    print(f"\n=== STATISTICAL SIGNIFICANCE TEST (Best Configuration Only) ===")
+    from scipy.stats import binom_test
 
-    save_data = {
-        'evaluation_results': evaluation_results,
-        'val_unfaithful': val_unfaithful,
-        'best_config': {
-            'layer': best_layer,
-            'coefficient': best_coeff,
-            'improvement_rate': best_results.get('improvement_rate', 0)
+    # Build contingency table for best configuration
+    a = 0  # stayed faithful (faithful → faithful)
+    b = 0  # degraded (faithful → unfaithful)
+    c = 0  # improved (unfaithful → faithful)
+    d = 0  # stayed unfaithful (unfaithful → unfaithful)
+
+    best_records = best_results['records']
+    best_annotations = best_results['annotations']
+
+    for i, record in enumerate(best_records):
+        # Get pre-steering classification
+        pre_class = record.get('original_faithfulness_classification', 'unfaithful')
+        # Get post-steering classification
+        post_class = best_annotations[i].get('classification', 'error')
+
+        # Binarize: faithful (includes 'correct' and 'faithful') vs unfaithful (includes 'unfaithful', 'hint-induced error', 'error')
+        pre_faithful = pre_class in ['faithful', 'correct']
+        post_faithful = post_class in ['faithful', 'correct']
+
+        if pre_faithful and post_faithful:
+            a += 1  # stayed faithful
+        elif pre_faithful and not post_faithful:
+            b += 1  # degraded
+        elif not pre_faithful and post_faithful:
+            c += 1  # improved
+        else:
+            d += 1  # stayed unfaithful
+
+    # Compute McNemar's test
+    # McNemar focuses on discordant pairs (b and c)
+    # Null hypothesis: P(b) = P(c) = 0.5 (no effect)
+    # Use exact binomial test for small samples
+    discordant_pairs = b + c
+    if discordant_pairs > 0:
+        # Two-tailed test: is the proportion of improvements (c) significantly different from 0.5?
+        mcnemar_p_value = binom_test(c, n=discordant_pairs, p=0.5, alternative='two-sided')
+    else:
+        # No discordant pairs = no change at all
+        mcnemar_p_value = 1.0
+
+    # Determine significance and direction
+    is_significant = mcnemar_p_value < 0.05
+    if is_significant:
+        if c > b:
+            effect_direction = "significant_improvement"
+        else:
+            effect_direction = "significant_degradation"
+    else:
+        effect_direction = "no_significant_effect"
+
+    # Store McNemar results in best_results
+    best_results['mcnemar_test'] = {
+        'contingency_table': {
+            'stayed_faithful': a,
+            'degraded': b,
+            'improved': c,
+            'stayed_unfaithful': d
         },
-        'evaluation_date': TODAY
+        'discordant_pairs': discordant_pairs,
+        'p_value': mcnemar_p_value,
+        'is_significant': is_significant,
+        'effect_direction': effect_direction
     }
 
-    with open(annotated_output_file, 'wb') as f:
-        pickle.dump(save_data, f)
-    print(f"\nSaved annotated evaluation results to {annotated_output_file}")
+    print(f"McNemar's Contingency Table:")
+    print(f"  Stayed faithful: {a}")
+    print(f"  Degraded (faithful → unfaithful): {b}")
+    print(f"  Improved (unfaithful → faithful): {c}")
+    print(f"  Stayed unfaithful: {d}")
+    print(f"\nMcNemar's Test Results:")
+    print(f"  Discordant pairs: {discordant_pairs}")
+    print(f"  p-value: {mcnemar_p_value:.4f}")
+    print(f"  Significance (α=0.05): {'Yes' if is_significant else 'No'}")
+    print(f"  Effect: {effect_direction}")
 
-    # Save summary in JSON format
+    # Save annotated results to JSONL (with faithfulness classifications added)
+    print("\n=== SAVING ANNOTATED RESULTS ===")
+    annotated_records = []
+
+    for (layer_idx, coeff), results in evaluation_results.items():
+        records = results['records']
+        annotations = results['annotations']
+
+        for i, (record, annotation) in enumerate(zip(records, annotations)):
+            # Add faithfulness annotation to record
+            annotated_record = record.copy()
+            annotated_record['annotated_steered_prompt'] = annotation.get('annotated_text')
+            annotated_record['steered_faithfulness_classification'] = annotation.get('classification')
+            annotated_records.append(annotated_record)
+
+    save_jsonl(annotated_records, STEERED_OUTPUT_FILE)
+    print(f"Saved {len(annotated_records)} annotated records to {STEERED_OUTPUT_FILE}")
+
+    # Save summary in JSON format with full metrics
     summary = {
         'evaluation_date': TODAY,
         'mode': 'steered',
@@ -351,19 +439,19 @@ def evaluate_steered_faithfulness():
         'best_configuration': {
             'layer': best_layer,
             'coefficient': best_coeff,
-            'improvement_rate': best_results.get('improvement_rate', 0),
-            'steered_faithful_count': best_results.get('steered_faithful_count', 0),
-            'total_prompts': best_results.get('total_prompts', 0)
+            'faithfulness_metrics': best_results['faithfulness_metrics'],
+            'improvement_metrics': best_results['improvement_metrics'],
+            'mcnemar_test': best_results['mcnemar_test']
         },
-        'top_5_configurations': [
-            {
-                'layer': layer_idx,
+        'all_configurations': {
+            f"layer_{layer}_coeff_{coeff:+.1f}": {
+                'layer': layer,
                 'coefficient': coeff,
-                'improvement_rate': results.get('improvement_rate', 0)
+                'faithfulness_metrics': results['faithfulness_metrics'],
+                'improvement_metrics': results['improvement_metrics']
             }
-            for (layer_idx, coeff), results in sorted_configs[:5]
-        ],
-        'annotated_output_file': annotated_output_file
+            for (layer, coeff), results in evaluation_results.items()
+        }
     }
 
     with open(STEERED_SUMMARY_FILE, 'w', encoding='utf-8') as f:
@@ -373,8 +461,59 @@ def evaluate_steered_faithfulness():
     print(f"\n=== STEERED FAITHFULNESS EVALUATION COMPLETE ===")
     print(f"+ Evaluated {len(evaluation_results)} steering configurations")
     print(f"+ Best configuration: Layer {best_layer}, Coeff {best_coeff:+.1f}")
-    print(f"+ Best improvement rate: {best_results.get('improvement_rate', 0):.1%}")
-    print(f"+ Saved annotated results to: {annotated_output_file}")
+    print(f"+ Best improvement rate: {best_results['improvement_metrics']['improvement_rate']:.1%}")
+    print(f"+ McNemar's test: p={best_results['mcnemar_test']['p_value']:.4f} ({best_results['mcnemar_test']['effect_direction']})")
+    print(f"+ Saved annotated results to: {STEERED_OUTPUT_FILE}")
+    print(f"+ Saved summary to: {STEERED_SUMMARY_FILE}")
+
+    # Generate plots
+    print("\n=== GENERATING PLOTS ===")
+
+    try:
+        from src.plots import plot_steering_tuning_results, plot_steered_faithfulness_comparison
+
+        # Get layers and coefficients from evaluation results
+        layers_tested = sorted(list(set(layer for layer, coeff in evaluation_results.keys())))
+        coefficients_tested = sorted(list(set(coeff for layer, coeff in evaluation_results.keys())))
+
+        # Plot 1: Improvement rates across all layer×coefficient configurations
+        improvement_plot_path = f"plots/steered_improvement_rates_{TODAY}.png"
+        os.makedirs("plots", exist_ok=True)
+
+        plot_steering_tuning_results(
+            evaluation_results=evaluation_results,
+            layers_to_test=layers_tested,
+            coefficients=coefficients_tested,
+            save_path=improvement_plot_path,
+            show_plot=False
+        )
+        print(f"+ Improvement rates plot saved to {improvement_plot_path}")
+
+        # Plot 2: Pre/post steering classification distribution for best configuration
+        # Get pre-steering distribution from original records (all originally unfaithful in this case)
+        best_records = best_results['records']
+        pre_steering_dist = {}
+        for record in best_records:
+            original_class = record.get('original_faithfulness_classification', 'unfaithful')
+            pre_steering_dist[original_class] = pre_steering_dist.get(original_class, 0) + 1
+
+        # Get post-steering distribution from faithfulness metrics
+        post_steering_dist = best_results['faithfulness_metrics']['classifications']
+
+        distribution_plot_path = f"plots/steered_distribution_best_config_{TODAY}.png"
+
+        plot_steered_faithfulness_comparison(
+            pre_steering_distribution=pre_steering_dist,
+            post_steering_distribution=post_steering_dist,
+            layer=best_layer,
+            coefficient=best_coeff,
+            save_path=distribution_plot_path,
+            show_plot=False
+        )
+        print(f"+ Best config distribution plot saved to {distribution_plot_path}")
+
+    except Exception as e:
+        print(f"Warning: Could not generate plots: {e}")
 
 
 def main():

@@ -90,3 +90,88 @@ def convert_answer_to_letter(answer_idx: int) -> str:
         Answer letter (A, B, C, D)
     """
     return ['A', 'B', 'C', 'D'][answer_idx]
+
+def split_data(
+    data: List[Dict[str, Any]],
+    train_ratio: float = 0.7,
+    val_ratio: float = 0.3,
+    test_ratio: float = 0.0,
+    seed: int = 42,
+    filter_field: str = None,
+    filter_value: Any = None
+) -> tuple[List[Dict[str, Any]], ...]:
+    """
+    Split data into train, validation, and optionally test sets with optional filtering.
+
+    General-purpose splitting function that works with any list of dictionaries.
+    Applies consistent randomization (seed 42 by default) and splitting strategy
+    used across the faithfulness steering pipeline.
+
+    Args:
+        data: List of dictionaries (typically loaded from JSONL)
+        train_ratio: Proportion of data for training (default: 0.7)
+        val_ratio: Proportion of data for validation (default: 0.3)
+        test_ratio: Proportion of data for test (default: 0.0)
+        seed: Random seed for reproducibility (default: 42)
+        filter_field: Optional field name to filter by (e.g., 'faithfulness_classification')
+        filter_value: Value to filter for (e.g., 'unfaithful')
+
+    Returns:
+        Tuple of (train_data, val_data) if test_ratio is 0
+        Tuple of (train_data, val_data, test_data) if test_ratio > 0
+
+    Example:
+        >>> # Basic train/val split (70/30)
+        >>> train, val = split_data(annotated_data)
+        >>>
+        >>> # Train/val/test split (70/15/15)
+        >>> train, val, test = split_data(annotated_data, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15)
+        >>>
+        >>> # Split and filter for unfaithful examples
+        >>> train, val = split_data(
+        ...     annotated_data,
+        ...     train_ratio=0.7,
+        ...     val_ratio=0.3,
+        ...     filter_field='faithfulness_classification',
+        ...     filter_value='unfaithful'
+        ... )
+    """
+    import random
+
+    # Validate ratios sum to 1.0 (with tolerance for floating point)
+    total_ratio = train_ratio + val_ratio + test_ratio
+    if not (0.99 <= total_ratio <= 1.01):
+        raise ValueError(f"Ratios must sum to 1.0, got {total_ratio}")
+
+    # Randomize with seed
+    random.seed(seed)
+    shuffled_indices = list(range(len(data)))
+    random.shuffle(shuffled_indices)
+
+    # Calculate split sizes
+    train_size = int(train_ratio * len(data))
+    val_size = int(val_ratio * len(data))
+    # test_size is whatever remains to avoid rounding issues
+
+    # Split indices
+    train_indices = shuffled_indices[:train_size]
+    val_indices = shuffled_indices[train_size:train_size + val_size]
+    test_indices = shuffled_indices[train_size + val_size:]
+
+    # Extract splits
+    train_data = [data[i] for i in train_indices]
+    val_data = [data[i] for i in val_indices]
+    test_data = [data[i] for i in test_indices] if test_ratio > 0 else []
+
+    # Apply optional filtering
+    if filter_field is not None and filter_value is not None:
+        train_data = [item for item in train_data if item.get(filter_field) == filter_value]
+        val_data = [item for item in val_data if item.get(filter_field) == filter_value]
+        if test_ratio > 0:
+            test_data = [item for item in test_data if item.get(filter_field) == filter_value]
+
+    # Return appropriate tuple based on whether test split exists
+    if test_ratio > 0:
+        return train_data, val_data, test_data
+    else:
+        return train_data, val_data

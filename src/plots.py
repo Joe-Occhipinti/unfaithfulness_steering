@@ -778,6 +778,246 @@ def plot_faithfulness_distribution(
         plt.close()
 
 
+def plot_steering_tuning_results(
+    evaluation_results: Dict[Tuple[int, float], Dict[str, Any]],
+    layers_to_test: List[int],
+    coefficients: List[float],
+    save_path: Optional[str] = None,
+    show_plot: bool = True,
+    title_suffix: str = ""
+) -> None:
+    """
+    Plot steering tuning results showing faithfulness improvement across layers and coefficients.
+
+    Creates dual subplots comparing positive vs negative coefficient effects on faithfulness
+    improvement rate across different model layers.
+
+    Args:
+        evaluation_results: Dict mapping (layer, coeff) tuples to result dicts with 'improvement_rate'
+        layers_to_test: List of layer indices that were tested
+        coefficients: List of coefficient values that were tested
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+        title_suffix: Optional suffix to add to the plot title (e.g., dataset name)
+
+    Returns:
+        None
+
+    Example:
+        >>> evaluation_results = {
+        ...     (15, 0.75): {'improvement_rate': 0.45, ...},
+        ...     (15, -0.75): {'improvement_rate': 0.12, ...},
+        ...     (25, 5.0): {'improvement_rate': 0.78, ...},
+        ... }
+        >>> plot_steering_tuning_results(
+        ...     evaluation_results,
+        ...     layers_to_test=[15, 25],
+        ...     coefficients=[0.75, -0.75, 5, -5],
+        ...     save_path='plots/steering_tuning.png'
+        ... )
+    """
+    setup_plot_style()
+
+    # Separate positive and negative coefficients
+    pos_coeffs = sorted([c for c in coefficients if c > 0])
+    neg_coeffs = sorted([c for c in coefficients if c < 0])
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+    # Plot positive coefficients
+    if pos_coeffs:
+        for coeff in pos_coeffs:
+            improvement_rates = []
+            for layer in layers_to_test:
+                if (layer, coeff) in evaluation_results:
+                    # Handle both old and new structure
+                    result = evaluation_results[(layer, coeff)]
+                    if 'improvement_metrics' in result:
+                        improvement_rates.append(result['improvement_metrics']['improvement_rate'])
+                    else:
+                        improvement_rates.append(result.get('improvement_rate', 0))
+                else:
+                    improvement_rates.append(0)
+            ax1.plot(layers_to_test, improvement_rates, marker='o', label=f'Coeff +{coeff:.1f}', linewidth=2, markersize=6)
+
+        ax1.set_xlabel('Layer', fontsize=12)
+        ax1.set_ylabel('Improvement Rate', fontsize=12)
+        ax1.set_title('Faithfulness Improvement vs Layer (Positive Coefficients)', fontsize=13)
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        ax1.set_ylim(0, 1)
+
+    # Plot negative coefficients
+    if neg_coeffs:
+        for coeff in neg_coeffs:
+            improvement_rates = []
+            for layer in layers_to_test:
+                if (layer, coeff) in evaluation_results:
+                    # Handle both old and new structure
+                    result = evaluation_results[(layer, coeff)]
+                    if 'improvement_metrics' in result:
+                        improvement_rates.append(result['improvement_metrics']['improvement_rate'])
+                    else:
+                        improvement_rates.append(result.get('improvement_rate', 0))
+                else:
+                    improvement_rates.append(0)
+            ax2.plot(layers_to_test, improvement_rates, marker='o', label=f'Coeff {coeff:.1f}', linewidth=2, markersize=6)
+
+        ax2.set_xlabel('Layer', fontsize=12)
+        ax2.set_ylabel('Improvement Rate', fontsize=12)
+        ax2.set_title('Faithfulness Improvement vs Layer (Negative Coefficients)', fontsize=13)
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+        ax2.set_ylim(0, 1)
+
+    # Add main title
+    main_title = 'Steering Tuning Results - Faithfulness Improvement by Layer and Coefficient'
+    if title_suffix:
+        main_title += f'\n{title_suffix}'
+    plt.suptitle(main_title, fontsize=14)
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"Steering tuning plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
+def plot_steered_faithfulness_comparison(
+    pre_steering_distribution: Dict[str, int],
+    post_steering_distribution: Dict[str, int],
+    layer: int,
+    coefficient: float,
+    save_path: Optional[str] = None,
+    show_plot: bool = True,
+    title_suffix: str = ""
+) -> None:
+    """
+    Plot comparison of faithfulness classification distributions before and after steering.
+
+    Shows side-by-side bar charts comparing the relative frequencies of each faithfulness
+    classification (correct, faithful, unfaithful, hint-induced error) before and after
+    applying steering vectors.
+
+    Args:
+        pre_steering_distribution: Dict mapping classification labels to counts before steering
+        post_steering_distribution: Dict mapping classification labels to counts after steering
+        layer: Layer index used for steering
+        coefficient: Steering coefficient used
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+        title_suffix: Optional suffix for plot title
+
+    Example:
+        >>> pre_dist = {'unfaithful': 100, 'faithful': 0, 'correct': 0, 'hint-induced error': 0}
+        >>> post_dist = {'unfaithful': 50, 'faithful': 30, 'correct': 15, 'hint-induced error': 5}
+        >>> plot_steered_faithfulness_comparison(pre_dist, post_dist, layer=15, coefficient=5.0)
+    """
+    setup_plot_style()
+
+    # Define classification order and colors
+    label_order = ['correct', 'faithful', 'unfaithful', 'hint-induced error', 'error']
+    label_colors = {
+        'correct': '#2E86AB',           # Blue - correct answer
+        'faithful': '#A23B72',          # Purple - faithful reasoning
+        'unfaithful': '#F18F01',        # Orange - unfaithful reasoning
+        'hint-induced error': '#C73E1D', # Red - confused by hint
+        'error': '#888888'              # Gray - annotation errors
+    }
+
+    # Calculate totals
+    total_pre = sum(pre_steering_distribution.values())
+    total_post = sum(post_steering_distribution.values())
+
+    # Calculate percentages for each label
+    pre_percentages = []
+    post_percentages = []
+    existing_labels = []
+
+    for label in label_order:
+        pre_count = pre_steering_distribution.get(label, 0)
+        post_count = post_steering_distribution.get(label, 0)
+
+        # Only include labels that appear in at least one distribution
+        if pre_count > 0 or post_count > 0:
+            existing_labels.append(label)
+            pre_percentages.append((pre_count / total_pre * 100) if total_pre > 0 else 0)
+            post_percentages.append((post_count / total_post * 100) if total_post > 0 else 0)
+
+    # Create the plot with two subplots side by side
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+
+    x = np.arange(len(existing_labels))
+    width = 0.6
+
+    # Pre-steering distribution (left subplot)
+    colors_pre = [label_colors[label] for label in existing_labels]
+    bars1 = ax1.bar(x, pre_percentages, width, color=colors_pre, alpha=0.8, edgecolor='black', linewidth=0.8)
+
+    ax1.set_ylabel('Percentage (%)', fontsize=12, fontweight='bold')
+    ax1.set_xlabel('Faithfulness Classification', fontsize=12, fontweight='bold')
+    ax1.set_title(f'Pre-Steering Distribution\nTotal: {total_pre}',
+                  fontsize=13, fontweight='bold', pad=15)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(existing_labels, rotation=45, ha='right')
+    ax1.set_ylim(0, 105)
+    ax1.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Add percentage labels on bars
+    for bar, percentage, label in zip(bars1, pre_percentages, existing_labels):
+        height = bar.get_height()
+        count = pre_steering_distribution.get(label, 0)
+        ax1.text(bar.get_x() + bar.get_width()/2, height + 2,
+                f'{percentage:.1f}%\n({count})',
+                ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+    # Post-steering distribution (right subplot)
+    colors_post = [label_colors[label] for label in existing_labels]
+    bars2 = ax2.bar(x, post_percentages, width, color=colors_post, alpha=0.8, edgecolor='black', linewidth=0.8)
+
+    ax2.set_ylabel('Percentage (%)', fontsize=12, fontweight='bold')
+    ax2.set_xlabel('Faithfulness Classification', fontsize=12, fontweight='bold')
+    ax2.set_title(f'Post-Steering Distribution\nLayer {layer}, Coefficient {coefficient:+.1f}\nTotal: {total_post}',
+                  fontsize=13, fontweight='bold', pad=15)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(existing_labels, rotation=45, ha='right')
+    ax2.set_ylim(0, 105)
+    ax2.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Add percentage labels on bars
+    for bar, percentage, label in zip(bars2, post_percentages, existing_labels):
+        height = bar.get_height()
+        count = post_steering_distribution.get(label, 0)
+        ax2.text(bar.get_x() + bar.get_width()/2, height + 2,
+                f'{percentage:.1f}%\n({count})',
+                ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+    # Overall title
+    title = f'Steering Effect on Faithfulness Distribution{title_suffix}'
+    fig.suptitle(title, fontsize=15, fontweight='bold', y=0.98)
+
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Steered faithfulness comparison plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
 # Utility function for quick plotting from command line
 if __name__ == "__main__":
     import sys
