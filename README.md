@@ -125,3 +125,54 @@ plots
 6. tune_steering_vectors.py, 
 
 
+# Ideal repository structure of I/O
+
+  unfaithfulness_steering/
+  ├── data/
+  │   ├── behavioural/
+  │   │      ├── baseline_psychology_business_ethics_2025-09-29.jsonl      
+  │   │      ├── hinted_psychology_business_ethics_2025-09-29.jsonl        
+  │   │      ├── steered_val_psychology_business_ethics_2025-09-29.jsonl
+  │   │      └── steered_test_psychology_business_ethics_2025-09-29.jsonl
+  │   ├── annotated/
+  │   │      ├── annotated_biased_psychology_business_ethics_2025-09-29.jsonl
+  │   │      └── annotated_steered_psychology_business_ethics_2025-09-29.jsonl
+  │   ├── activations/
+  │   │      └── annotated_biased_psychology_business_ethics_2025-09-29/
+  │   │                 ├── prompt_0_activations.pt
+  │   │                 └── prompt_1_activations.pt # many other .pt files              
+  │   ├── datasets/
+  │   │       ├── activations_annotated_biased_psychology_business_ethics_2025-09-29.pkl     
+  │   ├── steering vectors/
+  │   │        ├── steering_vectors_F_vs_U_psychology_business_ethics_2025-09-29.pkl   
+  │   ├── separability/
+  │   │        └── separability_F_vs_U_psychology_business_ethics_2025-09-29/    
+  │   │                ├── probe_results_2025-09-29.json
+  │   │                ├── cosine_similarities_2025-09-29.json
+  │   │                ├── mean_differences_2025-09-29.json
+  │   │                ├── pca_analysis_2025-09-29.json
+  │   │                └── probe_classifiers_2025-09-29.pkl
+  │   └── summaries/
+  │		       ├── baseline_summary_psychology_business_ethics_2025-09-29.json
+  │		       ├── hinted_summary_psychology_business_ethics_2025-09-29.json
+  │            ├── extraction_summary_psychology_business_ethics_2025-09-29.json
+  │            ├── steering_vectors_summary_2025-09-29.json
+  │            ├── tuning_steering_results_2025-09-30.json
+    │          ├── faithfulness_hinted_subsets_summary_2025-09-30.json
+  │            ├── faithfulness_steered_val_subsets_ummary_2025-09-30.json
+               ├── faithfulness_steered_test_subsets_summary_2025-09-30.json
+  │            └── separability_results_2025-09-29.json 
+  ├── plots/
+      ├── separability_F_vs_U_psychology_business_ethics_2025-09-29/    
+      │   ├── cosine_similarity_2025-09-29.png
+  │   │   ├── linear_probe_performance_2025-09-29.png
+  │   │   ├── mean_differences_2025-09-29.png
+  │   │   ├── pca_explained_variance_2025-09-29.png
+  │   │   ├── pca_separability_2025-09-29.png
+  │   │   └── separability_summary_2025-09-29.png
+  │   ├── steering_F_vs_U_psychology_business_ethics_2025-09-30/        
+  │   │   └── steering_effectiveness_2025-09-30.png
+  │   └── pipeline_psychology_business_ethics_2025-09-30/
+  │       ├── accuracy_comparison_2025-09-30.png
+  │       ├── faithfulness_distribution_2025-09-30.png
+          └── pipeline_summary_2025-09-30.png

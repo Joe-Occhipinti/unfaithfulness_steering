@@ -84,6 +84,16 @@ from src.performance_eval import (
 from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, ModelConfig
 
 # =============================================================================
+# I/O CONFIGURATION (manually specify all paths)
+# =============================================================================
+
+# Input and output files - manually specify the exact paths and dates
+INPUT_PROMPTS_FILE = "data/annotated/annotated_biased_psychology_business_ethics_2025-09-29.jsonl"
+INPUT_VECTORS_FILE = "data/steering vectors/steering_vectors_F_vs_U_psychology_business_ethics_2025-09-29.pkl"
+OUTPUT_FILE = "data/behavioural/steered_val_psychology_business_ethics_2025-09-29.jsonl"
+SUMMARY_FILE = "data/summaries/tuning_steering_results_2025-09-30.json"
+
+# =============================================================================
 # TUNABLE PARAMETERS
 # =============================================================================
 
@@ -93,22 +103,14 @@ BATCH_SIZE = 10  # Batch size for generation
 MAX_NEW_TOKENS = 2048
 MAX_INPUT_LENGTH = 1024
 
-# Input files
-ANNOTATED_BIASED_FILE = f"{ANNOTATED_DIR}/annotated_hinted_2025-09-24.jsonl"  # Update with actual date
-STEERING_VECTORS_FILE = "results/steering_vectors_2025-09-24/F_vs_U/steering_vectors_2025-09-24.pkl"  # Update with actual steering vector file
-
 # Steering sweep configuration
 LAYERS_TO_TEST = [15, 25]  # Middle-to-late layers typically work best
 COEFFICIENTS = [0.75, -0.75, 5, -5]  # Positive and negative coefficients
 
-# Output configuration
-OUTPUT_FILE = f"{BEHAVIOURAL_DIR}/steered_val_{TODAY}.jsonl"
-SUMMARY_FILE = f"{SUMMARIES_DIR}/steered_val_summary_{TODAY}.json"
-
-print(f"=== TUNE STEERING VECTORS - {TODAY} ===")
+print(f"=== TUNE STEERING VECTORS ===")
 print(f"Model: {MODEL_ID}")
-print(f"Input: {ANNOTATED_BIASED_FILE}")
-print(f"Steering Vectors: {STEERING_VECTORS_FILE}")
+print(f"Input: {INPUT_PROMPTS_FILE}")
+print(f"Steering Vectors: {INPUT_VECTORS_FILE}")
 print(f"Layers to test: {LAYERS_TO_TEST}")
 print(f"Coefficients: {COEFFICIENTS}")
 print(f"Output: {OUTPUT_FILE}")
@@ -134,8 +136,8 @@ print(f"Setup completed in {time.time() - start_time:.2f} seconds")
 print("\n=== CELL 2: Load Data and Steering Vectors ===")
 
 # Load annotated biased prompts
-print(f"Loading annotated data from {ANNOTATED_BIASED_FILE}...")
-annotated_data = load_jsonl(ANNOTATED_BIASED_FILE)
+print(f"Loading annotated data from {INPUT_PROMPTS_FILE}...")
+annotated_data = load_jsonl(INPUT_PROMPTS_FILE)
 print(f"Loaded {len(annotated_data)} annotated examples")
 
 # Apply same randomization and splitting as separability analysis (seed 42, 70% train / 30% val + test)
@@ -164,8 +166,8 @@ hinted_prompts = [item['biased_input_prompt'] for item in val_unfaithful]
 print(f"Extracted {len(hinted_prompts)} biased input prompts (unfaithful only)")
 
 # Load steering vectors
-print(f"\nLoading steering vectors from {STEERING_VECTORS_FILE}...")
-with open(STEERING_VECTORS_FILE, 'rb') as f:
+print(f"\nLoading steering vectors from {INPUT_VECTORS_FILE}...")
+with open(INPUT_VECTORS_FILE, 'rb') as f:
     steering_data = pickle.load(f)
 
 steering_vectors = steering_data['steering_vectors']
@@ -222,7 +224,7 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
     print(f"\nProcessing layer {layer_idx}, coefficient {coeff:+.1f}")
 
     # Create steered biased prompts (prompt + steered response)
-    steered_biased_prompts = [
+    steered_prompts = [
         prompt + response
         for prompt, response in zip(hinted_prompts, steered_responses)
     ]
@@ -239,12 +241,32 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
     # Store results for this configuration
     evaluation_results[(layer_idx, coeff)] = {
         'steered_responses': steered_responses,
-        'steered_biased_prompts': steered_biased_prompts,
+        'steered_prompts': steered_prompts,
         'steered_answers': steered_answers,
         'steered_validations': steered_validations
     }
 
 print(f"Processed results for {len(evaluation_results)} steering configurations")
+
+# Save evaluation results before faithfulness evaluation (for standalone eval_faithfulness.py)
+print(f"\n--- Saving evaluation results for standalone faithfulness evaluation ---")
+results_dir = "results"
+os.makedirs(results_dir, exist_ok=True)
+
+evaluation_data = {
+    'evaluation_results': evaluation_results,
+    'val_unfaithful': val_unfaithful,
+    'evaluation_date': TODAY,
+    'model_id': MODEL_ID,
+    'steering_vectors_file': STEERING_VECTORS_FILE
+}
+
+evaluation_file = f"{results_dir}/steering_evaluation_results_{TODAY}.pkl"
+import pickle
+with open(evaluation_file, 'wb') as f:
+    pickle.dump(evaluation_data, f)
+print(f"Saved evaluation results to {evaluation_file}")
+print(f"You can now run: python eval_faithfulness.py (set MODE='steered' and STEERED_INPUT_FILE='{evaluation_file}')")
 
 # CELL 5: Faithfulness Evaluation
 print("\n=== CELL 5: Faithfulness Evaluation ===")
@@ -398,7 +420,7 @@ end_time = time.time()
 summary = {
     'date': TODAY,
     'model': MODEL_ID,
-    'input_file': ANNOTATED_BIASED_FILE,
+    'input_file': INPUT_PROMPTS_FILE,
     'steering_vectors_file': STEERING_VECTORS_FILE,
     'num_examples': len(val_unfaithful),
     'layers_tested': layers_to_test,
@@ -433,7 +455,7 @@ for i, orig_item in enumerate(val_unfaithful):
     record = {
         'question_id': orig_item.get('question_id', i),
         'question': orig_item.get('question'),
-        'hinted_input_prompt': orig_item.get('hinted_input_prompt'),
+        'biased_input_prompt': orig_item.get('biased_input_prompt'),
         'hint': orig_item.get('hint'),
 
         # Original data

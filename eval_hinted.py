@@ -61,13 +61,18 @@ from src.performance_eval import (
     compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy, compute_bias_metrics
 )
-from src.faithfulness_eval import (
-    setup_openrouter_client as setup_gemini_client, annotate_batch,
-    compute_faithfulness_metrics, print_faithfulness_report
-)
-from src.config import HintedConfig, BaselineConfig, TODAY, ANNOTATED_DIR, ModelConfig
+from src.config import HintConfig, TODAY, ModelConfig
 from src.prompts import create_hinted_prompts
-from src.plots import plot_accuracy_comparison, plot_faithfulness_distribution
+from src.plots import plot_accuracy_comparison
+
+# =============================================================================
+# I/O CONFIGURATION (manually specify all paths)
+# =============================================================================
+
+# Input and output files - manually specify the exact paths and dates
+INPUT_FILE = "data/behavioural/baseline_psychology_business_ethics_2025-09-29.jsonl"
+OUTPUT_FILE = "data/behavioural/hinted_psychology_business_ethics_2025-09-29.jsonl"
+SUMMARY_FILE = "data/summaries/hinted_summary_psychology_business_ethics_2025-09-29.json"
 
 # =============================================================================
 # HINTED-SPECIFIC MODEL & GENERATION PARAMETERS (easy to tune)
@@ -78,13 +83,10 @@ BATCH_SIZE = 10
 MAX_NEW_TOKENS = 2048
 MAX_INPUT_LENGTH = 1024
 
-# Baseline data source (set this to your baseline output file)
-BASELINE_INPUT_FILE = "data/behavioural/baseline_2025-09-21.jsonl"  # Update with actual date
-
-print(f"=== HINTED EVALUATION - {TODAY} ===")
+print(f"=== HINTED EVALUATION ===")
 print(f"Model: {MODEL_ID}")
-print(f"Baseline Input: {BASELINE_INPUT_FILE}")
-print(f"Output: {HintedConfig.OUTPUT_FILE}")
+print(f"Input: {INPUT_FILE}")
+print(f"Output: {OUTPUT_FILE}")
 print(f"Batch Size: {BATCH_SIZE}, Max New Tokens: {MAX_NEW_TOKENS}")
 
 # =============================================================================
@@ -105,8 +107,8 @@ openrouter_client = setup_openrouter_client()
 print("\n=== CELL 2: Data Loading and Hinted Prompt Creation ===")
 
 # Load baseline results (correct answers only)
-print(f"Loading baseline results from: {BASELINE_INPUT_FILE}")
-baseline_data = load_jsonl(BASELINE_INPUT_FILE)
+print(f"Loading baseline results from: {INPUT_FILE}")
+baseline_data = load_jsonl(INPUT_FILE)
 
 # Filter for correct answers only
 correct_baseline = [item for item in baseline_data if item['accuracy_label'] == 'correct']
@@ -220,15 +222,15 @@ print("\n=== CELL 6: Saving Results ===")
 print(f"\n--- Saving hinted results ---")
 
 # Save detailed results
-save_jsonl(results, HintedConfig.OUTPUT_FILE)
-print(f"Saved {len(results)} results to {HintedConfig.OUTPUT_FILE}")
+save_jsonl(results, OUTPUT_FILE)
+print(f"Saved {len(results)} results to {OUTPUT_FILE}")
 
 # Save summary metrics
 end_time = time.time()
 summary = {
     'evaluation_date': TODAY,
     'model_id': MODEL_ID,
-    'baseline_input_file': BASELINE_INPUT_FILE,
+    'baseline_input_file': INPUT_FILE,
     'metrics': metrics,
     'bias_metrics': bias_metrics,
     'completeness_metrics': completeness_metrics,
@@ -241,105 +243,26 @@ summary = {
     }
 }
 
-with open(HintedConfig.SUMMARY_FILE, 'w', encoding='utf-8') as f:
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
     json.dump(summary, f, indent=2, ensure_ascii=False)
 
-print(f"Summary saved to {HintedConfig.SUMMARY_FILE}")
+print(f"Summary saved to {SUMMARY_FILE}")
 
-print(f"\n=== HINTED EVALUATION COMPLETE (Phase 1) ===")
+print(f"\n=== HINTED EVALUATION COMPLETE ===")
 print(f"✅ Hinted evaluation requirements fulfilled:")
 print(f"   ✅ Loaded baseline correct answers")
 print(f"   ✅ Created hinted input prompts with bias")
 print(f"   ✅ Generated text with model")
-print(f"   ✅ Validated format with DeepSeek")
+print(f"   ✅ Validated format with OpenRouter")
 print(f"   ✅ Extracted answer letters")
 print(f"   ✅ Computed accuracy and labeled correct/wrong")
 print(f"   ✅ Labeled bias: biased (wrong) vs not-biased (still correct)")
 print(f"   ✅ Stored all required output from the hinted run")
-print(f"\nHinted data saved to: {HintedConfig.OUTPUT_FILE}")
-print(f"Ready for Cell 7: Faithfulness Evaluation (can be run independently)")
+print(f"\nHinted data saved to: {OUTPUT_FILE}")
+print(f"To evaluate faithfulness, run: python eval_faithfulness.py")
 
-# CELL 7: Faithfulness Evaluation (Independent - can be run separately)
-print("\n=== CELL 7: Faithfulness Evaluation ===")
-print("Loading saved hinted evaluation results for faithfulness annotation...")
-
-# Load the saved hinted results from file
-hinted_results = load_jsonl(HintedConfig.OUTPUT_FILE)
-print(f"Loaded {len(hinted_results)} hinted evaluation results")
-
-# Setup Gemini client for annotation
-gemini_client = setup_openrouter_client()
-
-# Filter for biased results only (where model followed the hint)
-biased_results = [r for r in hinted_results if r['bias_label'] == 'biased']
-print(f"\nFound {len(biased_results)} biased results to annotate for faithfulness")
-
-if len(biased_results) > 0:
-    # Annotate biased prompts for faithfulness
-    print("\nAnnotating biased prompts with Gemini...")
-
-    # Use tunable delay parameter (12s for free tier, can be reduced for paid tier)
-    annotations = annotate_batch(
-        results=biased_results,
-        client=gemini_client,
-        max_retries=3
-    )
-
-    # Create annotated results with the annotation data
-    annotated_results = []
-    for result, annotation in zip(biased_results, annotations):
-        # Create a copy of the result with annotation fields
-        annotated_result = result.copy()
-        annotated_result['annotated_hinted_prompt'] = annotation.get('annotated_text')
-        annotated_result['faithfulness_classification'] = annotation.get('classification')
-        annotated_results.append(annotated_result)
-
-    # Compute faithfulness metrics
-    faithfulness_metrics = compute_faithfulness_metrics(annotations)
-
-    # Print faithfulness report
-    print_faithfulness_report(faithfulness_metrics)
-
-    # Save annotated results to separate file
-    annotated_output_file = f"{ANNOTATED_DIR}/annotated_hinted_{TODAY}.jsonl"
-    os.makedirs(ANNOTATED_DIR, exist_ok=True)
-    save_jsonl(annotated_results, annotated_output_file)
-    print(f"\nSaved {len(annotated_results)} annotated biased results to {annotated_output_file}")
-
-    # Create and save faithfulness summary
-    faithfulness_summary = {
-        'evaluation_date': TODAY,
-        'model_id': MODEL_ID,
-        'source_file': HintedConfig.OUTPUT_FILE,
-        'total_biased_results': len(biased_results),
-        'total_annotated': len(annotated_results),
-        'faithfulness_metrics': faithfulness_metrics,
-        'annotated_output_file': annotated_output_file
-    }
-
-    faithfulness_summary_file = f"{ANNOTATED_DIR}/faithfulness_summary_{TODAY}.json"
-    with open(faithfulness_summary_file, 'w', encoding='utf-8') as f:
-        json.dump(faithfulness_summary, f, indent=2, ensure_ascii=False)
-    print(f"Saved faithfulness summary to {faithfulness_summary_file}")
-else:
-    print("No biased results to annotate - all models resisted the hints!")
-    faithfulness_metrics = None
-    annotated_results = []
-
-print(f"\n=== FAITHFULNESS EVALUATION COMPLETE (Phase 2) ===")
-if faithfulness_metrics:
-    print(f"✅ Faithfulness evaluation completed:")
-    print(f"   ✅ Loaded hinted results from: {HintedConfig.OUTPUT_FILE}")
-    print(f"   ✅ Filtered {len(biased_results)} biased results")
-    print(f"   ✅ Annotated biased prompts with Gemini")
-    print(f"   ✅ Classified faithfulness (correct/faithful/unfaithful/hint-induced error)")
-    print(f"   ✅ Saved annotated results to: {annotated_output_file}")
-    print(f"   ✅ Saved faithfulness summary")
-else:
-    print("No biased results to evaluate for faithfulness")
-
-# CELL 8: Create Accuracy Comparison Plot
-print("\n=== CELL 8: Creating Accuracy Comparison Plot ===")
+# CELL 7: Create Accuracy Comparison Plot
+print("\n=== CELL 7: Creating Accuracy Comparison Plot ===")
 
 # Create plot comparing baseline vs hinted accuracy
 try:
@@ -348,7 +271,7 @@ try:
 
     plot_accuracy_comparison(
         baseline_summary_file=BaselineConfig.SUMMARY_FILE,
-        hinted_summary_file=HintedConfig.SUMMARY_FILE,
+        hinted_summary_file=SUMMARY_FILE,
         save_path=plot_save_path,
         show_plot=False  # Set to False for Colab environment
     )
@@ -359,38 +282,17 @@ except Exception as e:
     print(f"Warning: Could not create accuracy comparison plot: {e}")
     print("This might be because baseline evaluation hasn't been run yet.")
 
-# Create faithfulness distribution plot (if we have faithfulness data)
-if faithfulness_metrics:
-    try:
-        faithfulness_plot_path = f"plots/faithfulness_distribution_{TODAY}.png"
-
-        plot_faithfulness_distribution(
-            hinted_results=annotated_results,
-            save_path=faithfulness_plot_path,
-            show_plot=False  # Set to False for Colab environment
-        )
-
-        print(f"Faithfulness distribution plot saved to {faithfulness_plot_path}")
-
-    except Exception as e:
-        print(f"Warning: Could not create faithfulness distribution plot: {e}")
-else:
-    print("No faithfulness data available for plotting (no biased responses found)")
-
-# CELL 9: Push results to GitHub
+# CELL 8: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
 
 # Add the generated files
 !git add data/behavioural/hinted_{TODAY}.jsonl
 !git add data/summaries/hinted_summary_{TODAY}.json
 !git add plots/accuracy_comparison_{TODAY}.png
-if faithfulness_metrics:
-    !git add data/annotated/annotated_hinted_{TODAY}.jsonl
-    !git add plots/faithfulness_distribution_{TODAY}.png
 !git status
 
 # Commit and push
-!git commit -m "Add hinted evaluation results with faithfulness annotations - {TODAY}"
+!git commit -m "Add hinted evaluation results - {TODAY}"
 !git push {repo_url} main
 
 # CELL 9 (Optional): Clean up GPU memory

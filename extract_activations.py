@@ -52,23 +52,32 @@ from src.activations import (
     save_activation_dataset,
     print_dataset_summary
 )
-from src.config import TODAY, ACTIVATIONS_DIR, ANNOTATED_DIR, ACTIVATION_DATASETS_DIR, ActivationConfig
+from src.config import TODAY, ACTIVATIONS_DIR, ANNOTATED_DIR, DATASETS_DIR, ActivationConfig
+
+# =============================================================================
+# I/O CONFIGURATION (manually specify all paths)
+# =============================================================================
+
+# Input and output files - manually specify the exact paths and dates
+INPUT_FILE = "data/annotated/annotated_biased_psychology_business_ethics_2025-09-29.jsonl"
+OUTPUT_DIR = "data/activations/annotated_biased_psychology_business_ethics_2025-09-29"
+DATASET_OUTPUT_FILE = "data/datasets/activations_annotated_biased_psychology_business_ethics_2025-09-29.pkl"
+SUMMARY_FILE = "data/summaries/extraction_summary_psychology_business_ethics_2025-09-29.json"
 
 # =============================================================================
 # ACTIVATION EXTRACTION PARAMETERS (easy to tune)
 # =============================================================================
 
 MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
-SOURCE_DATE = "2025-09-21"  # Update to match your annotated dataset date
 
-# Configuration (single function call)
-config = ActivationConfig.configure_extraction(SOURCE_DATE, MODEL_ID)
+# Get configuration defaults (non-path settings)
+config = ActivationConfig.configure_extraction(MODEL_ID)
 
-print(f"=== ACTIVATION EXTRACTION - {TODAY} ===")
+print(f"=== ACTIVATION EXTRACTION ===")
 print(f"Model: {MODEL_ID}")
-print(f"Input File: {config['annotated_input_file']}")
+print(f"Input File: {INPUT_FILE}")
 print(f"Prompt Field: {config['prompt_field']}")
-print(f"Output Directory: {config['output_dir']}")
+print(f"Output Directory: {OUTPUT_DIR}")
 print(f"Target Tags: {config['target_tags']}")
 print(f"Layers: {len(config['layers_to_extract'])} layers (0-{max(config['layers_to_extract'])})")
 
@@ -82,9 +91,9 @@ start_time = time.time()
 
 # Run the main extraction function
 extract_activations_from_annotated_prompts(
-    jsonl_filename=config['annotated_input_file'],
+    jsonl_filename=INPUT_FILE,
     prompt_field=config['prompt_field'],
-    output_dir=config['output_dir'],
+    output_dir=OUTPUT_DIR,
     model_id=MODEL_ID,
     target_tags=config['target_tags'],
     layers_to_extract=config['layers_to_extract'],
@@ -95,7 +104,7 @@ extract_activations_from_annotated_prompts(
 print("\n=== CELL 2: Compute and Display Statistics ===")
 
 # Get statistics about extracted activations
-stats = get_activation_statistics(config['output_dir'])
+stats = get_activation_statistics(OUTPUT_DIR)
 
 # Print detailed report
 print_activation_statistics(stats)
@@ -105,19 +114,39 @@ print("\n=== CELL 3: Build Activation Dataset ===")
 
 # Build aggregated dataset (layer-wise, all activations across prompts)
 dataset = build_activation_dataset(
-    activations_dir=config['output_dir'],
+    activations_dir=OUTPUT_DIR,
     target_tags=config['target_tags'],
     num_layers=len(config['layers_to_extract']),
     hidden_dim=4096  # DeepSeek hidden dimension
 )
 
 # Save dataset
-dataset_file = f"{ACTIVATION_DATASETS_DIR}/activations_annotated_hinted_{SOURCE_DATE}.pkl"
-os.makedirs(ACTIVATION_DATASETS_DIR, exist_ok=True)
-save_activation_dataset(dataset, dataset_file)
+os.makedirs(DATASETS_DIR, exist_ok=True)
+save_activation_dataset(dataset, DATASET_OUTPUT_FILE)
 
 # Print dataset summary
 print_dataset_summary(dataset)
+
+# Save extraction summary
+extraction_summary = {
+    'date': TODAY,
+    'model_id': MODEL_ID,
+    'input_file': INPUT_FILE,
+    'output_dir': OUTPUT_DIR,
+    'dataset_file': DATASET_OUTPUT_FILE,
+    'prompt_field': config['prompt_field'],
+    'target_tags': config['target_tags'],
+    'layers_extracted': len(config['layers_to_extract']),
+    'activation_statistics': stats,
+    'dataset_info': dataset['info']
+}
+
+import os
+os.makedirs(os.path.dirname(SUMMARY_FILE), exist_ok=True)
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
+    import json
+    json.dump(extraction_summary, f, indent=2, ensure_ascii=False)
+print(f"Saved extraction summary to {SUMMARY_FILE}")
 
 # CELL 4: Create Archive for Download
 print("\n=== CELL 4: Create Archive for Download ===")
@@ -125,8 +154,8 @@ print("\n=== CELL 4: Create Archive for Download ===")
 import shutil
 
 # Create a zip file of the entire output directory
-archive_path = f'/content/activations_{SOURCE_DATE}_archive'
-shutil.make_archive(archive_path, 'zip', config['output_dir'])
+archive_path = f'/content/activations_psychology_business_ethics_2025-09-29_archive'
+shutil.make_archive(archive_path, 'zip', OUTPUT_DIR)
 
 archive_file = f"{archive_path}.zip"
 print(f"Created archive: {archive_file}")
@@ -140,14 +169,14 @@ processing_time = end_time - start_time
 
 print(f"\n=== ACTIVATION EXTRACTION COMPLETE ===")
 print(f"✅ All README workflow requirements fulfilled:")
-print(f"   ✅ Loaded annotated biased prompts from {config['annotated_input_file']}")
+print(f"   ✅ Loaded annotated biased prompts from {INPUT_FILE}")
 print(f"   ✅ Extracted activations at periods before closing tags")
 print(f"   ✅ Processed {stats['total_prompts']} prompts")
 print(f"   ✅ Extracted from {len(stats['layers_found'])} layers")
 print(f"   ✅ Found tags: {stats['tags_found']}")
-print(f"   ✅ Stored activations in individual .pt files: {config['output_dir']}")
+print(f"   ✅ Stored activations in individual .pt files: {OUTPUT_DIR}")
 print(f"   ✅ Maintained prompt-wise hierarchy: prompt → layer → label → activations")
-print(f"   ✅ Built aggregated activation dataset: {dataset_file}")
+print(f"   ✅ Built aggregated activation dataset: {DATASET_OUTPUT_FILE}")
 print(f"   ✅ Dataset structure: layer → label → tensor([total_activations, hidden_dim])")
 
 print(f"\nProcessing time: {processing_time/60:.1f} minutes")
@@ -169,15 +198,10 @@ summary = {
 }
 
 import json
-summary_file = f"{config['output_dir']}/extraction_summary_{TODAY}.json"
-os.makedirs(os.path.dirname(summary_file), exist_ok=True)
-with open(summary_file, 'w', encoding='utf-8') as f:
-    json.dump(summary, f, indent=2, ensure_ascii=False)
-
-print(f"Summary saved to {summary_file}")
+# Summary already saved to proper summaries directory
 
 print(f"\nReady for Step 4: separability analysis")
-print(f"Use activation dataset: {dataset_file}")
+print(f"Use activation dataset: {DATASET_OUTPUT_FILE}")
 
 # CELL 6: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
