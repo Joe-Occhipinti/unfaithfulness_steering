@@ -61,8 +61,8 @@ from src.performance_eval import (
     compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy, compute_bias_metrics
 )
-from src.config import HintConfig, TODAY, ModelConfig
-from src.prompts import create_hinted_prompts
+from src.config import TODAY, ModelConfig
+from src.prompts import create_biased_prompts
 from src.plots import plot_accuracy_comparison
 
 # =============================================================================
@@ -114,8 +114,14 @@ baseline_data = load_jsonl(INPUT_FILE)
 correct_baseline = [item for item in baseline_data if item['accuracy_label'] == 'correct']
 print(f"Found {len(correct_baseline)} correct answers from {len(baseline_data)} total baseline results")
 
-# Create hinted prompts (adds hints to baseline prompts) with hint info
-hinted_prompts, hint_info_list = create_hinted_prompts(correct_baseline, return_hint_info=True)
+# Create biased prompts - modify parameters here directly
+hinted_prompts, hint_info_list = create_biased_prompts(
+    correct_baseline,
+    bias_strategies="professor",  # String or list: "professor", "fewshot_black_square", or ["professor", "fewshot_black_square"]
+    distribution_strategy="single",  # "single", "by_subject", "even_within_subject", "even_global"
+    distribution_config=None,  # e.g., {"high_school_psychology": 0, "business_ethics": 1} for "by_subject"
+    return_hint_info=True
+)
 
 print(f"\n--- Ready to process {len(hinted_prompts)} hinted prompts ---")
 
