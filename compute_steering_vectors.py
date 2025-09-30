@@ -26,11 +26,17 @@ from src.separability import split_dataset_by_prompts
 from src.config import TODAY
 
 # =============================================================================
-# STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
+# I/O CONFIGURATION (manually specify all paths)
 # =============================================================================
 
-# Input dataset
-DATASET_FILE = "data/datasets of activations/activations_annotated_hinted_2025-09-24.pkl"
+# Input and output files - manually specify the exact paths and dates
+INPUT_FILE = "data/datasets/activations_annotated_biased_psychology_business_ethics_2025-09-29.pkl"
+OUTPUT_FILE = "data/steering vectors/steering_vectors_F_vs_U_psychology_business_ethics_2025-09-29.pkl"
+SUMMARY_FILE = "data/summaries/steering_vectors_summary_2025-09-29.json"
+
+# =============================================================================
+# STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
+# =============================================================================
 
 # Tag groupings for steering vectors
 POSITIVE_TAGS = ["F"]     # Faithful tags
@@ -58,16 +64,15 @@ POSITIVE_LABEL = "_".join(POSITIVE_TAGS)
 NEGATIVE_LABEL = "_".join(NEGATIVE_TAGS)
 LABEL_COMBINATION = f"{POSITIVE_LABEL}_vs_{NEGATIVE_LABEL}"
 
-OUTPUT_DIR = f"results/steering_vectors_{TODAY}/{LABEL_COMBINATION}"
 SAVE_RESULTS = True
 SAVE_JSON_SUMMARY = True
 
-print(f"=== STEERING VECTOR COMPUTATION - {TODAY} ===")
-print(f"Dataset: {DATASET_FILE}")
+print(f"=== STEERING VECTOR COMPUTATION ===")
+print(f"Dataset: {INPUT_FILE}")
 print(f"Positive tags: {POSITIVE_TAGS}")
 print(f"Negative tags: {NEGATIVE_TAGS}")
 print(f"Layers to compute: {len(LAYERS_TO_COMPUTE)} layers")
-print(f"Output: {OUTPUT_DIR}")
+print(f"Output: {OUTPUT_FILE}")
 
 # =============================================================================
 # STEERING VECTOR COMPUTATION WORKFLOW
@@ -77,7 +82,7 @@ start_time = time.time()
 
 # STEP 1: Load Dataset
 print("\n=== STEP 1: Loading Dataset ===")
-dataset = load_activation_dataset(DATASET_FILE)
+dataset = load_activation_dataset(INPUT_FILE)
 
 print(f"Loaded dataset with {dataset['info']['num_layers']} layers")
 print(f"Total tags: {dataset['info']['tags']}")
@@ -142,41 +147,37 @@ print_steering_summary(
 if SAVE_RESULTS:
     print("\n=== STEP 5: Saving Results ===")
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 
     # Compile all results
     end_time = time.time()
     processing_time = end_time - start_time
 
     # Save steering vectors with full metadata
-    steering_vectors_file = os.path.join(OUTPUT_DIR, f"steering_vectors_{TODAY}.pkl")
     save_steering_vectors(
         steering_vectors=steering_vectors,
         computation_stats=computation_stats,
-        output_file=steering_vectors_file,
+        output_file=OUTPUT_FILE,
         dataset_info=dataset['info']
     )
 
-    print(f"Steering vectors saved to {steering_vectors_file}")
+    print(f"Steering vectors saved to {OUTPUT_FILE}")
 
 # STEP 6: Save JSON Summary
 if SAVE_JSON_SUMMARY:
     print("\n=== STEP 6: Saving JSON Summary ===")
 
-    # Save human-readable summary
-    json_summary_file = os.path.join(OUTPUT_DIR, f"steering_summary_{TODAY}.json")
+    # Save human-readable summary to summaries directory
+    os.makedirs(os.path.dirname(SUMMARY_FILE), exist_ok=True)
     save_steering_summary_json(
         steering_vectors=steering_vectors,
         computation_stats=computation_stats,
-        output_file=json_summary_file
+        output_file=SUMMARY_FILE
     )
-
-    # Also save complete configuration for reproducibility
-    config_file = os.path.join(OUTPUT_DIR, f"steering_config_{TODAY}.json")
 
     config_data = {
         'computation_date': TODAY,
-        'dataset_file': DATASET_FILE,
+        'dataset_file': INPUT_FILE,
         'configuration': {
             'positive_tags': POSITIVE_TAGS,
             'negative_tags': NEGATIVE_TAGS,
@@ -209,10 +210,10 @@ if steering_vectors:
     print(f"✓ Average vector norm: {avg_norm:.4f}")
 
 if SAVE_RESULTS:
-    print(f"✓ Results saved to: {OUTPUT_DIR}")
+    print(f"✓ Results saved to: {OUTPUT_FILE}")
 
 if SAVE_JSON_SUMMARY:
-    print(f"✓ Summaries saved to: {OUTPUT_DIR}")
+    print(f"✓ Summaries saved to: {SUMMARY_FILE}")
 
 print(f"\nReady for Step 5: Separability Analysis")
 print(f"Use steering vectors: {steering_vectors_file if SAVE_RESULTS else 'results in memory'}")

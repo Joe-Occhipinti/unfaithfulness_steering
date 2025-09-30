@@ -38,11 +38,18 @@ from src.plots import (
 from src.config import TODAY, PLOTS_DIR
 
 # =============================================================================
-# SEPARABILITY ANALYSIS PARAMETERS (easy to tune)
+# I/O CONFIGURATION (manually specify all paths)
 # =============================================================================
 
-# Input dataset
-DATASET_FILE = "data/datasets of activations/activations_annotated_hinted_2025-09-24.pkl"
+# Input and output files - manually specify the exact paths and dates
+INPUT_FILE = "data/datasets/activations_annotated_biased_psychology_business_ethics_2025-09-29.pkl"
+OUTPUT_DIR = "data/separability/separability_F_vs_U_psychology_business_ethics_2025-09-29"
+PLOTS_DIR = "plots/separability_F_vs_U_psychology_business_ethics_2025-09-29"
+SUMMARY_FILE = "data/summaries/separability_results_2025-09-29.json"
+
+# =============================================================================
+# SEPARABILITY ANALYSIS PARAMETERS (easy to tune)
+# =============================================================================
 
 # Tag groupings for analysis
 POSITIVE_TAGS = ["F"]     # Faithful tags
@@ -73,12 +80,11 @@ POSITIVE_LABEL = "_".join(POSITIVE_TAGS)
 NEGATIVE_LABEL = "_".join(NEGATIVE_TAGS)
 LABEL_COMBINATION = f"{POSITIVE_LABEL}_vs_{NEGATIVE_LABEL}"
 
-OUTPUT_DIR = f"results/separability_{TODAY}/{LABEL_COMBINATION}"
 SAVE_RESULTS = True
 CREATE_PLOTS = True
 
-print(f"=== SEPARABILITY ANALYSIS - {TODAY} ===")
-print(f"Dataset: {DATASET_FILE}")
+print(f"=== SEPARABILITY ANALYSIS ===")
+print(f"Dataset: {INPUT_FILE}")
 print(f"Positive tags: {POSITIVE_TAGS}")
 print(f"Negative tags: {NEGATIVE_TAGS}")
 print(f"Split ratios: {TRAIN_RATIO}/{VAL_RATIO}/{TEST_RATIO}")
@@ -92,7 +98,7 @@ start_time = time.time()
 
 # STEP 1: Load Dataset
 print("\n=== STEP 1: Loading Dataset ===")
-dataset = load_activation_dataset(DATASET_FILE)
+dataset = load_activation_dataset(INPUT_FILE)
 
 print(f"Loaded dataset with {dataset['info']['num_layers']} layers")
 print(f"Total tags: {dataset['info']['tags']}")
@@ -257,11 +263,12 @@ if SAVE_RESULTS:
     }
 
     # Save results
-    results_file = os.path.join(OUTPUT_DIR, f"separability_results_{TODAY}.json")
-    with open(results_file, 'w', encoding='utf-8') as f:
+    # Save summary to summaries directory
+    os.makedirs(os.path.dirname(SUMMARY_FILE), exist_ok=True)
+    with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
-    print(f"Results saved to {results_file}")
+    print(f"Results saved to {SUMMARY_FILE}")
 
     # Save individual analysis files for easier access
     cosine_file = os.path.join(OUTPUT_DIR, f"cosine_similarities_{TODAY}.json")
@@ -292,7 +299,7 @@ if SAVE_RESULTS:
 if CREATE_PLOTS:
     print("\n=== STEP 9: Creating Visualizations ===")
 
-    plot_dir = os.path.join(OUTPUT_DIR, "plots")
+    plot_dir = PLOTS_DIR
     os.makedirs(plot_dir, exist_ok=True)
 
     # Individual plots

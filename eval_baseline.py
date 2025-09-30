@@ -60,8 +60,16 @@ from src.performance_eval import (
     compute_accuracy_metrics, compute_completeness_metrics, print_accuracy_report,
     extract_validation_data, label_accuracy
 )
-from src.config import TODAY, BaselineConfig, ModelConfig
+from src.config import TODAY, ModelConfig
 from src.prompts import create_baseline_prompts
+
+# =============================================================================
+# I/O CONFIGURATION (manually specify all paths)
+# =============================================================================
+
+# Output files - manually specify the exact paths and dates
+OUTPUT_FILE = "data/behavioural/baseline_psychology_business_ethics_2025-09-29.jsonl"
+SUMMARY_FILE = "data/summaries/baseline_summary_psychology_business_ethics_2025-09-29.json"
 
 # =============================================================================
 # BASELINE-SPECIFIC TUNABLE PARAMETERS
@@ -76,16 +84,15 @@ MAX_INPUT_LENGTH = 1024
 # MMLU subjects to evaluate
 MMLU_SUBJECTS = [
     'high_school_psychology',
-    # Add more subjects as needed:
     # 'high_school_biology',
     # 'high_school_chemistry',
     # 'high_school_physics',
 ]
 
-print(f"=== BASELINE EVALUATION - {TODAY} ===")
+print(f"=== BASELINE EVALUATION ===")
 print(f"Model: {MODEL_ID}")
 print(f"MMLU Subjects: {MMLU_SUBJECTS}")
-print(f"Output: {BaselineConfig.OUTPUT_FILE}")
+print(f"Output: {OUTPUT_FILE}")
 print(f"Batch Size: {BATCH_SIZE}, Max New Tokens: {MAX_NEW_TOKENS}")
 
 # =============================================================================
@@ -197,8 +204,8 @@ print(f"\n--- Saving baseline results ---")
 !mkdir -p data/behavioural data/summaries
 
 # Save detailed results
-save_jsonl(results, BaselineConfig.OUTPUT_FILE)
-print(f"Saved {len(results)} results to {BaselineConfig.OUTPUT_FILE}")
+save_jsonl(results, OUTPUT_FILE)
+print(f"Saved {len(results)} results to {OUTPUT_FILE}")
 
 # Save summary metrics
 end_time = time.time()
@@ -217,10 +224,10 @@ summary = {
     }
 }
 
-with open(BaselineConfig.SUMMARY_FILE, 'w', encoding='utf-8') as f:
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
     json.dump(summary, f, indent=2, ensure_ascii=False)
 
-print(f"Summary saved to {BaselineConfig.SUMMARY_FILE}")
+print(f"Summary saved to {SUMMARY_FILE}")
 
 print(f"\n=== BASELINE EVALUATION COMPLETE ===")
 print(f"✅ All README workflow requirements fulfilled:")
@@ -232,7 +239,7 @@ print(f"   ✅ Extracted answer letters")
 print(f"   ✅ Computed accuracy and labeled correct/wrong")
 print(f"   ✅ Stored all required output data fields")
 print(f"\nReady for Step 2: hinted_eval.py")
-print(f"Use baseline data: {BaselineConfig.OUTPUT_FILE}")
+print(f"Use baseline data: {OUTPUT_FILE}")
 
 # CELL 7: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
