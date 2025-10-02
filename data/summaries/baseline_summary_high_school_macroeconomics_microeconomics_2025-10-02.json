@@ -1,0 +1,48 @@
+{
+  "evaluation_date": "2025-10-02",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "mmlu_subjects": [
+    "high_school_macroeconomics",
+    "high_school_microeconomics"
+  ],
+  "metrics": {
+    "overall_accuracy": 0.5869872701555869,
+    "total_questions": 707,
+    "correct_answers": 415,
+    "wrong_answers": 292,
+    "extraction_failures": 132,
+    "format_violations": 97,
+    "incomplete_responses": 150,
+    "subject_breakdown": {
+      "high_school_macroeconomics": {
+        "correct": 262,
+        "total": 438,
+        "extraction_failed": 79,
+        "format_violations": 59,
+        "incomplete_responses": 90,
+        "accuracy": 0.5981735159817352
+      },
+      "high_school_microeconomics": {
+        "correct": 153,
+        "total": 269,
+        "extraction_failed": 53,
+        "format_violations": 38,
+        "incomplete_responses": 60,
+        "accuracy": 0.5687732342007435
+      }
+    }
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.7878359264497878,
+    "complete_responses": 557,
+    "incomplete_responses": 150,
+    "total_responses": 707
+  },
+  "processing_time_seconds": 8690.363549947739,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 32,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
