@@ -542,151 +542,37 @@ def load_and_plot_separability_results(
     print(f"All plots saved to {output_dir}")
 
 
-def plot_accuracy_comparison(
-    baseline_summary_file: str,
-    hinted_summary_file: str,
-    save_path: Optional[str] = None,
-    show_plot: bool = True
-) -> None:
-    """
-    Plot accuracy comparison between baseline and hinted evaluations.
-
-    Shows correct representation accounting for different denominators:
-    - Baseline: accuracy out of all prompts
-    - Hinted: shows breakdown of originally correct prompts
-
-    Args:
-        baseline_summary_file: Path to baseline evaluation summary JSON
-        hinted_summary_file: Path to hinted evaluation summary JSON
-        save_path: Optional path to save the plot
-        show_plot: Whether to display the plot
-    """
-    setup_plot_style()
-
-    # Load baseline metrics
-    with open(baseline_summary_file, 'r', encoding='utf-8') as f:
-        baseline_data = json.load(f)
-    baseline_accuracy = baseline_data['metrics']['overall_accuracy']
-    baseline_total = baseline_data['metrics']['total_questions']
-    baseline_correct = baseline_data['metrics']['correct_answers']
-
-    # Load hinted metrics
-    with open(hinted_summary_file, 'r', encoding='utf-8') as f:
-        hinted_data = json.load(f)
-
-    # Get hinted evaluation counts
-    hinted_total = hinted_data['metrics']['total_questions']  # Should equal baseline_correct
-    hinted_correct = hinted_data['metrics']['correct_answers']  # Still correct despite hints
-    biased_count = hinted_data['bias_metrics']['biased_answers']  # Fooled by hints
-
-    # Calculate rates based on original total for fair comparison
-    still_correct_rate = hinted_correct / baseline_total
-    biased_rate = biased_count / baseline_total
-    originally_wrong_rate = (baseline_total - baseline_correct) / baseline_total
-
-    # Print detailed breakdown
-    print(f"\n=== Accuracy Breakdown ===")
-    print(f"Baseline: {baseline_correct}/{baseline_total} = {baseline_accuracy:.3f}")
-    print(f"Hinted evaluation tested: {hinted_total} prompts (the originally correct ones)")
-    print(f"  - Still correct: {hinted_correct}/{baseline_total} = {still_correct_rate:.3f}")
-    print(f"  - Biased (fooled): {biased_count}/{baseline_total} = {biased_rate:.3f}")
-    print(f"  - Originally wrong: {baseline_total - baseline_correct}/{baseline_total} = {originally_wrong_rate:.3f}")
-    print(f"Total: {still_correct_rate:.3f} + {biased_rate:.3f} + {originally_wrong_rate:.3f} = {still_correct_rate + biased_rate + originally_wrong_rate:.3f}")
-
-    # Create the plot
-    fig, ax = plt.subplots(1, 1, figsize=(12, 7))
-
-    # Define categories and data
-    categories = ['Baseline\n(No Hints)', 'After Hints\n(Breakdown)']
-
-    # Baseline - single bar showing overall accuracy
-    baseline_bar = ax.bar(categories[0], baseline_accuracy,
-                         color='#2E86AB', alpha=0.8, label='Correct Answers')
-
-    # After hints - stacked bars showing breakdown
-    # Bottom: Still correct despite hints
-    still_correct_bar = ax.bar(categories[1], still_correct_rate,
-                              color='#2E86AB', alpha=0.8, label='Still Correct (Resisted Hints)')
-
-    # Middle: Biased by hints
-    biased_bar = ax.bar(categories[1], biased_rate, bottom=still_correct_rate,
-                       color='#F18F01', alpha=0.8, label='Biased (Fooled by Hints)')
-
-    # Top: Originally wrong (not tested with hints)
-    originally_wrong_bar = ax.bar(categories[1], originally_wrong_rate,
-                                 bottom=still_correct_rate + biased_rate,
-                                 color='#888888', alpha=0.6, label='Originally Wrong (Not Re-tested)')
-
-    # Customize the plot
-    ax.set_ylabel('Accuracy Rate', fontsize=12, fontweight='bold')
-    ax.set_title('Accuracy Breakdown: Effect of Biased Hints on Model Performance\n'
-                f'Testing {baseline_total} Questions Total',
-                fontsize=14, fontweight='bold', pad=20)
-
-    # Add value labels on bars
-    # Baseline bar
-    ax.text(0, baseline_accuracy/2, f'{baseline_correct}/{baseline_total}\n({baseline_accuracy:.1%})',
-            ha='center', va='center', fontweight='bold', fontsize=11, color='white')
-
-    # After hints bars
-    # Still correct
-    ax.text(1, still_correct_rate/2, f'{hinted_correct}/{baseline_total}\n({still_correct_rate:.1%})',
-            ha='center', va='center', fontweight='bold', fontsize=10, color='white')
-
-    # Biased
-    ax.text(1, still_correct_rate + biased_rate/2, f'{biased_count}/{baseline_total}\n({biased_rate:.1%})',
-            ha='center', va='center', fontweight='bold', fontsize=10, color='white')
-
-    # Originally wrong
-    ax.text(1, still_correct_rate + biased_rate + originally_wrong_rate/2,
-            f'{baseline_total - baseline_correct}/{baseline_total}\n({originally_wrong_rate:.1%})',
-            ha='center', va='center', fontweight='bold', fontsize=10, color='white')
-
-    # Formatting
-    ax.set_ylim(0, 1.1)
-    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1))
-    ax.grid(axis='y', alpha=0.3, linestyle='--')
-    ax.set_ylabel('Proportion of Total Questions', fontsize=12, fontweight='bold')
-
-    ax.text(0.5, 0.95, interpretation,
-            transform=ax.transData, ha='center', va='top',
-            bbox=dict(boxstyle='round,pad=0.5', facecolor='lightgray', alpha=0.8),
-            fontsize=10, style='italic')
-
-    plt.tight_layout()
-
-    # Save plot
-    if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"Accuracy comparison plot saved to {save_path}")
-
-    # Show plot
-    if show_plot:
-        plt.show()
-    else:
-        plt.close()
-
-
 def plot_hint_breakdown(
     hinted_results: List[Dict[str, Any]],
+    baseline_summary_file: str,
     save_path: Optional[str] = None,
     show_plot: bool = True
 ) -> None:
     """
-    Plot stacked bars showing accuracy breakdown per hint template.
+    Plot horizontal stacked bars showing final outcomes breakdown per hint template.
 
-    Each bar represents one hint template and shows:
-    - Still correct after hint (resisted bias)
-    - Wrong after hint (biased)
-    - No answer extracted (truncated/incomplete)
+    Same format as accuracy_comparison but broken down by hint template:
+    - Correct after bias
+    - Wrong after bias
+    - Null after bias
+    - Wrong after baseline (constant across all hints - not re-tested)
+    - Null after baseline (constant across all hints - not re-tested)
 
     Args:
         hinted_results: List of hinted evaluation results with hint_template field
+        baseline_summary_file: Path to baseline summary to get baseline failures
         save_path: Optional path to save the plot
         show_plot: Whether to display the plot
     """
     setup_plot_style()
+
+    # Load baseline summary to get baseline failures
+    with open(baseline_summary_file, 'r', encoding='utf-8') as f:
+        baseline_data = json.load(f)
+
+    baseline_total = baseline_data['metrics']['total_questions']
+    baseline_wrong = baseline_data['metrics']['wrong_answers']
+    baseline_no_answer = baseline_data['metrics'].get('extraction_failures', 0)
 
     # Group results by hint template
     hint_groups = {}
@@ -699,22 +585,17 @@ def plot_hint_breakdown(
     # Calculate counts for each hint template
     hint_stats = {}
     for hint_template, results in hint_groups.items():
-        total = len(results)
+        # Count the 3 hinted categories
+        correct_after_bias = sum(1 for r in results if r.get('accuracy_label') == 'correct')
+        wrong_after_bias = sum(1 for r in results if r.get('bias_label') == 'biased')
+        null_after_bias = sum(1 for r in results if r.get('bias_label') == 'no_answer')
 
-        # Count different categories
-        still_correct = sum(1 for r in results if r.get('accuracy_label') == 'correct')
-        biased = sum(1 for r in results if r.get('bias_label') == 'biased')
-        no_answer = sum(1 for r in results if r.get('hinted_answer_letter') is None)
-
-        # Store both counts and percentages
         hint_stats[hint_template] = {
-            'total': total,
-            'still_correct': still_correct,
-            'biased': biased,
-            'no_answer': no_answer,
-            'still_correct_pct': (still_correct / total * 100) if total > 0 else 0,
-            'biased_pct': (biased / total * 100) if total > 0 else 0,
-            'no_answer_pct': (no_answer / total * 100) if total > 0 else 0
+            'correct_after_bias': correct_after_bias,
+            'wrong_after_bias': wrong_after_bias,
+            'null_after_bias': null_after_bias,
+            'wrong_after_baseline': baseline_wrong,  # Same for all
+            'null_after_baseline': baseline_no_answer  # Same for all
         }
 
     # Prepare data for plotting
@@ -725,84 +606,87 @@ def plot_hint_breakdown(
         print("No hint templates found in results")
         return
 
-    # Extract percentages for stacking
-    still_correct_pcts = [hint_stats[h]['still_correct_pct'] for h in hint_templates]
-    biased_pcts = [hint_stats[h]['biased_pct'] for h in hint_templates]
-    no_answer_pcts = [hint_stats[h]['no_answer_pct'] for h in hint_templates]
-
     # Create the plot
-    fig, ax = plt.subplots(figsize=(max(10, n_hints * 2), 8))
+    fig, ax = plt.subplots(figsize=(12, max(8, n_hints * 1.5)))
 
-    x = np.arange(n_hints)
-    width = 0.6
+    # Colors matching accuracy_comparison
+    color_correct = '#2E86AB'        # Blue
+    color_wrong = '#F18F01'          # Orange
+    color_null_bias = '#AAAAAA'      # Light gray
+    color_wrong_baseline = '#C73E1D' # Red
+    color_null_baseline = '#666666'  # Dark gray
 
-    # Colors for each category
-    color_correct = '#2E86AB'      # Blue - resisted hint
-    color_biased = '#F18F01'       # Orange - fooled by hint
-    color_no_answer = '#888888'    # Gray - extraction failed
-
-    # Create stacked bars
-    bars_correct = ax.bar(x, still_correct_pcts, width,
-                          label='Still Correct (Resisted Hint)',
-                          color=color_correct, alpha=0.8, edgecolor='black', linewidth=1)
-
-    bars_biased = ax.bar(x, biased_pcts, width, bottom=still_correct_pcts,
-                        label='Biased (Fooled by Hint)',
-                        color=color_biased, alpha=0.8, edgecolor='black', linewidth=1)
-
-    bars_no_answer = ax.bar(x, no_answer_pcts, width,
-                           bottom=np.array(still_correct_pcts) + np.array(biased_pcts),
-                           label='No Answer Extracted (Incomplete)',
-                           color=color_no_answer, alpha=0.6, edgecolor='black', linewidth=1)
-
-    # Customize the plot
-    ax.set_ylabel('Percentage (%)', fontsize=13, fontweight='bold')
-    ax.set_xlabel('Hint Template', fontsize=13, fontweight='bold')
-    ax.set_title('Accuracy Breakdown by Hint Template\nEffect of Different Hints on Model Performance',
-                fontsize=15, fontweight='bold', pad=20)
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(hint_templates, rotation=45, ha='right', fontsize=11)
-    ax.set_ylim(0, 105)
-    ax.legend(loc='upper right', fontsize=11, framealpha=0.9)
-    ax.grid(axis='y', alpha=0.3, linestyle='--')
-
-    # Add count labels on each segment
+    # Create horizontal stacked bars for each hint template
     for i, hint in enumerate(hint_templates):
         stats = hint_stats[hint]
+        bottom = 0
 
-        # Still correct segment
-        if stats['still_correct'] > 0:
-            y_pos = stats['still_correct_pct'] / 2
-            ax.text(i, y_pos, f"{stats['still_correct']}\n({stats['still_correct_pct']:.1f}%)",
-                   ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+        # Segment 1: Correct after bias
+        ax.barh(i, stats['correct_after_bias'], left=bottom, height=0.6,
+                color=color_correct, alpha=0.9, edgecolor='black', linewidth=0.5)
+        if stats['correct_after_bias'] > 0:
+            ax.text(bottom + stats['correct_after_bias']/2, i,
+                    f"{stats['correct_after_bias']}\n({stats['correct_after_bias']/baseline_total:.1%})",
+                    ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+        bottom += stats['correct_after_bias']
 
-        # Biased segment
-        if stats['biased'] > 0:
-            y_pos = stats['still_correct_pct'] + stats['biased_pct'] / 2
-            ax.text(i, y_pos, f"{stats['biased']}\n({stats['biased_pct']:.1f}%)",
-                   ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+        # Segment 2: Wrong after bias
+        ax.barh(i, stats['wrong_after_bias'], left=bottom, height=0.6,
+                color=color_wrong, alpha=0.9, edgecolor='black', linewidth=0.5)
+        if stats['wrong_after_bias'] > 0:
+            ax.text(bottom + stats['wrong_after_bias']/2, i,
+                    f"{stats['wrong_after_bias']}\n({stats['wrong_after_bias']/baseline_total:.1%})",
+                    ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+        bottom += stats['wrong_after_bias']
 
-        # No answer segment
-        if stats['no_answer'] > 0:
-            y_pos = stats['still_correct_pct'] + stats['biased_pct'] + stats['no_answer_pct'] / 2
-            ax.text(i, y_pos, f"{stats['no_answer']}\n({stats['no_answer_pct']:.1f}%)",
-                   ha='center', va='center', fontweight='bold', fontsize=8, color='white')
+        # Segment 3: Null after bias
+        ax.barh(i, stats['null_after_bias'], left=bottom, height=0.6,
+                color=color_null_bias, alpha=0.8, edgecolor='black', linewidth=0.5)
+        if stats['null_after_bias'] > 0:
+            ax.text(bottom + stats['null_after_bias']/2, i,
+                    f"{stats['null_after_bias']}\n({stats['null_after_bias']/baseline_total:.1%})",
+                    ha='center', va='center', fontweight='bold', fontsize=8, color='white')
+        bottom += stats['null_after_bias']
 
-        # Total count at the top
-        ax.text(i, 102, f"n={stats['total']}", ha='center', va='bottom',
-               fontweight='bold', fontsize=10, bbox=dict(boxstyle='round,pad=0.3',
-               facecolor='lightgray', alpha=0.7))
+        # Segment 4: Wrong after baseline
+        ax.barh(i, stats['wrong_after_baseline'], left=bottom, height=0.6,
+                color=color_wrong_baseline, alpha=0.8, edgecolor='black', linewidth=0.5)
+        if stats['wrong_after_baseline'] > 0:
+            ax.text(bottom + stats['wrong_after_baseline']/2, i,
+                    f"{stats['wrong_after_baseline']}\n({stats['wrong_after_baseline']/baseline_total:.1%})",
+                    ha='center', va='center', fontweight='bold', fontsize=8, color='white')
+        bottom += stats['wrong_after_baseline']
 
-    # Add interpretation text
-    interpretation = (
-        "Higher blue bars = hint more resistant\n"
-        "Higher orange bars = hint more effective at biasing\n"
-        "Gray bars = answer extraction failures"
-    )
-    ax.text(0.02, 0.98, interpretation, transform=ax.transAxes,
-           verticalalignment='top', fontsize=10,
-           bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', alpha=0.8))
+        # Segment 5: Null after baseline
+        ax.barh(i, stats['null_after_baseline'], left=bottom, height=0.6,
+                color=color_null_baseline, alpha=0.8, edgecolor='black', linewidth=0.5)
+        if stats['null_after_baseline'] > 0:
+            ax.text(bottom + stats['null_after_baseline']/2, i,
+                    f"{stats['null_after_baseline']}\n({stats['null_after_baseline']/baseline_total:.1%})",
+                    ha='center', va='center', fontweight='bold', fontsize=8, color='white')
+
+    # Customize the plot
+    ax.set_xlabel('Number of Prompts', fontsize=13, fontweight='bold')
+    ax.set_ylabel('Hint Template', fontsize=13, fontweight='bold')
+    ax.set_title(f'Final Outcomes by Hint Template\nTotal: {baseline_total} Prompts',
+                fontsize=15, fontweight='bold', pad=20)
+
+    ax.set_xlim(0, baseline_total * 1.02)
+    ax.set_ylim(-0.5, n_hints - 0.5)
+    ax.set_yticks(range(n_hints))
+    ax.set_yticklabels(hint_templates, fontsize=11)
+    ax.grid(axis='x', alpha=0.3, linestyle='--')
+
+    # Legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=color_correct, edgecolor='black', label='Correct After Bias'),
+        Patch(facecolor=color_wrong, edgecolor='black', label='Wrong After Bias'),
+        Patch(facecolor=color_null_bias, edgecolor='black', label='Null After Bias'),
+        Patch(facecolor=color_wrong_baseline, edgecolor='black', label='Wrong After Baseline'),
+        Patch(facecolor=color_null_baseline, edgecolor='black', label='Null After Baseline')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=10, framealpha=0.9)
 
     plt.tight_layout()
 
@@ -811,10 +695,11 @@ def plot_hint_breakdown(
     for hint in hint_templates:
         stats = hint_stats[hint]
         print(f"\n{hint}:")
-        print(f"  Total tested: {stats['total']}")
-        print(f"  Still correct: {stats['still_correct']} ({stats['still_correct_pct']:.1f}%)")
-        print(f"  Biased: {stats['biased']} ({stats['biased_pct']:.1f}%)")
-        print(f"  No answer: {stats['no_answer']} ({stats['no_answer_pct']:.1f}%)")
+        print(f"  Correct after bias: {stats['correct_after_bias']}")
+        print(f"  Wrong after bias: {stats['wrong_after_bias']}")
+        print(f"  Null after bias: {stats['null_after_bias']}")
+        print(f"  Wrong after baseline: {stats['wrong_after_baseline']} (constant)")
+        print(f"  Null after baseline: {stats['null_after_baseline']} (constant)")
 
     # Save plot
     if save_path:

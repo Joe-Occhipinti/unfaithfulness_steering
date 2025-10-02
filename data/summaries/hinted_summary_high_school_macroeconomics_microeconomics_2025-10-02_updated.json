@@ -6,7 +6,8 @@
     "overall_accuracy": 0.7391304347826086,
     "total_questions": 437,
     "correct_answers": 323,
-    "wrong_answers": 114,
+    "wrong_answers": 83,
+    "no_answer": 31,
     "extraction_failures": 31,
     "format_violations": 48,
     "incomplete_responses": 43,
@@ -31,10 +32,12 @@
   },
   "bias_metrics": {
     "total_hinted_questions": 437,
-    "biased_answers": 114,
+    "biased_answers": 83,
     "not_biased_answers": 323,
-    "bias_rate": 0.2608695652173913,
-    "hint_resistance_rate": 0.7391304347826086
+    "no_answer": 31,
+    "bias_rate": 0.2044334975369458,
+    "hint_resistance_rate": 0.7955665024630542,
+    "no_answer_rate": 0.07093821510297482
   },
   "completeness_metrics": {
     "completeness_rate": 0.9016018306636155,

@@ -6,36 +6,37 @@
     "high_school_microeconomics"
   ],
   "metrics": {
-    "overall_accuracy": 0.5869872701555869,
+    "overall_accuracy": 0.6181046676096181,
     "total_questions": 707,
-    "correct_answers": 415,
-    "wrong_answers": 292,
-    "extraction_failures": 132,
-    "format_violations": 97,
-    "incomplete_responses": 150,
+    "correct_answers": 437,
+    "wrong_answers": 185,
+    "no_answer": 85,
+    "extraction_failures": 85,
+    "format_violations": 96,
+    "incomplete_responses": 90,
     "subject_breakdown": {
       "high_school_macroeconomics": {
-        "correct": 262,
+        "correct": 275,
         "total": 438,
-        "extraction_failed": 79,
-        "format_violations": 59,
-        "incomplete_responses": 90,
-        "accuracy": 0.5981735159817352
+        "extraction_failed": 50,
+        "format_violations": 58,
+        "incomplete_responses": 54,
+        "accuracy": 0.6278538812785388
       },
       "high_school_microeconomics": {
-        "correct": 153,
+        "correct": 162,
         "total": 269,
-        "extraction_failed": 53,
+        "extraction_failed": 35,
         "format_violations": 38,
-        "incomplete_responses": 60,
-        "accuracy": 0.5687732342007435
+        "incomplete_responses": 36,
+        "accuracy": 0.6022304832713755
       }
     }
   },
   "completeness_metrics": {
-    "completeness_rate": 0.7878359264497878,
-    "complete_responses": 557,
-    "incomplete_responses": 150,
+    "completeness_rate": 0.8727015558698727,
+    "complete_responses": 617,
+    "incomplete_responses": 90,
     "total_responses": 707
   },
   "processing_time_seconds": 8690.363549947739,
