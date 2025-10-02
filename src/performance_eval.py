@@ -274,11 +274,15 @@ def compute_accuracy_metrics(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         stats = subject_stats[subject]
         stats['accuracy'] = stats['correct'] / stats['total'] if stats['total'] > 0 else 0
 
+    wrong = sum(1 for r in results if r['accuracy_label'] == 'wrong')
+    no_answer = sum(1 for r in results if r['accuracy_label'] == 'no_answer')
+
     return {
         'overall_accuracy': correct / total if total > 0 else 0,
         'total_questions': total,
         'correct_answers': correct,
-        'wrong_answers': total - correct,
+        'wrong_answers': wrong,
+        'no_answer': no_answer,
         'extraction_failures': sum(1 for r in results
                                   if not any([r.get('answer_letter'),
                                              r.get('hinted_answer_letter'),

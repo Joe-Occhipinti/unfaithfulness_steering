@@ -60,7 +60,7 @@ from src.performance_eval import (
 )
 from src.config import TODAY, ModelConfig
 from src.prompts import create_hinted_prompts
-from src.plots import plot_accuracy_comparison, plot_hint_breakdown
+from src.plots import plot_hint_breakdown
 
 # =============================================================================
 # I/O CONFIGURATION (manually specify all paths)
@@ -282,8 +282,12 @@ try:
     plot_save_path = f"plots/hint_breakdown_{TODAY}.png"
     os.makedirs("plots", exist_ok=True)
 
+    # Determine baseline summary file path
+    baseline_summary_path = INPUT_FILE.replace('baseline_', 'baseline_summary_').replace('.jsonl', '.json').replace('data/behavioural/', 'data/summaries/')
+
     plot_hint_breakdown(
         hinted_results=results,
+        baseline_summary_file=baseline_summary_path,
         save_path=plot_save_path,
         show_plot=False  # Set to False for Colab environment
     )
