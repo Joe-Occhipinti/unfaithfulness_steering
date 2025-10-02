@@ -32,9 +32,6 @@ repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_ste
 # Set up OpenRouter API environment variables from Colab secrets
 import os
 os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
-# Optional: Set site info for OpenRouter tracking
-os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
-os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 
 """
 hinted_eval.py

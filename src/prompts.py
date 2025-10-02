@@ -200,10 +200,10 @@ def create_hinted_prompts(
     # Map strategy names to functions
     HINT_FUNCTIONS = {
         "professor": _create_professor_hint_prompts,
-        "black_square": _create_fewshot_black_square_prompts
+        "black_square": _create_fewshot_black_square_prompts,
         "white_square": None,  # Placeholders for future implementation
         "argument": None,     
-        "self-consistency": None 
+        "self-consistency": None,
         "user": None
     }
 
