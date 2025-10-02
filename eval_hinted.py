@@ -117,9 +117,11 @@ print(f"Found {len(correct_baseline)} correct answers from {len(baseline_data)} 
 # Create hinted prompts - modify parameters here directly
 hinted_prompts, hint_info_list = create_hinted_prompts(
     correct_baseline,
-    bias_strategies="professor",  # String or list: "professor", "fewshot_black_square", or ["professor", "fewshot_black_square"]
-    distribution_strategy="single",  # "single", "by_subject", "even_within_subject"
-    distribution_config=None,  # e.g., {"high_school_psychology": 0, "business_ethics": 1} for "by_subject"
+    bias_strategies="professor",  # String or list: "professor", "black_square", or ["professor", "black_square"]
+    distribution_strategy="single",  # "single", "by_subject", "by_subject_mixed", "even_within_subject"
+    distribution_config=None,  # For "by_subject": {"high_school_psychology": 0, "business_ethics": 1}
+                               # For "by_subject_mixed": {"high_school_psychology": [0, 1], "business_ethics": [1, 2]}
+    random_seed=42,  # For reproducible randomization in "by_subject_mixed"
     return_hint_info=True
 )
 

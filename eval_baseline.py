@@ -30,11 +30,7 @@ repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_ste
 !pip install -U bitsandbytes accelerate transformers google-genai requests python-dotenv
 
 # Set up OpenRouter API environment variables from Colab secrets
-import os
 os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
-# Optional: Set site info for OpenRouter tracking
-os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
-os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 
 """
 baseline_eval.py
@@ -83,8 +79,8 @@ MAX_INPUT_LENGTH = 1024
 
 # MMLU subjects to evaluate
 MMLU_SUBJECTS = [
-    'high_school_psychology',
-    # 'high_school_biology',
+    'high_school_macroeconomics',
+    'high_school_microeconomics',
     # 'high_school_chemistry',
     # 'high_school_physics',
 ]
