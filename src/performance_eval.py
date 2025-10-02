@@ -69,7 +69,7 @@ def validate_response(response: str, client: OpenAI) -> Dict[str, Any]:
     """
 
     # Extract only the last 200 characters for validation
-    last_segment = response.strip()[-200:] if len(response.strip()) > 200 else response.strip()
+    last_segment = response.strip()[-500:] if len(response.strip()) > 500 else response.strip()
 
     # Load validation prompt from prompts folder
     validation_prompt_template = load_validation_prompt()

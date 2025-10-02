@@ -135,6 +135,7 @@ def create_hinted_prompts(
     bias_strategies: Union[str, List[str]] = "professor",
     distribution_strategy: str = "single",
     distribution_config: Dict[str, Any] = None,
+    random_seed: int = 42,
     return_hint_info: bool = False
 ) -> Union[List[str], Tuple[List[str], List[Dict[str, Any]]]]:
     """
@@ -144,20 +145,51 @@ def create_hinted_prompts(
     Args:
         baseline_data: List of baseline evaluation results (correct answers only)
         bias_strategies: List of hint template function names to use:
-            - Single string: "professor" or "fewshot_black_square"
-            - List: ["professor", "fewshot_black_square"] to use multiple templates
+            - Single string: "professor" or "black_square"
+            - List: ["professor", "black_square"] to use multiple templates
         distribution_strategy: How to distribute hint templates:
             - "single": All prompts use first template (default)
             - "by_subject": Different subjects get different templates (requires distribution_config)
+            - "by_subject_mixed": Each subject gets multiple templates distributed evenly and randomly
             - "even_within_subject": Distribute templates evenly within each subject
-        distribution_config: Configuration for distribution (only for "by_subject")
-            Maps subject names to bias_strategies indices
-            Example: {"high_school_psychology": 0, "business_ethics": 1}
+        distribution_config: Configuration for distribution (strategy-dependent):
+            - For "by_subject": Maps subject names to single bias_strategies index
+              Example: {"high_school_psychology": 0, "business_ethics": 1}
+            - For "by_subject_mixed": Maps subject names to list of bias_strategies indices
+              Example: {"high_school_psychology": [0, 1], "business_ethics": [1, 2]}
+        random_seed: Random seed for reproducible randomization (used in by_subject_mixed)
         return_hint_info: If True, also returns hint information for each prompt
 
     Returns:
         List of formatted hinted prompts, or tuple of (prompts, hint_info) if return_hint_info=True
 
+    Examples:
+        >>> # Single template for all
+        >>> prompts = create_hinted_prompts(data, bias_strategies="professor")
+        >>>
+        >>> # By subject: each subject gets one specific template
+        >>> prompts = create_hinted_prompts(
+        ...     data,
+        ...     bias_strategies=["professor", "black_square"],
+        ...     distribution_strategy="by_subject",
+        ...     distribution_config={"high_school_psychology": 0, "business_ethics": 1}
+        ... )
+        >>>
+        >>> # By subject mixed: each subject gets multiple templates distributed evenly
+        >>> prompts = create_hinted_prompts(
+        ...     data,
+        ...     bias_strategies=["professor", "black_square", "white_square"],
+        ...     distribution_strategy="by_subject_mixed",
+        ...     distribution_config={"high_school_psychology": [0, 1], "business_ethics": [1, 2]},
+        ...     random_seed=42
+        ... )
+        >>>
+        >>> # Even within subject: alternate templates evenly within each subject
+        >>> prompts = create_hinted_prompts(
+        ...     data,
+        ...     bias_strategies=["professor", "black_square"],
+        ...     distribution_strategy="even_within_subject"
+        ... )
     """
     print(f"\n--- Creating hinted prompts ---")
 
@@ -175,10 +207,23 @@ def create_hinted_prompts(
         "user": None
     }
 
-    # Validate all strategies ar"e supported
+    # Validate all strategies are supported
     for strategy in bias_strategies:
         if strategy not in HINT_FUNCTIONS:
             raise ValueError(f"Unknown bias strategy: {strategy}. Supported: {list(HINT_FUNCTIONS.keys())}")
+        if HINT_FUNCTIONS[strategy] is None:
+            raise ValueError(f"Bias strategy '{strategy}' is not yet implemented")
+
+    # Validate distribution_config if provided
+    if distribution_config is not None:
+        for subject, config_value in distribution_config.items():
+            # Handle both single index and list of indices
+            indices = config_value if isinstance(config_value, list) else [config_value]
+            for idx in indices:
+                if not isinstance(idx, int):
+                    raise ValueError(f"Invalid index type in distribution_config for subject '{subject}': {idx} (must be int)")
+                if idx < 0 or idx >= len(bias_strategies):
+                    raise ValueError(f"Invalid index in distribution_config for subject '{subject}': {idx} (must be 0-{len(bias_strategies)-1})")
 
     # Compute hint letter assignments (even distribution of wrong answers)
     hint_assignments, option_counters = _compute_hint_assignments(baseline_data)
@@ -200,6 +245,40 @@ def create_hinted_prompts(
             subject = item.get('subject', 'unknown')
             strategy_idx = distribution_config.get(subject, 0)
             function_assignments[idx] = bias_strategies[strategy_idx]
+
+    elif distribution_strategy == "by_subject_mixed":
+        # Each subject gets multiple hint-template-specific functions distributed evenly and randomly
+        if distribution_config is None:
+            raise ValueError("distribution_config required for 'by_subject_mixed' strategy")
+
+        import random
+        random.seed(random_seed)
+
+        # Group items by subject
+        subject_groups = {}
+        for idx, item in enumerate(baseline_data):
+            subject = item.get('subject', 'unknown')
+            if subject not in subject_groups:
+                subject_groups[subject] = []
+            subject_groups[subject].append(idx)
+
+        # For each subject, assign hint functions evenly and randomly
+        for subject, indices in subject_groups.items():
+            # Get hint function indices for this subject (can be a list)
+            hint_indices = distribution_config.get(subject, [0])
+
+            # Ensure hint_indices is a list
+            if not isinstance(hint_indices, list):
+                hint_indices = [hint_indices]
+
+            # Randomize order of items within subject for even distribution
+            shuffled_indices = indices.copy()
+            random.shuffle(shuffled_indices)
+
+            # Distribute hint functions evenly using modulo
+            for i, idx in enumerate(shuffled_indices):
+                strategy_idx = hint_indices[i % len(hint_indices)]
+                function_assignments[idx] = bias_strategies[strategy_idx]
 
     elif distribution_strategy == "even_within_subject":
         # Distribute hint-template-specific functions evenly within each subject
@@ -253,6 +332,31 @@ def create_hinted_prompts(
           f"B: {option_counters['B']}, "
           f"C: {option_counters['C']}, "
           f"D: {option_counters['D']}")
+
+    # Print distribution statistics per subject (for by_subject and by_subject_mixed strategies)
+    if distribution_strategy in ["by_subject", "by_subject_mixed", "even_within_subject"]:
+        print(f"\n=== Hint Template Distribution by Subject ===")
+
+        # Group by subject and count hint templates
+        subject_stats = {}
+        for idx, item in enumerate(baseline_data):
+            subject = item.get('subject', 'unknown')
+            hint_template = function_assignments[idx]
+
+            if subject not in subject_stats:
+                subject_stats[subject] = {}
+            if hint_template not in subject_stats[subject]:
+                subject_stats[subject][hint_template] = 0
+            subject_stats[subject][hint_template] += 1
+
+        # Print statistics per subject
+        for subject in sorted(subject_stats.keys()):
+            total = sum(subject_stats[subject].values())
+            print(f"\n{subject} (total: {total})")
+            for hint_template in sorted(subject_stats[subject].keys()):
+                count = subject_stats[subject][hint_template]
+                percentage = (count / total) * 100
+                print(f"  - {hint_template}: {count} ({percentage:.1f}%)")
 
     if return_hint_info:
         return all_prompts, all_hint_info
