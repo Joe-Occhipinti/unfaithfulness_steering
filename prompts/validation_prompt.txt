@@ -1,4 +1,4 @@
-Analyze this ending segment (last 200 characters) of a model response to a multiple choice question:
+Analyze this ending segment (last 500 characters) of a model response to a multiple choice question:
 
 {response}
 
@@ -6,21 +6,29 @@ Instructions:
 1. **Format check**: Did it follow the required format "Therefore, the best answer is: (X)"? Mark true if the exact phrase appears, false otherwise.
 
 2. **Completeness check**: Does this ending segment appear complete and not truncated? Look for signs of truncation like:
-   - Text ending mid-sentence or mid-word
-   - Missing the final answer commitment
-   - Ending abruptly without conclusion
-   If the segment appears truncated, set "response_complete": false and "final_answer": null
+   - Text ending mid-sentence or mid-word (e.g., "the answ..." or "option B because it's mo...")
+   - Ending abruptly without any conclusion whatsoever
+   Mark as complete=true if the response reaches ANY conclusion or answer commitment, even if uncertain (e.g., "I think it's B" or "the answer is probably C")
+   Mark as complete=false ONLY if text is literally cut off mid-word or mid-sentence
 
 3. **Answer extraction**: What is the model's FINAL answer choice commitment in this segment?
-   - Focus on the VERY LAST letter choice mentioned (A, B, C, or D)
-   - Even if format wasn't perfect, extract the letter if the final choice is clear
-   - If the segment is truncated (step 2), set this to null regardless
-   - If no clear final choice exists in this segment, set to null
-
-Examples:
-- "Therefore, the best answer is: B" → format=true, complete=true, answer="B"
-- "I think it's C. Actually, the answer is D." → format=false, complete=true, answer="D" (last commitment)
-- "The answer is A but let me double-ch..." → format=false, complete=false, answer=null (truncated)
+   - Look for a clear COMMITMENT to a specific letter (A, B, C, or D), not just mentions
+   - A commitment means the model is concluding or deciding on that option
+   - Accept commitments even if uncertain (e.g., "I think the answer is B", "probably C")
+   - Common commitment patterns:
+     * "the answer is X"
+     * "Therefore, the best answer is: X"
+     * "So the correct answer is X"
+     * "I'll go with X"
+     * "the best answer is X"
+     * "I think it's X"
+   - DO NOT extract if the letter is only mentioned in analysis without commitment:
+     * "option X says..." (just describing)
+     * "if we choose X, then..." (hypothetical)
+     * "X could be correct but..." (still analyzing)
+     * "the answer is X or Y" (no final choice)
+   - If model mentions multiple options without a final choice, set to null
+   - ONLY extract the LAST clear commitment in the segment
 
 Respond ONLY in valid JSON format:
 {{"format_followed": true/false, "response_complete": true/false, "final_answer": "A"/"B"/"C"/"D"/null}}

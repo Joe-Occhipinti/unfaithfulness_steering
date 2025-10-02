@@ -54,55 +54,86 @@ def setup_openrouter_client(api_key: Optional[str] = None) -> OpenAI:
 setup_gemini_client = setup_openrouter_client
 setup_deepseek_client = setup_openrouter_client
 
-def validate_response(response: str, client: OpenAI) -> Dict[str, Any]:
+def validate_response(response: str, client: OpenAI, max_retries: int = 3, retry_delay: float = 2.0) -> Dict[str, Any]:
     """
     Validate format and extract final answer using the default validation model.
-    Only passes the last sentence for efficiency.
+    Includes retry mechanism for API failures.
     Reusable across all evaluation scripts.
 
     Args:
         response: Model response to validate
         client: OpenAI client configured for OpenRouter
+        max_retries: Maximum number of retry attempts (default: 3)
+        retry_delay: Initial delay between retries in seconds (default: 2.0, uses exponential backoff)
 
     Returns:
         Dictionary with format_followed, response_complete, final_answer
     """
 
-    # Extract only the last 200 characters for validation
+    # Extract only the last 500 characters for validation
     last_segment = response.strip()[-500:] if len(response.strip()) > 500 else response.strip()
 
     # Load validation prompt from prompts folder
     validation_prompt_template = load_validation_prompt()
     validation_prompt = validation_prompt_template.format(response=last_segment)
 
-    try:
-        completion = client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": os.environ.get("SITE_URL", "https://github.com"),
-                "X-Title": os.environ.get("SITE_NAME", "Faithfulness Steering")
-            },
-            model=ModelConfig.DEFAULT_VALIDATION_MODEL,
-            messages=[
-                {
-                    "role": "user",
-                    "content": validation_prompt
+    # Retry loop
+    for attempt in range(max_retries):
+        try:
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": os.environ.get("SITE_URL", "https://github.com"),
+                    "X-Title": os.environ.get("SITE_NAME", "Faithfulness Steering")
+                },
+                model=ModelConfig.DEFAULT_VALIDATION_MODEL,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": validation_prompt
+                    }
+                ],
+                temperature=0  # Deterministic for validation
+            )
+
+            # Parse JSON response
+            result = json.loads(completion.choices[0].message.content.strip())
+            return result
+
+        except json.JSONDecodeError as e:
+            if attempt < max_retries - 1:
+                print(f"\n⚠ JSON parsing error (attempt {attempt + 1}/{max_retries}): {e}")
+                print(f"Raw response: {completion.choices[0].message.content[:200]}")
+                print(f"Retrying in {retry_delay * (2 ** attempt):.1f}s...")
+                time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+            else:
+                print(f"\n✗ JSON parsing failed after {max_retries} attempts")
+                print(f"Raw response: {completion.choices[0].message.content[:200]}")
+                # Fallback after all retries exhausted
+                return {
+                    "format_followed": False,
+                    "response_complete": True,
+                    "final_answer": None
                 }
-            ],
-            temperature=0  # Deterministic for validation
-        )
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"\n⚠ Validation API error (attempt {attempt + 1}/{max_retries}): {e}")
+                print(f"Retrying in {retry_delay * (2 ** attempt):.1f}s...")
+                time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+            else:
+                print(f"\n✗ Validation API failed after {max_retries} attempts: {e}")
+                # Fallback after all retries exhausted
+                return {
+                    "format_followed": False,
+                    "response_complete": True,
+                    "final_answer": None
+                }
 
-        # Parse JSON response
-        result = json.loads(completion.choices[0].message.content.strip())
-        return result
-
-    except Exception as e:
-        print(f"Validation error: {e}")
-        # Fallback - assume format not followed if validation fails
-        return {
-            "format_followed": False,
-            "response_complete": True,
-            "final_answer": None
-        }
+    # Should never reach here, but just in case
+    return {
+        "format_followed": False,
+        "response_complete": True,
+        "final_answer": None
+    }
 
 
 
