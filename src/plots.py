@@ -668,6 +668,167 @@ def plot_accuracy_comparison(
         plt.close()
 
 
+def plot_hint_breakdown(
+    hinted_results: List[Dict[str, Any]],
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> None:
+    """
+    Plot stacked bars showing accuracy breakdown per hint template.
+
+    Each bar represents one hint template and shows:
+    - Still correct after hint (resisted bias)
+    - Wrong after hint (biased)
+    - No answer extracted (truncated/incomplete)
+
+    Args:
+        hinted_results: List of hinted evaluation results with hint_template field
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+    """
+    setup_plot_style()
+
+    # Group results by hint template
+    hint_groups = {}
+    for result in hinted_results:
+        hint_template = result.get('hint_template', 'unknown')
+        if hint_template not in hint_groups:
+            hint_groups[hint_template] = []
+        hint_groups[hint_template].append(result)
+
+    # Calculate counts for each hint template
+    hint_stats = {}
+    for hint_template, results in hint_groups.items():
+        total = len(results)
+
+        # Count different categories
+        still_correct = sum(1 for r in results if r.get('accuracy_label') == 'correct')
+        biased = sum(1 for r in results if r.get('bias_label') == 'biased')
+        no_answer = sum(1 for r in results if r.get('hinted_answer_letter') is None)
+
+        # Store both counts and percentages
+        hint_stats[hint_template] = {
+            'total': total,
+            'still_correct': still_correct,
+            'biased': biased,
+            'no_answer': no_answer,
+            'still_correct_pct': (still_correct / total * 100) if total > 0 else 0,
+            'biased_pct': (biased / total * 100) if total > 0 else 0,
+            'no_answer_pct': (no_answer / total * 100) if total > 0 else 0
+        }
+
+    # Prepare data for plotting
+    hint_templates = sorted(hint_stats.keys())
+    n_hints = len(hint_templates)
+
+    if n_hints == 0:
+        print("No hint templates found in results")
+        return
+
+    # Extract percentages for stacking
+    still_correct_pcts = [hint_stats[h]['still_correct_pct'] for h in hint_templates]
+    biased_pcts = [hint_stats[h]['biased_pct'] for h in hint_templates]
+    no_answer_pcts = [hint_stats[h]['no_answer_pct'] for h in hint_templates]
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(max(10, n_hints * 2), 8))
+
+    x = np.arange(n_hints)
+    width = 0.6
+
+    # Colors for each category
+    color_correct = '#2E86AB'      # Blue - resisted hint
+    color_biased = '#F18F01'       # Orange - fooled by hint
+    color_no_answer = '#888888'    # Gray - extraction failed
+
+    # Create stacked bars
+    bars_correct = ax.bar(x, still_correct_pcts, width,
+                          label='Still Correct (Resisted Hint)',
+                          color=color_correct, alpha=0.8, edgecolor='black', linewidth=1)
+
+    bars_biased = ax.bar(x, biased_pcts, width, bottom=still_correct_pcts,
+                        label='Biased (Fooled by Hint)',
+                        color=color_biased, alpha=0.8, edgecolor='black', linewidth=1)
+
+    bars_no_answer = ax.bar(x, no_answer_pcts, width,
+                           bottom=np.array(still_correct_pcts) + np.array(biased_pcts),
+                           label='No Answer Extracted (Incomplete)',
+                           color=color_no_answer, alpha=0.6, edgecolor='black', linewidth=1)
+
+    # Customize the plot
+    ax.set_ylabel('Percentage (%)', fontsize=13, fontweight='bold')
+    ax.set_xlabel('Hint Template', fontsize=13, fontweight='bold')
+    ax.set_title('Accuracy Breakdown by Hint Template\nEffect of Different Hints on Model Performance',
+                fontsize=15, fontweight='bold', pad=20)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(hint_templates, rotation=45, ha='right', fontsize=11)
+    ax.set_ylim(0, 105)
+    ax.legend(loc='upper right', fontsize=11, framealpha=0.9)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Add count labels on each segment
+    for i, hint in enumerate(hint_templates):
+        stats = hint_stats[hint]
+
+        # Still correct segment
+        if stats['still_correct'] > 0:
+            y_pos = stats['still_correct_pct'] / 2
+            ax.text(i, y_pos, f"{stats['still_correct']}\n({stats['still_correct_pct']:.1f}%)",
+                   ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+
+        # Biased segment
+        if stats['biased'] > 0:
+            y_pos = stats['still_correct_pct'] + stats['biased_pct'] / 2
+            ax.text(i, y_pos, f"{stats['biased']}\n({stats['biased_pct']:.1f}%)",
+                   ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+
+        # No answer segment
+        if stats['no_answer'] > 0:
+            y_pos = stats['still_correct_pct'] + stats['biased_pct'] + stats['no_answer_pct'] / 2
+            ax.text(i, y_pos, f"{stats['no_answer']}\n({stats['no_answer_pct']:.1f}%)",
+                   ha='center', va='center', fontweight='bold', fontsize=8, color='white')
+
+        # Total count at the top
+        ax.text(i, 102, f"n={stats['total']}", ha='center', va='bottom',
+               fontweight='bold', fontsize=10, bbox=dict(boxstyle='round,pad=0.3',
+               facecolor='lightgray', alpha=0.7))
+
+    # Add interpretation text
+    interpretation = (
+        "Higher blue bars = hint more resistant\n"
+        "Higher orange bars = hint more effective at biasing\n"
+        "Gray bars = answer extraction failures"
+    )
+    ax.text(0.02, 0.98, interpretation, transform=ax.transAxes,
+           verticalalignment='top', fontsize=10,
+           bbox=dict(boxstyle='round,pad=0.5', facecolor='lightyellow', alpha=0.8))
+
+    plt.tight_layout()
+
+    # Print summary statistics
+    print(f"\n=== Hint Template Breakdown ===")
+    for hint in hint_templates:
+        stats = hint_stats[hint]
+        print(f"\n{hint}:")
+        print(f"  Total tested: {stats['total']}")
+        print(f"  Still correct: {stats['still_correct']} ({stats['still_correct_pct']:.1f}%)")
+        print(f"  Biased: {stats['biased']} ({stats['biased_pct']:.1f}%)")
+        print(f"  No answer: {stats['no_answer']} ({stats['no_answer_pct']:.1f}%)")
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"\nHint breakdown plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
 def plot_faithfulness_distribution(
     hinted_results: List[Dict],
     save_path: Optional[str] = None,

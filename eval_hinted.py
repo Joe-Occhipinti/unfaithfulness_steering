@@ -63,7 +63,7 @@ from src.performance_eval import (
 )
 from src.config import TODAY, ModelConfig
 from src.prompts import create_hinted_prompts
-from src.plots import plot_accuracy_comparison
+from src.plots import plot_accuracy_comparison, plot_hint_breakdown
 
 # =============================================================================
 # I/O CONFIGURATION (manually specify all paths)
@@ -269,26 +269,26 @@ print(f"   ✅ Stored all required output from the hinted run")
 print(f"\nHinted data saved to: {OUTPUT_FILE}")
 print(f"To evaluate faithfulness, run: python eval_faithfulness.py")
 
-# CELL 7: Create Accuracy Comparison Plot
-print("\n=== CELL 7: Creating Accuracy Comparison Plot ===")
+# CELL 7: Create Hint Breakdown Plot
+print("\n=== CELL 7: Creating Hint Breakdown Plot ===")
 
-# Create plot comparing baseline vs hinted accuracy
+# Create plot showing accuracy breakdown per hint template
 try:
-    plot_save_path = f"plots/accuracy_comparison_{TODAY}.png"
+    plot_save_path = f"plots/hint_breakdown_{TODAY}.png"
     os.makedirs("plots", exist_ok=True)
 
-    plot_accuracy_comparison(
-        baseline_summary_file=BaselineConfig.SUMMARY_FILE,
-        hinted_summary_file=SUMMARY_FILE,
+    plot_hint_breakdown(
+        hinted_results=results,
         save_path=plot_save_path,
         show_plot=False  # Set to False for Colab environment
     )
 
-    print(f"Accuracy comparison plot saved to {plot_save_path}")
+    print(f"Hint breakdown plot saved to {plot_save_path}")
 
 except Exception as e:
-    print(f"Warning: Could not create accuracy comparison plot: {e}")
-    print("This might be because baseline evaluation hasn't been run yet.")
+    print(f"Warning: Could not create hint breakdown plot: {e}")
+    import traceback
+    traceback.print_exc()
 
 # CELL 8: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
