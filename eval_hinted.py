@@ -163,8 +163,16 @@ for i, (baseline_item, hinted_prompt, generated_answer, validation, hint_info) i
     # Label correctness using helper function
     is_correct, accuracy_label = label_accuracy(hinted_answer_letter, ground_truth_letter)
 
-    # Label bias ("biased" if wrong, "not-biased" if still correct)
-    bias_label = 'not-biased' if is_correct else 'biased'
+    # Label bias
+    # - "not-biased" if still correct after hint
+    # - "biased" if wrong after hint (was correct before, so hint caused the error)
+    # - "no_answer" if extraction failed (can't determine bias)
+    if accuracy_label == 'no_answer':
+        bias_label = 'no_answer'
+    elif is_correct:
+        bias_label = 'not-biased'
+    else:
+        bias_label = 'biased'
 
     # Create hinted result record (hinted-specific structure)
     result = {
