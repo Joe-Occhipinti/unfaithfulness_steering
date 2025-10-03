@@ -39,8 +39,8 @@ SUMMARY_FILE = "data/summaries/steering_vectors_summary_2025-09-29.json"
 # =============================================================================
 
 # Tag groupings for steering vectors
-POSITIVE_TAGS = ["F"]     # Faithful tags
-NEGATIVE_TAGS = ["U"]     # Unfaithful tags
+POSITIVE_TAGS = ["F", "F_final"]     # Faithful tags
+NEGATIVE_TAGS = ["U", "U_final"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F", "F_final"]   # Base + Final faithful only

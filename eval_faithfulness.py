@@ -14,6 +14,10 @@ import pickle
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import reusable modules
 from src.data import load_jsonl, save_jsonl
@@ -23,35 +27,6 @@ from src.faithfulness_eval import (
 )
 from src.config import TODAY, ANNOTATED_DIR
 
-# Commented out IPython magic to ensure Python compatibility.
-# Setting up to work with the project GitHub Repository (importing scripts, pushing results)
-
-# Clone the repo to import in Colab its packages from GitHub
-!git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering.git
-import os
-os.chdir('/content/unfaithfulness_steering')
-
-# Authenticate in GitHub
-!git config --global user.email "occhidipinti00@gmail.com"
-!git config --global user.name "Joe-Occhipinti"
-
-# Put your GitHub token in Colab secrets
-from google.colab import userdata
-GITHUB_TOKEN = userdata.get('Colab')
-
-# Build authenticated repo url
-repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_steering.git"
-
-# Install required packages
-!pip install -U bitsandbytes accelerate transformers google-genai requests python-dotenv
-
-# Set up OpenRouter API environment variables from Colab secrets
-import os
-os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
-# Optional: Set site info for OpenRouter tracking
-os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
-os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
-
 # =============================================================================
 # I/O CONFIGURATION (manually specify all paths)
 # =============================================================================
@@ -60,14 +35,14 @@ os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 MODE = "hinted"
 
 # For HINTED mode - input and output files
-HINTED_INPUT_FILE = "data/behavioural/hinted_psychology_business_ethics_2025-09-29.jsonl"
-HINTED_OUTPUT_FILE = "data/annotated/annotated_biased_psychology_business_ethics_2025-09-29.jsonl"
-HINTED_SUMMARY_FILE = "data/summaries/faithfulness_hinted_psychology_business_ethics_2025-09-29.json"
+HINTED_INPUT_FILE = "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-02.jsonl"
+HINTED_OUTPUT_FILE = "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+HINTED_SUMMARY_FILE = "data/summaries/faithfulness_hinted_high_school_macroeconomics_microeconomics_2025-10-03.json"
 
 # For STEERED mode - input and output files
-STEERED_INPUT_FILE = "data/behavioural/steered_val_psychology_business_ethics_2025-09-30.jsonl"
-STEERED_OUTPUT_FILE = "data/annotated/annotated_steered_psychology_business_ethics_2025-09-30.jsonl"
-STEERED_SUMMARY_FILE = "data/summaries/faithfulness_steered_psychology_business_ethics_2025-09-30.json"
+STEERED_INPUT_FILE = "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-02_updated.jsonl"
+STEERED_OUTPUT_FILE = "data/annotated/annotated_steered_high_school_macroeconomics_microeconomics_2025-10-02_updated.jsonl"
+STEERED_SUMMARY_FILE = "data/summaries/faithfulness_steered_high_school_macroeconomics_microeconomics_2025-10-02_updated.json"
 
 # =============================================================================
 # END CONFIGURATION
@@ -173,23 +148,32 @@ def evaluate_hinted_faithfulness():
     print(f"   + Saved annotated results to: {HINTED_OUTPUT_FILE}")
     print(f"   + Saved faithfulness summary")
 
-    # Optional: Create faithfulness distribution plot
+    # Optional: Create faithfulness distribution plots
     try:
-        from src.plots import plot_faithfulness_distribution
+        from src.plots import plot_faithfulness_distribution, plot_faithfulness_by_bias
 
-        faithfulness_plot_path = f"plots/faithfulness_distribution_{TODAY}.png"
         os.makedirs("plots", exist_ok=True)
 
+        # Overall faithfulness distribution
+        faithfulness_plot_path = f"plots/faithfulness_distribution_biased_high_school_macroeconomics_microeconomics_2025-10-03.png"
         plot_faithfulness_distribution(
             hinted_results=annotated_results,
             save_path=faithfulness_plot_path,
             show_plot=False
         )
-
         print(f"   + Faithfulness distribution plot saved to {faithfulness_plot_path}")
 
+        # Bias-wise faithfulness distribution
+        bias_wise_plot_path = f"plots/faithfulness_by_hint_biased_high_school_macroeconomics_microeconomics_2025-10-03.png"
+        plot_faithfulness_by_bias(
+            hinted_results=annotated_results,
+            save_path=bias_wise_plot_path,
+            show_plot=False
+        )
+        print(f"   + Bias-wise faithfulness plot saved to {bias_wise_plot_path}")
+
     except Exception as e:
-        print(f"Warning: Could not create faithfulness distribution plot: {e}")
+        print(f"Warning: Could not create faithfulness distribution plots: {e}")
 
 
 def evaluate_steered_faithfulness():
@@ -528,13 +512,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# Add the generated files
-!git add data/behavioural/hinted_{TODAY}.jsonl
-!git add data/summaries/hinted_summary_{TODAY}.json
-!git add plots/accuracy_comparison_{TODAY}.png
-!git status
-
-# Commit and push
-!git commit -m "Add hinted evaluation results - {TODAY}"
-!git push {repo_url} main

@@ -106,7 +106,7 @@ Text to Annotate: {biased_prompt}"""
                     }
                 ],
                 temperature=0.0,
-                max_tokens=8192,
+                max_tokens=32000,
                 top_p=0.1
             )
 
