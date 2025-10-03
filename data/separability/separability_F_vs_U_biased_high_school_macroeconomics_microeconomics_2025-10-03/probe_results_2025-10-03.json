@@ -1,0 +1,194 @@
+{
+  "0": {
+    "train_acc": 0.8910891089108911,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "1": {
+    "train_acc": 0.8910891089108911,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "2": {
+    "train_acc": 0.9108910891089109,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "3": {
+    "train_acc": 0.9504950495049505,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "4": {
+    "train_acc": 0.9900990099009901,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "5": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "6": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "7": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "8": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "9": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "10": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "11": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "12": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "13": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "14": {
+    "train_acc": 1.0,
+    "val_acc": 0.9636363636363636,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "15": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "16": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "17": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "18": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "19": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "20": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "21": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "22": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "23": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "24": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "25": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "26": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "27": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "28": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "29": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "30": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  },
+  "31": {
+    "train_acc": 1.0,
+    "val_acc": 0.9454545454545454,
+    "train_samples": 101,
+    "val_samples": 55
+  }
+}

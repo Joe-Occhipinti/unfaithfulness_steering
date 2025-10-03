@@ -32,8 +32,7 @@ def load_activation_dataset(file_path: str) -> Dict[str, Any]:
 def split_dataset_by_prompts(
     dataset: Dict[str, Any],
     train_ratio: float = 0.7,
-    val_ratio: float = 0.15,
-    test_ratio: float = 0.15,
+    val_ratio: float = 0.3,
     random_seed: int = 42
 ) -> Dict[str, Dict]:
     """
@@ -43,13 +42,12 @@ def split_dataset_by_prompts(
         dataset: Activation dataset with prompt-wise structure
         train_ratio: Proportion for training set
         val_ratio: Proportion for validation set
-        test_ratio: Proportion for test set
         random_seed: Random seed for reproducibility
 
     Returns:
-        Dictionary with train/val/test splits: {'train': dataset_subset, 'val': dataset_subset, 'test': dataset_subset}
+        Dictionary with train/val splits: {'train': dataset_subset, 'val': dataset_subset}
     """
-    assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6, "Ratios must sum to 1.0"
+    assert abs(train_ratio + val_ratio - 1.0) < 1e-6, "Ratios must sum to 1.0"
 
     data = dataset['data']
     info = dataset['info']
@@ -65,17 +63,15 @@ def split_dataset_by_prompts(
 
     # Split indices
     train_end = int(train_ratio * total_prompts)
-    val_end = train_end + int(val_ratio * total_prompts)
 
     train_prompts = prompt_indices[:train_end]
-    val_prompts = prompt_indices[train_end:val_end]
-    test_prompts = prompt_indices[val_end:]
+    val_prompts = prompt_indices[train_end:]
 
-    print(f"Split dataset: {len(train_prompts)} train, {len(val_prompts)} val, {len(test_prompts)} test prompts")
+    print(f"Split dataset: {len(train_prompts)} train, {len(val_prompts)} val prompts")
 
     # Create splits by selecting specific prompts
     splits = {}
-    for split_name, prompt_list in [('train', train_prompts), ('val', val_prompts), ('test', test_prompts)]:
+    for split_name, prompt_list in [('train', train_prompts), ('val', val_prompts)]:
         split_data = {}
 
         # Include only the prompts assigned to this split
@@ -262,10 +258,10 @@ def train_linear_probes_by_layer(
     random_seed: int = 42
 ) -> Dict[int, Dict[str, Any]]:
     """
-    Train linear probes for each layer using proper train/val/test splits.
+    Train linear probes for each layer using train/val splits.
 
     Args:
-        dataset_splits: Dictionary with train/val/test splits
+        dataset_splits: Dictionary with train/val splits
         positive_tags: Tags to treat as positive class (label 0)
         negative_tags: Tags to treat as negative class (label 1)
         random_seed: Random seed for reproducibility
@@ -274,21 +270,23 @@ def train_linear_probes_by_layer(
         Dictionary: {layer_idx: {
             'train_acc': float,
             'val_acc': float,
-            'test_acc': float,
             'classifier': LogisticRegression model,
             'train_samples': int,
-            'val_samples': int,
-            'test_samples': int
+            'val_samples': int
         }}
     """
     # Extract activations for each split
     train_pos, train_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'train')
     val_pos, val_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'val')
-    test_pos, test_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'test')
 
     probe_results = {}
 
-    print(f"Training linear probes for {len(train_pos)} layers...")
+    # Debug: Check sample counts
+    print(f"\nDebug - Sample counts for layer 0:")
+    print(f"  Train: F={train_pos[0].shape[0] if 0 in train_pos else 0}, U={train_neg[0].shape[0] if 0 in train_neg else 0}")
+    print(f"  Val: F={val_pos[0].shape[0] if 0 in val_pos else 0}, U={val_neg[0].shape[0] if 0 in val_neg else 0}")
+
+    print(f"\nTraining linear probes for {len(train_pos)} layers...")
 
     for layer_idx in tqdm(train_pos, desc="Training probes"):
         # Get activations for this layer
@@ -296,22 +294,17 @@ def train_linear_probes_by_layer(
         train_neg_acts = train_neg[layer_idx]
         val_pos_acts = val_pos[layer_idx]
         val_neg_acts = val_neg[layer_idx]
-        test_pos_acts = test_pos[layer_idx]
-        test_neg_acts = test_neg[layer_idx]
 
         # Check if we have sufficient data
         if (train_pos_acts.numel() == 0 or train_neg_acts.numel() == 0 or
-            val_pos_acts.numel() == 0 or val_neg_acts.numel() == 0 or
-            test_pos_acts.numel() == 0 or test_neg_acts.numel() == 0):
+            val_pos_acts.numel() == 0 or val_neg_acts.numel() == 0):
 
             probe_results[layer_idx] = {
                 'train_acc': 0.0,
                 'val_acc': 0.0,
-                'test_acc': 0.0,
                 'classifier': None,
                 'train_samples': 0,
                 'val_samples': 0,
-                'test_samples': 0,
                 'error': 'Insufficient data'
             }
             continue
@@ -330,39 +323,20 @@ def train_linear_probes_by_layer(
             torch.ones(val_neg_acts.shape[0])
         ]).numpy()
 
-        # Prepare test data
-        X_test = torch.cat([test_pos_acts, test_neg_acts], dim=0).float().numpy()
-        y_test = torch.cat([
-            torch.zeros(test_pos_acts.shape[0]),
-            torch.ones(test_neg_acts.shape[0])
-        ]).numpy()
-
         # Train classifier
         classifier = LogisticRegression(random_state=random_seed, max_iter=1000)
         classifier.fit(X_train, y_train)
 
-        # Combine val and test for evaluation
-        X_eval = torch.cat([
-            torch.from_numpy(X_val),
-            torch.from_numpy(X_test)
-        ], dim=0).numpy()
-        y_eval = torch.cat([
-            torch.from_numpy(y_val),
-            torch.from_numpy(y_test)
-        ]).numpy()
-
-        # Evaluate on train and combined eval
+        # Evaluate on train and val
         train_acc = accuracy_score(y_train, classifier.predict(X_train))
-        eval_acc = accuracy_score(y_eval, classifier.predict(X_eval))
+        val_acc = accuracy_score(y_val, classifier.predict(X_val))
 
         probe_results[layer_idx] = {
             'train_acc': train_acc,
-            'val_acc': eval_acc,  # Combined val+test accuracy
-            'test_acc': eval_acc,  # Same as val_acc for compatibility
+            'val_acc': val_acc,
             'classifier': classifier,
             'train_samples': len(y_train),
-            'val_samples': len(y_eval),
-            'test_samples': 0  # Not used separately
+            'val_samples': len(y_val)
         }
 
     return probe_results
@@ -484,15 +458,15 @@ def print_separability_summary(
     print(f"\n--- Linear Probe Performance ---")
     valid_results = [r for r in probe_results.values() if 'error' not in r]
     if valid_results:
+        train_accs = [r['train_acc'] for r in valid_results]
         val_accs = [r['val_acc'] for r in valid_results]
-        test_accs = [r['test_acc'] for r in valid_results]
-        print(f"Validation accuracy - Range: {min(val_accs):.3f} to {max(val_accs):.3f}, Mean: {np.mean(val_accs):.3f}")
-        print(f"Test accuracy - Range: {min(test_accs):.3f} to {max(test_accs):.3f}, Mean: {np.mean(test_accs):.3f}")
+        print(f"Train accuracy - Range: {min(train_accs):.3f} to {max(train_accs):.3f}, Mean: {np.mean(train_accs):.3f}")
+        print(f"Val accuracy - Range: {min(val_accs):.3f} to {max(val_accs):.3f}, Mean: {np.mean(val_accs):.3f}")
 
         # Find best performing layer
         best_layer = max(valid_results, key=lambda x: x['val_acc'])
         best_layer_idx = [k for k, v in probe_results.items() if v == best_layer][0]
-        print(f"Best layer: {best_layer_idx} (val_acc: {best_layer['val_acc']:.3f}, test_acc: {best_layer['test_acc']:.3f})")
+        print(f"Best layer: {best_layer_idx} (train_acc: {best_layer['train_acc']:.3f}, val_acc: {best_layer['val_acc']:.3f})")
     else:
         print("No valid probe results found.")
 
