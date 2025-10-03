@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "date": "2025-10-03",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "input_file": "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl",
+    "steering_vectors_file": "data/steering vectors/steering_vectors_F_vs_U_high_school_macroeconomics_microeconomics_2025-10-03.pkl",
+    "output_file": "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl",
+    "num_examples": 11,
+    "layers_tested": [
+      8,
+      17,
+      25
+    ],
+    "coefficients_tested": [
+      0.75,
+      -0.75
+    ],
+    "processing_time_seconds": 2763.5085895061493
+  },
+  "all_configurations": {
+    "layer_8_coeff_+0.8": {
+      "layer": 8,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.2727272727272727,
+      "correct_count": 3,
+      "total_prompts": 11,
+      "compliance_rate": 0.2727272727272727,
+      "completeness_rate": 0.18181818181818182
+    },
+    "layer_8_coeff_-0.8": {
+      "layer": 8,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.18181818181818182,
+      "correct_count": 2,
+      "total_prompts": 11,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_17_coeff_+0.8": {
+      "layer": 17,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.36363636363636365,
+      "correct_count": 4,
+      "total_prompts": 11,
+      "compliance_rate": 0.09090909090909091,
+      "completeness_rate": 0.09090909090909091
+    },
+    "layer_17_coeff_-0.8": {
+      "layer": 17,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.36363636363636365,
+      "correct_count": 4,
+      "total_prompts": 11,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_25_coeff_+0.8": {
+      "layer": 25,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.2727272727272727,
+      "correct_count": 3,
+      "total_prompts": 11,
+      "compliance_rate": 0.2727272727272727,
+      "completeness_rate": 0.2727272727272727
+    },
+    "layer_25_coeff_-0.8": {
+      "layer": 25,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.6363636363636364,
+      "correct_count": 7,
+      "total_prompts": 11,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    }
+  }
+}
