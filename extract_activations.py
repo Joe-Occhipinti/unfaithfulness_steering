@@ -192,22 +192,19 @@ print(f"Use activation dataset: {DATASET_OUTPUT_FILE}")
 # CELL 6: Push results to GitHub
 print(f"\n--- Pushing results to GitHub ---")
 
-# Setup Git LFS for large .pt files
+# Setup Git LFS for large files
 !git lfs install
 !git lfs track "*.pt"
+!git lfs track "*.pkl"
 !git add .gitattributes
 
 # Configure git for large uploads
 !git config http.postBuffer 524288000
 !git config http.timeout 600
 
-# Add all activation .pt files from the output directory
+# Add all files
 !git add "{OUTPUT_DIR}"/*.pt
-
-# Add the extraction summary
 !git add "{SUMMARY_FILE}"
-
-# Add the dataset file (path has spaces, needs quotes)
 !git add "{DATASET_OUTPUT_FILE}"
 
 # Check what will be committed
