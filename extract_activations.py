@@ -185,8 +185,8 @@ print(f"\nProcessing time: {processing_time/60:.1f} minutes")
 summary = {
     'extraction_date': TODAY,
     'model_id': MODEL_ID,
-    'input_file': config['annotated_input_file'],
-    'output_dir': config['output_dir'],
+    'input_file': INPUT_FILE,
+    'output_dir': OUTPUT_DIR,
     'statistics': stats,
     'processing_time_seconds': processing_time,
     'configuration': {
@@ -207,13 +207,13 @@ print(f"Use activation dataset: {DATASET_OUTPUT_FILE}")
 print(f"\n--- Pushing results to GitHub ---")
 
 # Add all activation .pt files from the output directory
-!git add "{config['output_dir']}"/*.pt
+!git add "{OUTPUT_DIR}"/*.pt
 
 # Add the extraction summary
-!git add "{config['output_dir']}/extraction_summary_{TODAY}.json"
+!git add "{OUTPUT_DIR}/extraction_summary_{TODAY}.json"
 
 # Add the dataset file (path has spaces, needs quotes)
-!git add "{dataset_file}"
+!git add "{DATASET_OUTPUT_FILE}"
 
 # Check what will be committed
 !git status
