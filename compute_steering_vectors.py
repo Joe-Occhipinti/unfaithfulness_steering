@@ -30,17 +30,17 @@ from src.config import TODAY
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/activations_annotated_biased_psychology_business_ethics_2025-09-29.pkl"
-OUTPUT_FILE = "data/steering vectors/steering_vectors_F_vs_U_psychology_business_ethics_2025-09-29.pkl"
-SUMMARY_FILE = "data/summaries/steering_vectors_summary_2025-09-29.json"
+INPUT_FILE = "data/datasets/activations_biased_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
+OUTPUT_FILE = "data/steering vectors/steering_vectors_F_vs_U_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
+SUMMARY_FILE = "data/summaries/steering_vectors_summary_F_vs_U_high_school_macroeconomics_microeconomics_2025-10-03.json"
 
 # =============================================================================
 # STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
 # =============================================================================
 
 # Tag groupings for steering vectors
-POSITIVE_TAGS = ["F", "F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U", "U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F"]     # Faithful tags
+NEGATIVE_TAGS = ["U"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F", "F_final"]   # Base + Final faithful only
@@ -54,8 +54,7 @@ LAYERS_TO_COMPUTE = list(range(32))  # All layers for DeepSeek (tunable)
 
 # Split configuration (same as separability analysis)
 TRAIN_RATIO = 0.7
-VAL_RATIO = 0.15
-TEST_RATIO = 0.15
+VAL_RATIO = 0.3
 RANDOM_SEED = 42
 
 # Output configuration
@@ -103,11 +102,10 @@ dataset_splits = split_dataset_by_prompts(
     dataset=dataset,
     train_ratio=TRAIN_RATIO,
     val_ratio=VAL_RATIO,
-    test_ratio=TEST_RATIO,
     random_seed=RANDOM_SEED
 )
 
-print(f"Created splits with train/val/test ratios: {TRAIN_RATIO}/{VAL_RATIO}/{TEST_RATIO}")
+print(f"Created splits with train/val ratios: {TRAIN_RATIO}/{VAL_RATIO}")
 
 # STEP 3: Compute Steering Vectors (using TRAIN split only)
 print("\n=== STEP 3: Computing Steering Vectors ===")
@@ -193,10 +191,10 @@ if SAVE_JSON_SUMMARY:
         }
     }
 
-    with open(config_file, 'w', encoding='utf-8') as f:
+    with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
         json.dump(config_data, f, indent=2, ensure_ascii=False)
 
-    print(f"Configuration saved to {config_file}")
+    print(f"Configuration saved to {SUMMARY_FILE}")
 
 # STEP 7: Analysis Complete
 print(f"\n=== STEERING VECTOR COMPUTATION COMPLETE ===")
@@ -215,5 +213,5 @@ if SAVE_RESULTS:
 if SAVE_JSON_SUMMARY:
     print(f"✓ Summaries saved to: {SUMMARY_FILE}")
 
-print(f"\nReady for Step 5: Separability Analysis")
-print(f"Use steering vectors: {steering_vectors_file if SAVE_RESULTS else 'results in memory'}")
+print(f"\nReady for Step 6: Apply Steering")
+print(f"Use steering vectors: {OUTPUT_FILE if SAVE_RESULTS else 'results in memory'}")

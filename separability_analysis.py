@@ -43,27 +43,24 @@ from src.config import TODAY, PLOTS_DIR
 
 # Input and output files - manually specify the exact paths and dates
 INPUT_FILE = "data/datasets/activations_biased_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
-OUTPUT_DIR = "data/separability/separability_F_Ffinal_vs_U_Ufinal_biased_high_school_macroeconomics_microeconomics_2025-10-03"
-PLOTS_DIR = "plots/separability_F_Ffinal_vs_U_Ufinal_biased_high_school_macroeconomics_microeconomics_2025-10-03"
-SUMMARY_FILE = "data/summaries/summary_separability_biased_high_school_macroeconomics_microeconomics_2025-10-03.json"
+OUTPUT_DIR = "data/separability/separability_F_vs_U_biased_high_school_macroeconomics_microeconomics_2025-10-03"
+PLOTS_DIR = "plots/separability_F_vs_U_biased_high_school_macroeconomics_microeconomics_2025-10-03"
+SUMMARY_FILE = "data/summaries/summary_separability_F_vs_U_biased_high_school_macroeconomics_microeconomics_2025-10-03.json"
 # =============================================================================
 # SEPARABILITY ANALYSIS PARAMETERS (easy to tune)
 # =============================================================================
 
 # Tag groupings for analysis
-POSITIVE_TAGS = ["F", "F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U", "U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F"]     # Faithful tags
+NEGATIVE_TAGS = ["U"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
-# POSITIVE_TAGS = ["F"]              # Base faithful only
-# NEGATIVE_TAGS = ["U"]              # Base unfaithful only
-# POSITIVE_TAGS = ["F_wk"]  # Just weakly faithful variants to test correlations with Faithfulness
-# POSITIVE_TAGS = ["Fact"]           # Factually correct only, to test correlations with Faithfulness
+# POSITIVE_TAGS = ["F", "F_wk"]           # Add weakly faithful variants
+# POSITIVE_TAGS = ["F", "Fact"]           # Add factually correct variants
 
 # Split configuration for linear probes
 TRAIN_RATIO = 0.7
-VAL_RATIO = 0.15
-TEST_RATIO = 0.15
+VAL_RATIO = 0.3
 RANDOM_SEED = 42
 
 # Layers to test
@@ -86,7 +83,7 @@ print(f"=== SEPARABILITY ANALYSIS ===")
 print(f"Dataset: {INPUT_FILE}")
 print(f"Positive tags: {POSITIVE_TAGS}")
 print(f"Negative tags: {NEGATIVE_TAGS}")
-print(f"Split ratios: {TRAIN_RATIO}/{VAL_RATIO}/{TEST_RATIO}")
+print(f"Split ratios: {TRAIN_RATIO}/{VAL_RATIO}")
 print(f"Output: {OUTPUT_DIR}")
 
 # =============================================================================
@@ -118,11 +115,10 @@ dataset_splits = split_dataset_by_prompts(
     dataset=dataset,
     train_ratio=TRAIN_RATIO,
     val_ratio=VAL_RATIO,
-    test_ratio=TEST_RATIO,
     random_seed=RANDOM_SEED
 )
 
-print(f"Created splits: train, val, test")
+print(f"Created splits: train, val")
 
 # STEP 3: Investigation 1 - Cosine Similarity Analysis
 print("\n=== STEP 3: Cosine Similarity Analysis ===")
@@ -188,9 +184,7 @@ print(f"Trained linear probes for {len(probe_results)} layers")
 valid_probes = {k: v for k, v in probe_results.items() if 'error' not in v}
 if valid_probes:
     val_accs = [result['val_acc'] for result in valid_probes.values()]
-    test_accs = [result['test_acc'] for result in valid_probes.values()]
     print(f"Validation accuracy range: {min(val_accs):.3f} to {max(val_accs):.3f}")
-    print(f"Test accuracy range: {min(test_accs):.3f} to {max(test_accs):.3f}")
 else:
     print("WARNING: No valid probe results obtained")
 
@@ -247,7 +241,6 @@ if SAVE_RESULTS:
             'negative_tags': NEGATIVE_TAGS,
             'train_ratio': TRAIN_RATIO,
             'val_ratio': VAL_RATIO,
-            'test_ratio': TEST_RATIO,
             'random_seed': RANDOM_SEED,
             'layers_analyzed': LAYERS_TO_ANALYZE
         },
