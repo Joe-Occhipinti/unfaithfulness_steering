@@ -127,7 +127,7 @@ save_activation_dataset(dataset, DATASET_OUTPUT_FILE)
 # Print dataset summary
 print_dataset_summary(dataset)
 
-# Save extraction summary
+# Save extraction summary (will add processing time later)
 extraction_summary = {
     'date': TODAY,
     'model_id': MODEL_ID,
@@ -181,24 +181,10 @@ print(f"   ✅ Dataset structure: layer → label → tensor([total_activations,
 
 print(f"\nProcessing time: {processing_time/60:.1f} minutes")
 
-# Save summary
-summary = {
-    'extraction_date': TODAY,
-    'model_id': MODEL_ID,
-    'input_file': INPUT_FILE,
-    'output_dir': OUTPUT_DIR,
-    'statistics': stats,
-    'processing_time_seconds': processing_time,
-    'configuration': {
-        'prompt_field': config['prompt_field'],
-        'target_tags': config['target_tags'],
-        'layers_extracted': config['layers_to_extract'],
-        'verbose': config['verbose']
-    }
-}
-
-import json
-# Summary already saved to proper summaries directory
+# Update summary with processing time and re-save
+extraction_summary['processing_time_seconds'] = processing_time
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
+    json.dump(extraction_summary, f, indent=2, ensure_ascii=False)
 
 print(f"\nReady for Step 4: separability analysis")
 print(f"Use activation dataset: {DATASET_OUTPUT_FILE}")
