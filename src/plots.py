@@ -805,10 +805,6 @@ def plot_faithfulness_distribution(
     # Rotate x-axis labels if needed
     plt.xticks(rotation=45, ha='right')
 
-    ax.text(0.02, 0.98, explanation, transform=ax.transAxes,
-            verticalalignment='top', fontsize=9,
-            bbox=dict(boxstyle='round,pad=0.5', facecolor='lightblue', alpha=0.8))
-
     plt.tight_layout()
 
     # Save plot
@@ -816,6 +812,135 @@ def plot_faithfulness_distribution(
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Faithfulness distribution plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
+def plot_faithfulness_by_bias(
+    hinted_results: List[Dict],
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> None:
+    """
+    Plot faithfulness distribution broken down by bias type (hint_template).
+
+    Creates a grouped bar chart showing faithfulness classifications for each bias type,
+    similar to how bias rates are shown per bias in hinted_eval.py.
+
+    Args:
+        hinted_results: List of hinted evaluation results with faithfulness_classification
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+    """
+    setup_plot_style()
+
+    # Filter for biased results only
+    biased_results = [r for r in hinted_results if r.get('bias_label') == 'biased']
+
+    if not biased_results:
+        print("No biased results found for bias-wise faithfulness plot")
+        return
+
+    # Group by bias type (hint_template)
+    bias_type_data = {}
+    for result in biased_results:
+        bias_type = result.get('hint_template', 'unknown')
+        if bias_type not in bias_type_data:
+            bias_type_data[bias_type] = []
+        bias_type_data[bias_type].append(result)
+
+    # Calculate faithfulness distribution for each bias type
+    faithfulness_labels = ['correct', 'faithful', 'unfaithful', 'hint-induced error', 'error']
+    bias_types = sorted(bias_type_data.keys())
+
+    # Data structure: bias_type -> classification -> percentage
+    data_by_bias = {}
+    for bias_type in bias_types:
+        results = bias_type_data[bias_type]
+        total = len(results)
+
+        counts = {label: 0 for label in faithfulness_labels}
+        for result in results:
+            classification = result.get('faithfulness_classification', 'error')
+            if classification in counts:
+                counts[classification] += 1
+            else:
+                counts['error'] += 1
+
+        percentages = {label: (counts[label] / total * 100) if total > 0 else 0
+                      for label in faithfulness_labels}
+
+        data_by_bias[bias_type] = {
+            'counts': counts,
+            'percentages': percentages,
+            'total': total
+        }
+
+    # Print summary
+    print(f"\nFaithfulness distribution by bias type:")
+    for bias_type in bias_types:
+        print(f"\n{bias_type} (n={data_by_bias[bias_type]['total']}):")
+        for label in faithfulness_labels:
+            count = data_by_bias[bias_type]['counts'][label]
+            pct = data_by_bias[bias_type]['percentages'][label]
+            if count > 0:
+                print(f"  {label}: {count} ({pct:.1f}%)")
+
+    # Create grouped bar chart
+    fig, ax = plt.subplots(1, 1, figsize=(14, 8))
+
+    # Define colors for each classification
+    label_colors = {
+        'correct': '#2E86AB',           # Blue
+        'faithful': '#A23B72',          # Purple
+        'unfaithful': '#F18F01',        # Orange
+        'hint-induced error': '#C73E1D', # Red
+        'error': '#888888'              # Gray
+    }
+
+    # Set up bar positions
+    x = np.arange(len(bias_types))
+    width = 0.15  # Width of each bar
+
+    # Plot bars for each classification
+    for i, label in enumerate(faithfulness_labels):
+        percentages = [data_by_bias[bt]['percentages'][label] for bt in bias_types]
+        offset = (i - len(faithfulness_labels)/2 + 0.5) * width
+        bars = ax.bar(x + offset, percentages, width,
+                     label=label, color=label_colors[label],
+                     alpha=0.8, edgecolor='black', linewidth=0.5)
+
+        # Add count labels on bars (only if percentage > 5%)
+        for j, (bar, bias_type) in enumerate(zip(bars, bias_types)):
+            height = bar.get_height()
+            if height > 5:  # Only show label if bar is tall enough
+                count = data_by_bias[bias_type]['counts'][label]
+                ax.text(bar.get_x() + bar.get_width()/2, height,
+                       f'{count}', ha='center', va='bottom', fontsize=7)
+
+    # Customize plot
+    ax.set_ylabel('Percentage of Biased Responses', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Bias Type (Hint Template)', fontsize=12, fontweight='bold')
+    ax.set_title('Faithfulness Distribution by Bias Type\n'
+                f'Total Biased Responses: {len(biased_results)}',
+                fontsize=14, fontweight='bold', pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(bias_types, rotation=45, ha='right')
+    ax.legend(title='Classification', bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.set_ylim(0, 100)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"\nBias-wise faithfulness plot saved to {save_path}")
 
     # Show plot
     if show_plot:

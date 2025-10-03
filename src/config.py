@@ -49,10 +49,11 @@ class ModelConfig:
 
     # Annotation models (for faithfulness classification)
     ANNOTATION_MODELS = {
-        "gemini": "google/gemini-2.0-flash-exp:free",  # Default for annotation
-        "gemini-2.5-pro": "google/gemini-2.5-pro",             # More capable Gemini
-        "gpt4o": "openai/gpt-4o",                      # GPT-4o for high quality
-        "claude-sonnet": "anthropic/claude-3.5-sonnet", # Claude for nuanced analysis
+        "gemini": "google/gemini-2.0-flash-exp:free",  
+        "gemini-2.5-pro": "google/gemini-2.5-pro",             
+        "gpt4o": "openai/gpt-4o",                     
+        "claude-sonnet": "anthropic/claude-3.5-sonnet",
+         "gpt-4.1-nano": "gpt-4.1-nano-2025-04-14"
     }
 
     # Default model selections (easily change here)
@@ -61,7 +62,7 @@ class ModelConfig:
 
     # API rate limits (requests per minute)
     RATE_LIMITS = {                   
-        "google/gemini-2.5-pro": 50,              
+        "google/gemini-2.5-pro": 30,              
         "deepseek/deepseek-reasoner": 10,        
         "openai/gpt-4o": 500,                    
         "openai/gpt-4o-mini": 500,
