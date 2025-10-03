@@ -1,0 +1,290 @@
+{
+  "0": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "1": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "2": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "3": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "4": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "5": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "6": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "7": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "8": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "9": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "10": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "11": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "12": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "13": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "14": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "15": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "16": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "17": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "18": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "19": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "20": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "21": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "22": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "23": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "24": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "25": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "26": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "27": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "28": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "29": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "30": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  },
+  "31": {
+    "train_acc": 0.0,
+    "val_acc": 0.0,
+    "test_acc": 0.0,
+    "train_samples": 0,
+    "val_samples": 0,
+    "test_samples": 0,
+    "error": "Insufficient data"
+  }
+}

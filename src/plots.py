@@ -165,15 +165,13 @@ def plot_linear_probe_performance(
 
     layers = sorted(valid_results.keys())
     train_accs = [valid_results[layer]['train_acc'] for layer in layers]
-    val_accs = [valid_results[layer]['val_acc'] for layer in layers]
-    test_accs = [valid_results[layer]['test_acc'] for layer in layers]
+    eval_accs = [valid_results[layer]['val_acc'] for layer in layers]  # val_acc now contains combined val+test
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
     # Top plot: Accuracy curves
     ax1.plot(layers, train_accs, marker='o', label='Train', linewidth=2, markersize=4)
-    ax1.plot(layers, val_accs, marker='s', label='Validation', linewidth=2, markersize=4)
-    ax1.plot(layers, test_accs, marker='^', label='Test', linewidth=2, markersize=4)
+    ax1.plot(layers, eval_accs, marker='s', label='Eval (Val+Test)', linewidth=2, markersize=4)
 
     ax1.axhline(y=0.5, color='black', linestyle='--', alpha=0.5, label='Random chance')
 
@@ -186,23 +184,21 @@ def plot_linear_probe_performance(
 
     # Add best layer annotation
     best_layer = max(valid_results.keys(), key=lambda x: valid_results[x]['val_acc'])
-    best_val_acc = valid_results[best_layer]['val_acc']
-    ax1.annotate(f'Best: Layer {best_layer}\n(Val: {best_val_acc:.3f})',
-                xy=(best_layer, best_val_acc), xytext=(best_layer + 2, best_val_acc + 0.1),
+    best_eval_acc = valid_results[best_layer]['val_acc']
+    ax1.annotate(f'Best: Layer {best_layer}\n(Eval: {best_eval_acc:.3f})',
+                xy=(best_layer, best_eval_acc), xytext=(best_layer + 2, best_eval_acc + 0.1),
                 arrowprops=dict(arrowstyle='->', color='black', alpha=0.7),
                 bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7))
 
     # Bottom plot: Sample counts per layer
     train_samples = [valid_results[layer]['train_samples'] for layer in layers]
-    val_samples = [valid_results[layer]['val_samples'] for layer in layers]
-    test_samples = [valid_results[layer]['test_samples'] for layer in layers]
+    eval_samples = [valid_results[layer]['val_samples'] for layer in layers]  # Combined val+test count
 
-    width = 0.25
+    width = 0.4
     x = np.array(layers)
 
-    ax2.bar(x - width, train_samples, width, label='Train', alpha=0.7)
-    ax2.bar(x, val_samples, width, label='Validation', alpha=0.7)
-    ax2.bar(x + width, test_samples, width, label='Test', alpha=0.7)
+    ax2.bar(x - width/2, train_samples, width, label='Train', alpha=0.7)
+    ax2.bar(x + width/2, eval_samples, width, label='Eval (Val+Test)', alpha=0.7)
 
     ax2.set_xlabel('Layer Index')
     ax2.set_ylabel('Sample Count')

@@ -1,0 +1,98 @@
+{
+  "0": {
+    "mean_diff_norm": 0.173828125
+  },
+  "1": {
+    "mean_diff_norm": 0.37890625
+  },
+  "2": {
+    "mean_diff_norm": 0.51953125
+  },
+  "3": {
+    "mean_diff_norm": 0.85546875
+  },
+  "4": {
+    "mean_diff_norm": 1.34375
+  },
+  "5": {
+    "mean_diff_norm": 1.734375
+  },
+  "6": {
+    "mean_diff_norm": 2.09375
+  },
+  "7": {
+    "mean_diff_norm": 2.609375
+  },
+  "8": {
+    "mean_diff_norm": 2.875
+  },
+  "9": {
+    "mean_diff_norm": 3.234375
+  },
+  "10": {
+    "mean_diff_norm": 3.484375
+  },
+  "11": {
+    "mean_diff_norm": 3.546875
+  },
+  "12": {
+    "mean_diff_norm": 4.15625
+  },
+  "13": {
+    "mean_diff_norm": 4.75
+  },
+  "14": {
+    "mean_diff_norm": 5.25
+  },
+  "15": {
+    "mean_diff_norm": 5.96875
+  },
+  "16": {
+    "mean_diff_norm": 7.375
+  },
+  "17": {
+    "mean_diff_norm": 8.375
+  },
+  "18": {
+    "mean_diff_norm": 9.5
+  },
+  "19": {
+    "mean_diff_norm": 10.3125
+  },
+  "20": {
+    "mean_diff_norm": 11.0
+  },
+  "21": {
+    "mean_diff_norm": 11.9375
+  },
+  "22": {
+    "mean_diff_norm": 12.75
+  },
+  "23": {
+    "mean_diff_norm": 13.5625
+  },
+  "24": {
+    "mean_diff_norm": 14.5625
+  },
+  "25": {
+    "mean_diff_norm": 15.375
+  },
+  "26": {
+    "mean_diff_norm": 16.375
+  },
+  "27": {
+    "mean_diff_norm": 17.75
+  },
+  "28": {
+    "mean_diff_norm": 18.875
+  },
+  "29": {
+    "mean_diff_norm": 20.0
+  },
+  "30": {
+    "mean_diff_norm": 22.5
+  },
+  "31": {
+    "mean_diff_norm": 28.25
+  }
+}
