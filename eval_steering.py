@@ -32,9 +32,6 @@ repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_ste
 # Set up OpenRouter API environment variables from Colab secrets
 import os
 os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
-# Optional: Set site info for OpenRouter tracking
-os.environ['SITE_URL'] = userdata.get('SITE_URL', 'https://github.com')
-os.environ['SITE_NAME'] = userdata.get('SITE_NAME', 'Faithfulness Steering')
 
 """
 eval_steering.py
@@ -85,10 +82,10 @@ from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, Mod
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_PROMPTS_FILE = "data/annotated/annotated_biased_psychology_business_ethics_2025-09-29.jsonl"
-INPUT_VECTORS_FILE = "data/steering vectors/steering_vectors_F_vs_U_psychology_business_ethics_2025-09-29.pkl"
-OUTPUT_FILE = "data/behavioural/steered_val_psychology_business_ethics_2025-09-29.jsonl"
-SUMMARY_FILE = "data/summaries/tuning_steering_results_2025-09-30.json"
+INPUT_PROMPTS_FILE = "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+INPUT_VECTORS_FILE = "data/steering vectors/steering_vectors_F_vs_U_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
+OUTPUT_FILE = "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+SUMMARY_FILE = "data/summaries/tuning_steering_results_high_school_macroeconomics_microeconomics_2025-10-03.json"
 
 # =============================================================================
 # MODEL CONFIGURATION
@@ -102,7 +99,7 @@ MAX_INPUT_LENGTH = 1024
 # STEERING CONFIGURATION
 # =============================================================================
 LAYERS_TO_TEST = [15, 25]  # Middle-to-late layers typically work best
-COEFFICIENTS = [0.75, -0.75, 5, -5]  # Positive and negative coefficients
+COEFFICIENTS = [0.75, -0.75]  # Positive and negative coefficients
 
 print(f"=== STEERING EVALUATION ===")
 print(f"Model: {MODEL_ID}")
@@ -141,7 +138,6 @@ train_data, val_data = split_data(
     annotated_data,
     train_ratio=0.7,
     val_ratio=0.3,
-    test_ratio=0.0,
     seed=42
 )
 print(f"Split: {len(train_data)} train, {len(val_data)} val (using seed 42)")
