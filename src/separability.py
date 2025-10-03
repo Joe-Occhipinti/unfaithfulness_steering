@@ -341,19 +341,28 @@ def train_linear_probes_by_layer(
         classifier = LogisticRegression(random_state=random_seed, max_iter=1000)
         classifier.fit(X_train, y_train)
 
-        # Evaluate on all splits
+        # Combine val and test for evaluation
+        X_eval = torch.cat([
+            torch.from_numpy(X_val),
+            torch.from_numpy(X_test)
+        ], dim=0).numpy()
+        y_eval = torch.cat([
+            torch.from_numpy(y_val),
+            torch.from_numpy(y_test)
+        ]).numpy()
+
+        # Evaluate on train and combined eval
         train_acc = accuracy_score(y_train, classifier.predict(X_train))
-        val_acc = accuracy_score(y_val, classifier.predict(X_val))
-        test_acc = accuracy_score(y_test, classifier.predict(X_test))
+        eval_acc = accuracy_score(y_eval, classifier.predict(X_eval))
 
         probe_results[layer_idx] = {
             'train_acc': train_acc,
-            'val_acc': val_acc,
-            'test_acc': test_acc,
+            'val_acc': eval_acc,  # Combined val+test accuracy
+            'test_acc': eval_acc,  # Same as val_acc for compatibility
             'classifier': classifier,
             'train_samples': len(y_train),
-            'val_samples': len(y_val),
-            'test_samples': len(y_test)
+            'val_samples': len(y_eval),
+            'test_samples': 0  # Not used separately
         }
 
     return probe_results

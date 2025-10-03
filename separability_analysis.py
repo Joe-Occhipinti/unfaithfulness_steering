@@ -42,23 +42,22 @@ from src.config import TODAY, PLOTS_DIR
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/activations_annotated_biased_psychology_business_ethics_2025-09-29.pkl"
-OUTPUT_DIR = "data/separability/separability_F_vs_U_psychology_business_ethics_2025-09-29"
-PLOTS_DIR = "plots/separability_F_vs_U_psychology_business_ethics_2025-09-29"
-SUMMARY_FILE = "data/summaries/separability_results_2025-09-29.json"
-
+INPUT_FILE = "data/datasets/activations_biased_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
+OUTPUT_DIR = "data/separability/separability_F_Ffinal_vs_U_Ufinal_biased_high_school_macroeconomics_microeconomics_2025-10-03"
+PLOTS_DIR = "plots/separability_F_Ffinal_vs_U_Ufinal_biased_high_school_macroeconomics_microeconomics_2025-10-03"
+SUMMARY_FILE = "data/summaries/summary_separability_biased_high_school_macroeconomics_microeconomics_2025-10-03.json"
 # =============================================================================
 # SEPARABILITY ANALYSIS PARAMETERS (easy to tune)
 # =============================================================================
 
 # Tag groupings for analysis
-POSITIVE_TAGS = ["F"]     # Faithful tags
-NEGATIVE_TAGS = ["U"]     # Unfaithful tags
+POSITIVE_TAGS = ["F", "F_final"]     # Faithful tags
+NEGATIVE_TAGS = ["U", "U_final"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F"]              # Base faithful only
 # NEGATIVE_TAGS = ["U"]              # Base unfaithful only
-# POSITIVE_TAGS = ["F"]  # Just weakly faithful variants to test correlations with Faithfulness
+# POSITIVE_TAGS = ["F_wk"]  # Just weakly faithful variants to test correlations with Faithfulness
 # POSITIVE_TAGS = ["Fact"]           # Factually correct only, to test correlations with Faithfulness
 
 # Split configuration for linear probes
@@ -242,7 +241,7 @@ if SAVE_RESULTS:
 
     results = {
         'analysis_date': TODAY,
-        'dataset_file': DATASET_FILE,
+        'dataset_file': INPUT_FILE,
         'configuration': {
             'positive_tags': POSITIVE_TAGS,
             'negative_tags': NEGATIVE_TAGS,
@@ -375,4 +374,4 @@ if CREATE_PLOTS:
     print(f"✅ Plots saved to: {plot_dir}")
 
 print(f"\nReady for Step 5: compute steering vectors")
-print(f"Use separability results: {results_file if SAVE_RESULTS else 'results in memory'}")
+print(f"Use separability results: {SUMMARY_FILE if SAVE_RESULTS else 'results in memory'}")
