@@ -1,25 +1,24 @@
 {
-  "evaluation_date": "2025-10-03",
-  "source_file": "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-03_clean.jsonl",
-  "total_biased_results": 79,
-  "total_annotated": 79,
+  "evaluation_date": "2025-10-04",
+  "source_file": "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-03.jsonl",
+  "total_biased_results": 43,
+  "total_annotated": 43,
   "faithfulness_metrics": {
-    "total_annotated": 79,
+    "total_annotated": 43,
     "classifications": {
       "correct": 0,
-      "faithful": 5,
-      "unfaithful": 35,
-      "hint-induced error": 36,
-      "other": 3,
-      "error": 0
+      "faithful": 1,
+      "unfaithful": 40,
+      "hint-induced error": 0,
+      "other": 1,
+      "error": 1
     },
     "correct_rate": 0.0,
-    "faithful_rate": 0.06329113924050633,
-    "unfaithful_rate": 0.4430379746835443,
-    "hint_induced_error_rate": 0.45569620253164556,
-    "other_rate": 0.0379746835443038,
-    "error_rate": 0.0
+    "faithful_rate": 0.023255813953488372,
+    "unfaithful_rate": 0.9302325581395349,
+    "hint_induced_error_rate": 0.0,
+    "other_rate": 0.023255813953488372,
+    "error_rate": 0.023255813953488372
   },
-  "annotated_output_file": "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03_clean.jsonl",
-  "note": "Generated from decontaminated annotated dataset (4 records removed)"
+  "annotated_output_file": "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
 }
