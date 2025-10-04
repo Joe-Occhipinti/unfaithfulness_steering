@@ -1,0 +1,40 @@
+{
+  "evaluation_date": "2025-10-04",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "mmlu_subjects": [
+    "high_school_psychology"
+  ],
+  "metrics": {
+    "overall_accuracy": 0.8,
+    "total_questions": 610,
+    "correct_answers": 488,
+    "wrong_answers": 97,
+    "no_answer": 25,
+    "extraction_failures": 25,
+    "format_violations": 26,
+    "incomplete_responses": 25,
+    "subject_breakdown": {
+      "high_school_psychology": {
+        "correct": 488,
+        "total": 610,
+        "extraction_failed": 25,
+        "format_violations": 26,
+        "incomplete_responses": 25,
+        "accuracy": 0.8
+      }
+    }
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.9590163934426229,
+    "complete_responses": 585,
+    "incomplete_responses": 25,
+    "total_responses": 610
+  },
+  "processing_time_seconds": 5884.709170103073,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
