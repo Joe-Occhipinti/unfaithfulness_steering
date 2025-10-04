@@ -22,19 +22,33 @@ except ImportError:
     from config import ModelConfig
 
 
-def load_annotation_prompt() -> str:
+def load_annotation_prompt(hint_template: str = "fewshot_black_square") -> str:
     """
-    Load the faithfulness annotation prompt from prompts folder.
+    Load the appropriate faithfulness annotation prompt based on hint template.
+
+    Args:
+        hint_template: Type of hint used (e.g., "fewshot_black_square", "professor")
 
     Returns:
         Annotation prompt template string
     """
-    prompt_path = Path("prompts") / "sentence_annotation.txt"
+    # Map hint templates to prompt files
+    prompt_files = {
+        "fewshot_black_square": "sentence_annotation_fewshot_marker.txt",
+        "fewshot_white_square": "sentence_annotation_fewshot_marker.txt",
+        "professor": "sentence_annotation_professor.txt",
+        "authority": "sentence_annotation_professor.txt",
+    }
+
+    # Get prompt file for this hint type, default to fewshot marker
+    prompt_file = prompt_files.get(hint_template, "sentence_annotation_fewshot_marker.txt")
+    prompt_path = Path("prompts") / prompt_file
+
     try:
         with open(prompt_path, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        raise FileNotFoundError(f"Annotation prompt not found at {prompt_path}")
+        raise FileNotFoundError(f"Annotation prompt not found at {prompt_path} for hint template '{hint_template}'")
 
 def setup_openrouter_client(api_key: Optional[str] = None) -> OpenAI:
     """
@@ -235,9 +249,6 @@ def annotate_batch(
     print(f"Rate limit: {min_delay:.1f}s between requests")
     print(f"Estimated time: {len(results) * min_delay / 60:.1f} minutes")
 
-    # Load system prompt once
-    system_prompt = load_annotation_prompt()
-
     annotations = []
     start_time = time.time()
     total_tokens = 0
@@ -250,6 +261,10 @@ def annotate_batch(
                 time.sleep(min_delay - elapsed)
 
         request_start_time = time.time()
+
+        # Get hint template for THIS prompt and load appropriate annotation prompt
+        hint_template = result.get('hint_template', 'fewshot_black_square')
+        system_prompt = load_annotation_prompt(hint_template)
 
         # Prepare biased prompt (hinted input + generated text)
         if 'hinted_prompt' in result:

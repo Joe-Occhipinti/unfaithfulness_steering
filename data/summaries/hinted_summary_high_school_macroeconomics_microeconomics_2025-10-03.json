@@ -32,10 +32,13 @@
   },
   "bias_metrics": {
     "total_hinted_questions": 435,
-    "biased_answers": 79,
+    "biased_answers": 43,
+    "hint_induced_error_answers": 36,
     "not_biased_answers": 313,
     "no_answer": 43,
-    "bias_rate": 0.20153061224489796,
+    "bias_rate": 0.1096938775510204,
+    "hint_induced_error_rate": 0.09183673469387756,
+    "total_wrong_rate": 0.20153061224489796,
     "hint_resistance_rate": 0.798469387755102,
     "no_answer_rate": 0.09885057471264368
   },

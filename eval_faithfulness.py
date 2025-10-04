@@ -32,10 +32,10 @@ from src.config import TODAY, ANNOTATED_DIR
 # =============================================================================
 
 # Mode selection: "hinted" or "steered"
-MODE = "steered"
+MODE = "hinted"
 
 # For HINTED mode - input and output files
-HINTED_INPUT_FILE = "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-02.jsonl"
+HINTED_INPUT_FILE = "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
 HINTED_OUTPUT_FILE = "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
 HINTED_SUMMARY_FILE = "data/summaries/faithfulness_hinted_high_school_macroeconomics_microeconomics_2025-10-03.json"
 

@@ -547,10 +547,11 @@ def plot_hint_breakdown(
     """
     Plot horizontal stacked bars showing final outcomes breakdown per hint template.
 
-    Same format as accuracy_comparison but broken down by hint template:
-    - Correct after bias
-    - Wrong after bias
-    - Null after bias
+    Shows breakdown by hint template with categories:
+    - Correct after bias (still correct despite hint)
+    - Biased (wrong AND followed hint - needs faithfulness annotation)
+    - Hint-induced error (wrong but didn't follow hint - no annotation needed)
+    - Null after bias (no answer extracted after hint)
     - Wrong after baseline (constant across all hints - not re-tested)
     - Null after baseline (constant across all hints - not re-tested)
 
@@ -581,14 +582,16 @@ def plot_hint_breakdown(
     # Calculate counts for each hint template
     hint_stats = {}
     for hint_template, results in hint_groups.items():
-        # Count the 3 hinted categories
+        # Count the hinted categories (now 4 instead of 3)
         correct_after_bias = sum(1 for r in results if r.get('accuracy_label') == 'correct')
-        wrong_after_bias = sum(1 for r in results if r.get('bias_label') == 'biased')
+        biased = sum(1 for r in results if r.get('bias_label') == 'biased')  # Followed hint
+        hint_induced_error = sum(1 for r in results if r.get('bias_label') == 'hint-induced error')  # Wrong but didn't follow hint
         null_after_bias = sum(1 for r in results if r.get('bias_label') == 'no_answer')
 
         hint_stats[hint_template] = {
             'correct_after_bias': correct_after_bias,
-            'wrong_after_bias': wrong_after_bias,
+            'biased': biased,  # Wrong AND followed hint
+            'hint_induced_error': hint_induced_error,  # Wrong but didn't follow hint
             'null_after_bias': null_after_bias,
             'wrong_after_baseline': baseline_wrong,  # Same for all
             'null_after_baseline': baseline_no_answer  # Same for all
@@ -605,12 +608,13 @@ def plot_hint_breakdown(
     # Create the plot
     fig, ax = plt.subplots(figsize=(12, max(8, n_hints * 1.5)))
 
-    # Colors matching accuracy_comparison
-    color_correct = '#2E86AB'        # Blue
-    color_wrong = '#F18F01'          # Orange
-    color_null_bias = '#AAAAAA'      # Light gray
-    color_wrong_baseline = '#C73E1D' # Red
-    color_null_baseline = '#666666'  # Dark gray
+    # Colors for different categories
+    color_correct = '#2E86AB'        # Blue - correct after bias
+    color_biased = '#F18F01'          # Orange - followed hint (biased)
+    color_hint_error = '#FDB833'      # Yellow - hint-induced error
+    color_null_bias = '#AAAAAA'      # Light gray - null after bias
+    color_wrong_baseline = '#C73E1D' # Red - wrong after baseline
+    color_null_baseline = '#666666'  # Dark gray - null after baseline
 
     # Create horizontal stacked bars for each hint template
     for i, hint in enumerate(hint_templates):
@@ -626,16 +630,25 @@ def plot_hint_breakdown(
                     ha='center', va='center', fontweight='bold', fontsize=9, color='white')
         bottom += stats['correct_after_bias']
 
-        # Segment 2: Wrong after bias
-        ax.barh(i, stats['wrong_after_bias'], left=bottom, height=0.6,
-                color=color_wrong, alpha=0.9, edgecolor='black', linewidth=0.5)
-        if stats['wrong_after_bias'] > 0:
-            ax.text(bottom + stats['wrong_after_bias']/2, i,
-                    f"{stats['wrong_after_bias']}\n({stats['wrong_after_bias']/baseline_total:.1%})",
+        # Segment 2: Biased (followed hint)
+        ax.barh(i, stats['biased'], left=bottom, height=0.6,
+                color=color_biased, alpha=0.9, edgecolor='black', linewidth=0.5)
+        if stats['biased'] > 0:
+            ax.text(bottom + stats['biased']/2, i,
+                    f"{stats['biased']}\n({stats['biased']/baseline_total:.1%})",
                     ha='center', va='center', fontweight='bold', fontsize=9, color='white')
-        bottom += stats['wrong_after_bias']
+        bottom += stats['biased']
 
-        # Segment 3: Null after bias
+        # Segment 3: Hint-induced error (wrong but didn't follow hint)
+        ax.barh(i, stats['hint_induced_error'], left=bottom, height=0.6,
+                color=color_hint_error, alpha=0.9, edgecolor='black', linewidth=0.5)
+        if stats['hint_induced_error'] > 0:
+            ax.text(bottom + stats['hint_induced_error']/2, i,
+                    f"{stats['hint_induced_error']}\n({stats['hint_induced_error']/baseline_total:.1%})",
+                    ha='center', va='center', fontweight='bold', fontsize=9, color='black')
+        bottom += stats['hint_induced_error']
+
+        # Segment 4: Null after bias
         ax.barh(i, stats['null_after_bias'], left=bottom, height=0.6,
                 color=color_null_bias, alpha=0.8, edgecolor='black', linewidth=0.5)
         if stats['null_after_bias'] > 0:
@@ -644,7 +657,7 @@ def plot_hint_breakdown(
                     ha='center', va='center', fontweight='bold', fontsize=8, color='white')
         bottom += stats['null_after_bias']
 
-        # Segment 4: Wrong after baseline
+        # Segment 5: Wrong after baseline
         ax.barh(i, stats['wrong_after_baseline'], left=bottom, height=0.6,
                 color=color_wrong_baseline, alpha=0.8, edgecolor='black', linewidth=0.5)
         if stats['wrong_after_baseline'] > 0:
@@ -653,7 +666,7 @@ def plot_hint_breakdown(
                     ha='center', va='center', fontweight='bold', fontsize=8, color='white')
         bottom += stats['wrong_after_baseline']
 
-        # Segment 5: Null after baseline
+        # Segment 6: Null after baseline
         ax.barh(i, stats['null_after_baseline'], left=bottom, height=0.6,
                 color=color_null_baseline, alpha=0.8, edgecolor='black', linewidth=0.5)
         if stats['null_after_baseline'] > 0:
@@ -677,7 +690,8 @@ def plot_hint_breakdown(
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor=color_correct, edgecolor='black', label='Correct After Bias'),
-        Patch(facecolor=color_wrong, edgecolor='black', label='Wrong After Bias'),
+        Patch(facecolor=color_biased, edgecolor='black', label='Biased (Followed Hint)'),
+        Patch(facecolor=color_hint_error, edgecolor='black', label='Hint-Induced Error'),
         Patch(facecolor=color_null_bias, edgecolor='black', label='Null After Bias'),
         Patch(facecolor=color_wrong_baseline, edgecolor='black', label='Wrong After Baseline'),
         Patch(facecolor=color_null_baseline, edgecolor='black', label='Null After Baseline')
@@ -692,7 +706,8 @@ def plot_hint_breakdown(
         stats = hint_stats[hint]
         print(f"\n{hint}:")
         print(f"  Correct after bias: {stats['correct_after_bias']}")
-        print(f"  Wrong after bias: {stats['wrong_after_bias']}")
+        print(f"  Biased (followed hint): {stats['biased']}")
+        print(f"  Hint-induced error: {stats['hint_induced_error']}")
         print(f"  Null after bias: {stats['null_after_bias']}")
         print(f"  Wrong after baseline: {stats['wrong_after_baseline']} (constant)")
         print(f"  Null after baseline: {stats['null_after_baseline']} (constant)")
