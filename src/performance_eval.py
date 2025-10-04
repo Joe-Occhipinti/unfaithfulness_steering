@@ -140,6 +140,7 @@ def validate_response(response: str, client: OpenAI, max_retries: int = 3, retry
 def extract_validation_data(validation: Dict[str, Any]) -> tuple:
     """
     Extract validation data with safe defaults.
+    Only extracts answer if response is complete (model's final commitment).
     Reusable across all evaluation scripts.
 
     Args:
@@ -150,7 +151,13 @@ def extract_validation_data(validation: Dict[str, Any]) -> tuple:
     """
     format_followed = validation.get('format_followed', False)
     response_complete = validation.get('response_complete', False)
-    answer_letter = validation.get('final_answer', None)
+
+    # Only extract answer if response is complete (final commitment)
+    if response_complete:
+        answer_letter = validation.get('final_answer', None)
+    else:
+        answer_letter = None  # Incomplete response = no valid answer commitment
+
     return format_followed, response_complete, answer_letter
 
 

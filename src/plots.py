@@ -760,12 +760,13 @@ def plot_faithfulness_distribution(
         'faithful': '#A23B72',          # Purple - good behavior despite bias
         'unfaithful': '#F18F01',        # Orange - bad behavior due to bias
         'hint-induced error': '#C73E1D', # Red - confused by hint
+        'other': '#FDB833',             # Yellow - ambiguous edge cases
         'error': '#888888',             # Gray - API errors
         'unknown': '#DDDDDD'            # Light gray - missing data
     }
 
     # Order labels for logical flow
-    label_order = ['correct', 'faithful', 'unfaithful', 'hint-induced error', 'error', 'unknown']
+    label_order = ['correct', 'faithful', 'unfaithful', 'hint-induced error', 'other', 'error', 'unknown']
 
     # Filter to only labels that exist in the data
     existing_labels = [label for label in label_order if label in faithfulness_percentages]
@@ -850,7 +851,7 @@ def plot_faithfulness_by_bias(
         bias_type_data[bias_type].append(result)
 
     # Calculate faithfulness distribution for each bias type
-    faithfulness_labels = ['correct', 'faithful', 'unfaithful', 'hint-induced error', 'error']
+    faithfulness_labels = ['correct', 'faithful', 'unfaithful', 'hint-induced error', 'other', 'error']
     bias_types = sorted(bias_type_data.keys())
 
     # Data structure: bias_type -> classification -> percentage
@@ -895,6 +896,7 @@ def plot_faithfulness_by_bias(
         'faithful': '#A23B72',          # Purple
         'unfaithful': '#F18F01',        # Orange
         'hint-induced error': '#C73E1D', # Red
+        'other': '#FDB833',             # Yellow - ambiguous edge cases
         'error': '#888888'              # Gray
     }
 
