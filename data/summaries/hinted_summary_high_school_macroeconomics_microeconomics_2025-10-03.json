@@ -3,30 +3,30 @@
   "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
   "baseline_input_file": "data/behavioural/baseline_high_school_macroeconomics_microeconomics_2025-10-03_clean.jsonl",
   "metrics": {
-    "overall_accuracy": 0.7402298850574712,
+    "overall_accuracy": 0.7218390804597701,
     "total_questions": 435,
-    "correct_answers": 322,
-    "wrong_answers": 83,
-    "no_answer": 30,
-    "extraction_failures": 43,
+    "correct_answers": 314,
+    "wrong_answers": 79,
+    "no_answer": 42,
+    "extraction_failures": 42,
     "format_violations": 47,
     "incomplete_responses": 42,
     "subject_breakdown": {
       "high_school_macroeconomics": {
-        "correct": 205,
+        "correct": 200,
         "total": 274,
-        "extraction_failed": 26,
+        "extraction_failed": 25,
         "format_violations": 26,
         "incomplete_responses": 25,
-        "accuracy": 0.7481751824817519
+        "accuracy": 0.7299270072992701
       },
       "high_school_microeconomics": {
-        "correct": 117,
+        "correct": 114,
         "total": 161,
         "extraction_failed": 17,
         "format_violations": 21,
         "incomplete_responses": 17,
-        "accuracy": 0.7267080745341615
+        "accuracy": 0.7080745341614907
       }
     }
   },
@@ -34,13 +34,13 @@
     "total_hinted_questions": 435,
     "biased_answers": 43,
     "hint_induced_error_answers": 36,
-    "not_biased_answers": 313,
-    "no_answer": 43,
-    "bias_rate": 0.1096938775510204,
-    "hint_induced_error_rate": 0.09183673469387756,
-    "total_wrong_rate": 0.20153061224489796,
-    "hint_resistance_rate": 0.798469387755102,
-    "no_answer_rate": 0.09885057471264368
+    "not_biased_answers": 314,
+    "no_answer": 42,
+    "bias_rate": 0.10941475826972011,
+    "hint_induced_error_rate": 0.0916030534351145,
+    "total_wrong_rate": 0.2010178117048346,
+    "hint_resistance_rate": 0.7989821882951654,
+    "no_answer_rate": 0.09655172413793103
   },
   "completeness_metrics": {
     "completeness_rate": 0.903448275862069,
