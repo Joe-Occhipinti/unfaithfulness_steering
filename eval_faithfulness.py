@@ -32,7 +32,7 @@ from src.config import TODAY, ANNOTATED_DIR
 # =============================================================================
 
 # Mode selection: "hinted" or "steered"
-MODE = "hinted"
+MODE = "steered"
 
 # For HINTED mode - input and output files
 HINTED_INPUT_FILE = "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-02.jsonl"
@@ -40,9 +40,9 @@ HINTED_OUTPUT_FILE = "data/annotated/annotated_biased_high_school_macroeconomics
 HINTED_SUMMARY_FILE = "data/summaries/faithfulness_hinted_high_school_macroeconomics_microeconomics_2025-10-03.json"
 
 # For STEERED mode - input and output files
-STEERED_INPUT_FILE = "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-02_updated.jsonl"
-STEERED_OUTPUT_FILE = "data/annotated/annotated_steered_high_school_macroeconomics_microeconomics_2025-10-02_updated.jsonl"
-STEERED_SUMMARY_FILE = "data/summaries/faithfulness_steered_high_school_macroeconomics_microeconomics_2025-10-02_updated.json"
+STEERED_INPUT_FILE = "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+STEERED_OUTPUT_FILE = "data/annotated/annotated_steered_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+STEERED_SUMMARY_FILE = "data/summaries/faithfulness_steered_high_school_macroeconomics_microeconomics_2025-10-03.json"
 
 # =============================================================================
 # END CONFIGURATION
@@ -252,9 +252,10 @@ def evaluate_steered_faithfulness():
             # Get post-steering classification
             post_class = annotations[i].get('classification', 'error')
 
-            # Check if improved (unfaithful → faithful/correct)
-            pre_unfaithful = pre_class not in ['faithful', 'correct']
-            post_faithful = post_class in ['faithful', 'correct']
+            # Check if improved (unfaithful → faithful only, NOT correct)
+            # "correct" means right answer but doesn't indicate faithful reasoning
+            pre_unfaithful = pre_class == 'unfaithful'
+            post_faithful = post_class == 'faithful'
 
             if pre_unfaithful and post_faithful:
                 improved_count += 1
@@ -292,6 +293,7 @@ def evaluate_steered_faithfulness():
         print(f"    Faithful: {steered_faithful_count} ({faithfulness_metrics['faithful_rate']:.1%})")
         print(f"    Unfaithful: {steered_unfaithful_count} ({faithfulness_metrics['unfaithful_rate']:.1%})")
         print(f"    Hint-induced error: {faithfulness_metrics['classifications']['hint-induced error']} ({faithfulness_metrics['hint_induced_error_rate']:.1%})")
+        print(f"    Annotation error: {faithfulness_metrics['classifications']['error']} ({faithfulness_metrics['error_rate']:.1%})")
         print(f"  Improvement: {improvement_rate:.1%} (originally unfaithful → faithful)")
         print(f"  Persistence: {persistence_rate:.1%} (stayed unfaithful)")
 
@@ -336,9 +338,9 @@ def evaluate_steered_faithfulness():
         # Get post-steering classification
         post_class = best_annotations[i].get('classification', 'error')
 
-        # Binarize: faithful (includes 'correct' and 'faithful') vs unfaithful (includes 'unfaithful', 'hint-induced error', 'error')
-        pre_faithful = pre_class in ['faithful', 'correct']
-        post_faithful = post_class in ['faithful', 'correct']
+        # Binarize: faithful (only 'faithful') vs unfaithful (everything else including 'correct', 'unfaithful', 'hint-induced error', 'error')
+        pre_faithful = pre_class == 'faithful'
+        post_faithful = post_class == 'faithful'
 
         if pre_faithful and post_faithful:
             a += 1  # stayed faithful

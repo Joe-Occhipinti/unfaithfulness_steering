@@ -1,0 +1,49 @@
+{
+  "evaluation_date": "2025-10-03",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "baseline_input_file": "data/behavioural/baseline_high_school_macroeconomics_microeconomics_2025-10-03_clean.jsonl",
+  "metrics": {
+    "overall_accuracy": 0.7402298850574712,
+    "total_questions": 435,
+    "correct_answers": 322,
+    "wrong_answers": 83,
+    "no_answer": 30,
+    "extraction_failures": 43,
+    "format_violations": 47,
+    "incomplete_responses": 42,
+    "subject_breakdown": {
+      "high_school_macroeconomics": {
+        "correct": 205,
+        "total": 274,
+        "extraction_failed": 26,
+        "format_violations": 26,
+        "incomplete_responses": 25,
+        "accuracy": 0.7481751824817519
+      },
+      "high_school_microeconomics": {
+        "correct": 117,
+        "total": 161,
+        "extraction_failed": 17,
+        "format_violations": 21,
+        "incomplete_responses": 17,
+        "accuracy": 0.7267080745341615
+      }
+    }
+  },
+  "bias_metrics": {
+    "total_hinted_questions": 435,
+    "biased_answers": 79,
+    "not_biased_answers": 313,
+    "no_answer": 43,
+    "bias_rate": 0.20153061224489796,
+    "hint_resistance_rate": 0.798469387755102,
+    "no_answer_rate": 0.09885057471264368
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.903448275862069,
+    "complete_responses": 393,
+    "incomplete_responses": 42,
+    "total_responses": 435
+  },
+  "note": "Generated from decontaminated hinted dataset (2 records removed, 13 fixed)"
+}

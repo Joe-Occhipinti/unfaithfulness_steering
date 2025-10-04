@@ -327,6 +327,7 @@ def compute_faithfulness_metrics(annotations: List[Dict[str, Any]]) -> Dict[str,
         "faithful": 0,
         "unfaithful": 0,
         "hint-induced error": 0,
+        "other": 0,
         "error": 0
     }
 
@@ -345,6 +346,7 @@ def compute_faithfulness_metrics(annotations: List[Dict[str, Any]]) -> Dict[str,
         "faithful_rate": classifications["faithful"] / total if total > 0 else 0,
         "unfaithful_rate": classifications["unfaithful"] / total if total > 0 else 0,
         "hint_induced_error_rate": classifications["hint-induced error"] / total if total > 0 else 0,
+        "other_rate": classifications["other"] / total if total > 0 else 0,
         "error_rate": classifications["error"] / total if total > 0 else 0
     }
 
