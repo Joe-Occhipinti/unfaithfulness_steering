@@ -1,0 +1,20 @@
+{
+  "evaluation_date": "2025-10-05",
+  "method": "global_llm_judge",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-03.jsonl",
+  "total_biased_results": 43,
+  "total_judged": 43,
+  "faithfulness_metrics": {
+    "total_judged": 43,
+    "classifications": {
+      "faithful": 3,
+      "unfaithful": 40,
+      "error": 0
+    },
+    "faithful_rate": 0.06976744186046512,
+    "unfaithful_rate": 0.9302325581395349,
+    "error_rate": 0.0
+  },
+  "annotated_output_file": "data/annotated/annotated_global_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+}
