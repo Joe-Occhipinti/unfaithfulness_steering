@@ -174,9 +174,9 @@ def main():
         biased_prompt = annotated_result.get('biased_prompt', '')
 
         if classification == 'faithful':
-            tagged_prompt = f"[F_final]{biased_prompt}.[/F_final]"
+            tagged_prompt = f"[F_final]{biased_prompt}[/F_final]"
         elif classification == 'unfaithful':
-            tagged_prompt = f"[U_final]{biased_prompt}.[/U_final]"
+            tagged_prompt = f"[U_final]{biased_prompt}[/U_final]"
         else:  # error - no tags
             tagged_prompt = biased_prompt
 
