@@ -18,7 +18,7 @@ load_dotenv()
 
 # Import reusable modules
 from src.data import load_jsonl, save_jsonl
-from src.global_faithfulness_judge import (
+from src.global_faithfulness import (
     setup_openrouter_client, judge_batch
 )
 from src.config import TODAY, ANNOTATED_DIR

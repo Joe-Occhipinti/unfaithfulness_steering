@@ -21,7 +21,7 @@ load_dotenv()
 
 # Import reusable modules
 from src.data import load_jsonl, save_jsonl
-from src.faithfulness_eval import (
+from src.local_faithfulness import (
     setup_openrouter_client, annotate_batch,
     compute_faithfulness_metrics, print_faithfulness_report
 )
