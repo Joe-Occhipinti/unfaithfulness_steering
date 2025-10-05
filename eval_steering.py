@@ -66,7 +66,7 @@ from src.model import load_model
 from src.steering import (
     sweep_coefficients
 )
-from src.faithfulness_eval import (
+from src.local_faithfulness import (
     setup_openrouter_client
 )
 from src.performance_eval import (
