@@ -93,7 +93,8 @@ def get_clean_text_and_char_indices(annotated_text: str, target_tags: List[str])
     # 2. Find target periods in the annotated text and map their positions to the clean text.
     for tag in target_tags:
         # This regex allows for optional spaces (\s*) and captures the period in group 2.
-        pattern = re.compile(fr'\[{tag}\](.*?)\s*(\.)\s*\[/{tag}\]')
+        # re.DOTALL allows . to match newlines (needed for multi-line tagged content)
+        pattern = re.compile(fr'\[{tag}\](.*?)\s*(\.)\s*\[/{tag}\]', re.DOTALL)
         for match in pattern.finditer(annotated_text):
             # Get original position of the period itself.
             period_char_pos_annotated = match.start(2)
