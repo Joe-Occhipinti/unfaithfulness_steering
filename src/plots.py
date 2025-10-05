@@ -962,6 +962,133 @@ def plot_faithfulness_by_bias(
         plt.close()
 
 
+def plot_global_faithfulness_by_bias(
+    hinted_results: List[Dict],
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> None:
+    """
+    Plot global faithfulness distribution broken down by bias type (hint_template).
+
+    Simplified version for global LLM judge which only produces 3 classifications:
+    faithful, unfaithful, error.
+
+    Args:
+        hinted_results: List of hinted evaluation results with faithfulness_classification
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+    """
+    setup_plot_style()
+
+    # Filter for biased results only
+    biased_results = [r for r in hinted_results if r.get('bias_label') == 'biased']
+
+    if not biased_results:
+        print("No biased results found for bias-wise faithfulness plot")
+        return
+
+    # Group by bias type (hint_template)
+    bias_type_data = {}
+    for result in biased_results:
+        bias_type = result.get('hint_template', 'unknown')
+        if bias_type not in bias_type_data:
+            bias_type_data[bias_type] = []
+        bias_type_data[bias_type].append(result)
+
+    # Global judge only produces these 3 classifications
+    faithfulness_labels = ['faithful', 'unfaithful', 'error']
+    bias_types = sorted(bias_type_data.keys())
+
+    # Data structure: bias_type -> classification -> percentage
+    data_by_bias = {}
+    for bias_type in bias_types:
+        results = bias_type_data[bias_type]
+        total = len(results)
+
+        counts = {label: 0 for label in faithfulness_labels}
+        for result in results:
+            classification = result.get('faithfulness_classification', 'error')
+            if classification in counts:
+                counts[classification] += 1
+            else:
+                counts['error'] += 1
+
+        percentages = {label: (counts[label] / total * 100) if total > 0 else 0
+                      for label in faithfulness_labels}
+
+        data_by_bias[bias_type] = {
+            'counts': counts,
+            'percentages': percentages,
+            'total': total
+        }
+
+    # Print summary
+    print(f"\nGlobal faithfulness distribution by bias type:")
+    for bias_type in bias_types:
+        print(f"\n{bias_type} (n={data_by_bias[bias_type]['total']}):")
+        for label in faithfulness_labels:
+            count = data_by_bias[bias_type]['counts'][label]
+            pct = data_by_bias[bias_type]['percentages'][label]
+            if count > 0:
+                print(f"  {label}: {count} ({pct:.1f}%)")
+
+    # Create grouped bar chart
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+    # Define colors for global judge classifications
+    label_colors = {
+        'faithful': '#A23B72',          # Purple - faithful reasoning
+        'unfaithful': '#F18F01',        # Orange - unfaithful reasoning
+        'error': '#888888'              # Gray - API/parsing errors
+    }
+
+    # Set up bar positions
+    x = np.arange(len(bias_types))
+    width = 0.25  # Width of each bar (wider since only 3 categories)
+
+    # Plot bars for each classification
+    for i, label in enumerate(faithfulness_labels):
+        percentages = [data_by_bias[bt]['percentages'][label] for bt in bias_types]
+        offset = (i - len(faithfulness_labels)/2 + 0.5) * width
+        bars = ax.bar(x + offset, percentages, width,
+                     label=label.capitalize(), color=label_colors[label],
+                     alpha=0.8, edgecolor='black', linewidth=0.8)
+
+        # Add count labels on bars (only if percentage > 3%)
+        for j, (bar, bias_type) in enumerate(zip(bars, bias_types)):
+            height = bar.get_height()
+            if height > 3:  # Only show label if bar is tall enough
+                count = data_by_bias[bias_type]['counts'][label]
+                ax.text(bar.get_x() + bar.get_width()/2, height,
+                       f'{count}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+    # Customize plot
+    ax.set_ylabel('Percentage of Biased Responses', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Bias Type (Hint Template)', fontsize=12, fontweight='bold')
+    ax.set_title('Global Faithfulness Distribution by Bias Type\n'
+                f'Total Biased Responses: {len(biased_results)}',
+                fontsize=14, fontweight='bold', pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(bias_types, rotation=45, ha='right')
+    ax.legend(title='Classification', loc='upper right', fontsize=11)
+    ax.set_ylim(0, 105)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Bias-wise global faithfulness plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
 def plot_steering_tuning_results(
     evaluation_results: Dict[Tuple[int, float], Dict[str, Any]],
     layers_to_test: List[int],

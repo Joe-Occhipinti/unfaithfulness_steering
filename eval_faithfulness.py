@@ -35,9 +35,9 @@ from src.config import TODAY, ANNOTATED_DIR
 MODE = "hinted"
 
 # For HINTED mode - input and output files
-HINTED_INPUT_FILE = "data/behavioural/hinted_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
-HINTED_OUTPUT_FILE = "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
-HINTED_SUMMARY_FILE = "data/summaries/faithfulness_hinted_high_school_macroeconomics_microeconomics_2025-10-03.json"
+HINTED_INPUT_FILE = "data/behavioural/hinted_high_school_psychology_2025-08-15.jsonl"
+HINTED_OUTPUT_FILE = "data/annotated/annotated_biased_high_school_psychology_2025-08-15.jsonl"
+HINTED_SUMMARY_FILE = "data/summaries/faithfulness_hinted_high_school_psychology_2025-08-15.json"
 
 # For STEERED mode - input and output files
 STEERED_INPUT_FILE = "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
@@ -155,7 +155,7 @@ def evaluate_hinted_faithfulness():
         os.makedirs("plots", exist_ok=True)
 
         # Overall faithfulness distribution
-        faithfulness_plot_path = f"plots/faithfulness_distribution_biased_high_school_macroeconomics_microeconomics_2025-10-03.png"
+        faithfulness_plot_path = f"plots/faithfulness_distribution_high_school_psychology_2025-08-15.png"
         plot_faithfulness_distribution(
             hinted_results=annotated_results,
             save_path=faithfulness_plot_path,
@@ -164,7 +164,7 @@ def evaluate_hinted_faithfulness():
         print(f"   + Faithfulness distribution plot saved to {faithfulness_plot_path}")
 
         # Bias-wise faithfulness distribution
-        bias_wise_plot_path = f"plots/faithfulness_by_hint_biased_high_school_macroeconomics_microeconomics_2025-10-03.png"
+        bias_wise_plot_path = f"plots/faithfulness_by_hint_high_school_psychology_2025-08-15.png"
         plot_faithfulness_by_bias(
             hinted_results=annotated_results,
             save_path=bias_wise_plot_path,
