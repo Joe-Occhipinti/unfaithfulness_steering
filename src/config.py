@@ -49,9 +49,10 @@ class ModelConfig:
 
     # Annotation models (for faithfulness classification)
     ANNOTATION_MODELS = {
-        "gemini": "google/gemini-2.0-flash-exp:free",  
-        "gemini-2.5-pro": "google/gemini-2.5-pro",             
-        "gpt4o": "openai/gpt-4o",                     
+        "gemini": "google/gemini-2.0-flash-exp:free",
+        "gemini-2.5-pro": "google/gemini-2.5-pro",
+        "gemini-2.5-flash": "google/gemini-2.5-flash",
+        "gpt4o": "openai/gpt-4o",
         "claude-sonnet": "anthropic/claude-3.5-sonnet",
          "gpt-4.1-nano": "gpt-4.1-nano-2025-04-14"
     }
@@ -61,12 +62,13 @@ class ModelConfig:
     DEFAULT_ANNOTATION_MODEL = ANNOTATION_MODELS["gemini-2.5-pro"]
 
     # API rate limits (requests per minute)
-    RATE_LIMITS = {                   
-        "google/gemini-2.5-pro": 30,              
-        "deepseek/deepseek-reasoner": 10,        
-        "openai/gpt-4o": 500,                    
+    RATE_LIMITS = {
+        "google/gemini-2.5-pro": 30,
+        "google/gemini-2.5-flash": 60,
+        "deepseek/deepseek-reasoner": 10,
+        "openai/gpt-4o": 500,
         "openai/gpt-4o-mini": 500,
-        "gpt-4.1-nano-2025-04-14": 100,        
+        "gpt-4.1-nano-2025-04-14": 100,
     }
 
     @staticmethod

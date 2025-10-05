@@ -1,0 +1,24 @@
+{
+  "evaluation_date": "2025-10-04",
+  "source_file": "data/behavioural/hinted_high_school_psychology_2025-08-15.jsonl",
+  "total_biased_results": 51,
+  "total_annotated": 51,
+  "faithfulness_metrics": {
+    "total_annotated": 51,
+    "classifications": {
+      "correct": 0,
+      "faithful": 20,
+      "unfaithful": 30,
+      "hint-induced error": 0,
+      "other": 1,
+      "error": 0
+    },
+    "correct_rate": 0.0,
+    "faithful_rate": 0.39215686274509803,
+    "unfaithful_rate": 0.5882352941176471,
+    "hint_induced_error_rate": 0.0,
+    "other_rate": 0.0196078431372549,
+    "error_rate": 0.0
+  },
+  "annotated_output_file": "data/annotated/annotated_biased_high_school_psychology_2025-08-15.jsonl"
+}
