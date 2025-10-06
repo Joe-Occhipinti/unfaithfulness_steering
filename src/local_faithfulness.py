@@ -50,6 +50,48 @@ def load_annotation_prompt(hint_template: str = "fewshot_black_square") -> str:
     except FileNotFoundError:
         raise FileNotFoundError(f"Annotation prompt not found at {prompt_path} for hint template '{hint_template}'")
 
+
+def load_local_annotation_prompt(hint_template: str = "professor", is_faithful: bool = True) -> str:
+    """
+    Load the appropriate local faithfulness annotation prompt based on hint template and global classification.
+
+    Args:
+        hint_template: Type of hint used (e.g., "professor", "metadata", "fewshot_black_square")
+        is_faithful: Whether the response is globally faithful (True) or unfaithful (False)
+
+    Returns:
+        Local annotation prompt template string
+    """
+    # Map hint templates to local prompt file prefixes
+    prompt_prefixes = {
+        "professor": "local_annotation",
+        "authority": "local_annotation",
+        "metadata": "local_annotation",
+        "fewshot_black_square": "local_annotation",
+        "fewshot_white_square": "local_annotation",
+    }
+
+    # Get prompt prefix for this hint type
+    prefix = prompt_prefixes.get(hint_template, "local_annotation")
+
+    # Determine suffix based on global classification
+    suffix = "faithful" if is_faithful else "unfaithful"
+
+    # Construct filename: local_annotation_{faithful|unfaithful}_{hint_template}.txt
+    # For now, we only have professor versions, so default to that
+    hint_suffix = "professor" if hint_template in ["professor", "authority"] else "professor"
+    prompt_file = f"{prefix}_{suffix}_{hint_suffix}.txt"
+    prompt_path = Path("prompts") / prompt_file
+
+    try:
+        with open(prompt_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Local annotation prompt not found at {prompt_path} for hint template '{hint_template}' "
+            f"and classification {'faithful' if is_faithful else 'unfaithful'}"
+        )
+
 def setup_openrouter_client(api_key: Optional[str] = None) -> OpenAI:
     """
     Setup OpenRouter client for all model interactions.
@@ -387,3 +429,265 @@ def print_faithfulness_report(metrics: Dict[str, Any]) -> None:
     print(f"  Unfaithful: {metrics['unfaithful_rate']:.3f}")
     print(f"  Hint-induced Error: {metrics['hint_induced_error_rate']:.3f}")
     print(f"  Error: {metrics['error_rate']:.3f}")
+
+
+# =============================================================================
+# LOCAL FAITHFULNESS ANNOTATION FUNCTIONS
+# =============================================================================
+
+def annotate_local_faithfulness(
+    biased_prompt: str,
+    hint_letter: str,
+    is_faithful: bool,
+    client: OpenAI,
+    hint_template: str = "professor",
+    model: str = None,
+    max_retries: int = 3,
+    verbose: bool = False
+) -> Dict[str, Any]:
+    """
+    Annotate a single biased prompt for local faithfulness markers ([F_body] or [U_body]).
+
+    Args:
+        biased_prompt: The full biased prompt (CoT text to annotate)
+        hint_letter: The letter suggested by the hint
+        is_faithful: Whether response is globally faithful (determines which annotator to use)
+        client: OpenRouter client
+        hint_template: Type of hint used (e.g., "professor")
+        model: Model to use for annotation (default: config)
+        max_retries: Number of retry attempts
+        verbose: Whether to print progress/debug information
+
+    Returns:
+        Dictionary with:
+            - annotated_text: Text with [F_body]/[U_body] markers
+            - success: Boolean indicating if annotation succeeded
+            - raw_response: Raw LLM response (for debugging)
+            - api_usage: Token usage statistics (if available)
+            - error: Error message (if failed)
+    """
+    # Load appropriate system prompt based on global classification
+    try:
+        system_prompt = load_local_annotation_prompt(hint_template, is_faithful)
+    except FileNotFoundError as e:
+        if verbose:
+            print(f"Error loading local annotation prompt: {e}")
+        return {
+            "annotated_text": None,
+            "success": False,
+            "raw_response": None,
+            "error": str(e)
+        }
+
+    # Construct user prompt
+    user_prompt = f"""Hint Letter: {hint_letter}
+
+Text to Annotate:
+{biased_prompt}"""
+
+    # Retry logic for API calls
+    for attempt in range(max_retries):
+        try:
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": os.environ.get("SITE_URL", "https://github.com"),
+                    "X-Title": os.environ.get("SITE_NAME", "Local Faithfulness Annotation")
+                },
+                model=model or ModelConfig.DEFAULT_ANNOTATION_MODEL,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt
+                    },
+                    {
+                        "role": "user",
+                        "content": user_prompt
+                    }
+                ],
+                temperature=0.0,
+                max_tokens=32000,
+                top_p=0.1
+            )
+
+            raw_response = completion.choices[0].message.content.strip()
+
+            # Extract token usage
+            usage = completion.usage if hasattr(completion, 'usage') else None
+
+            return {
+                "annotated_text": raw_response,
+                "success": True,
+                "raw_response": raw_response,
+                "api_usage": {
+                    "prompt_tokens": usage.prompt_tokens if usage else 0,
+                    "completion_tokens": usage.completion_tokens if usage else 0,
+                    "total_tokens": usage.total_tokens if usage else 0
+                }
+            }
+
+        except Exception as e:
+            error_msg = str(e)
+            if "429" in error_msg or "rate limit" in error_msg.lower():
+                if verbose:
+                    print(f"Rate limit exceeded (attempt {attempt + 1}/{max_retries}). Waiting 60s...")
+                time.sleep(60)
+            else:
+                if verbose:
+                    print(f"API error (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                else:
+                    return {
+                        "annotated_text": None,
+                        "success": False,
+                        "raw_response": None,
+                        "error": str(e)
+                    }
+
+    # If we exhausted all retries
+    return {
+        "annotated_text": None,
+        "success": False,
+        "raw_response": None,
+        "error": "Max retries exceeded"
+    }
+
+
+def annotate_local_batch(
+    results: List[Dict[str, Any]],
+    client: OpenAI,
+    model: str = None,
+    max_retries: int = 3,
+    verbose: bool = True
+) -> List[Dict[str, Any]]:
+    """
+    Annotate multiple biased prompts for local faithfulness with rate limiting and progress tracking.
+    Routes each prompt to appropriate annotator (faithful vs unfaithful) based on global classification.
+
+    Args:
+        results: List of result dictionaries with biased prompts and global faithfulness classifications
+        client: OpenRouter client
+        model: Model to use for annotation (default: config)
+        max_retries: Maximum retry attempts per annotation
+        verbose: Whether to print progress information
+
+    Returns:
+        List of annotation results, each containing:
+            - annotated_text: Text with [F_body]/[U_body] markers
+            - success: Boolean
+            - raw_response: Raw LLM response
+            - api_usage: Token usage statistics
+    """
+    model = model or ModelConfig.DEFAULT_ANNOTATION_MODEL
+    min_delay = ModelConfig.get_min_delay(model)
+
+    if verbose:
+        print(f"\n--- Annotating {len(results)} prompts for local faithfulness with {model} ---")
+        print(f"Rate limit: {min_delay:.1f}s between requests")
+        print(f"Estimated time: {len(results) * min_delay / 60:.1f} minutes")
+
+    annotations = []
+    start_time = time.time()
+    total_tokens = 0
+    error_count = 0
+    skipped_count = 0
+
+    for i, result in enumerate(tqdm(results, desc="Annotating locally", disable=not verbose)):
+        # Rate limiting
+        if i > 0:
+            elapsed = time.time() - request_start_time
+            if elapsed < min_delay:
+                time.sleep(min_delay - elapsed)
+
+        request_start_time = time.time()
+
+        # Extract global faithfulness classification
+        global_classification = result.get('faithfulness_classification', result.get('global_faithfulness_classification'))
+
+        # Skip if classification is error or missing
+        if not global_classification or global_classification == 'error':
+            skipped_count += 1
+            annotations.append({
+                "annotated_text": None,
+                "success": False,
+                "error": "Skipped: global classification is error or missing"
+            })
+            continue
+
+        # Determine if globally faithful or unfaithful
+        is_faithful = (global_classification == 'faithful')
+
+        # Extract hint template for THIS prompt
+        hint_template = result.get('hint_template', 'professor')
+
+        # Extract biased prompt (pre-annotation text)
+        biased_prompt = result.get('biased_prompt', '')
+
+        # Extract hint letter
+        hint_letter = result.get('hint_letter', '')
+
+        # Annotate locally
+        annotation_result = annotate_local_faithfulness(
+            biased_prompt=biased_prompt,
+            hint_letter=hint_letter,
+            is_faithful=is_faithful,
+            client=client,
+            hint_template=hint_template,
+            model=model,
+            max_retries=max_retries,
+            verbose=False  # Disable per-request verbose to avoid clutter
+        )
+
+        if annotation_result['success']:
+            total_tokens += annotation_result.get('api_usage', {}).get('total_tokens', 0)
+        else:
+            error_count += 1
+
+        annotations.append(annotation_result)
+
+    elapsed_time = time.time() - start_time
+
+    if verbose:
+        print(f"\nLocal annotation complete in {elapsed_time/60:.1f} minutes")
+        print(f"Total tokens used: {total_tokens:,}")
+        print(f"Successful: {len(results) - error_count - skipped_count}/{len(results)}")
+        print(f"Errors: {error_count}")
+        print(f"Skipped: {skipped_count}")
+
+    return annotations
+
+
+def compute_local_annotation_metrics(annotations: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Compute metrics from local faithfulness annotations.
+
+    Args:
+        annotations: List of annotation results from annotate_local_batch
+
+    Returns:
+        Dictionary with local annotation metrics
+    """
+    total = len(annotations)
+    successful = sum(1 for ann in annotations if ann.get('success', False))
+    errors = sum(1 for ann in annotations if not ann.get('success', False))
+
+    # Count markers in successful annotations
+    f_body_count = 0
+    u_body_count = 0
+
+    for ann in annotations:
+        if ann.get('success') and ann.get('annotated_text'):
+            text = ann['annotated_text']
+            f_body_count += len(re.findall(r'\[F_body\]', text))
+            u_body_count += len(re.findall(r'\[U_body\]', text))
+
+    return {
+        "total_annotations": total,
+        "successful": successful,
+        "errors": errors,
+        "success_rate": successful / total if total > 0 else 0,
+        "f_body_markers": f_body_count,
+        "u_body_markers": u_body_count,
+        "avg_f_markers_per_annotation": f_body_count / successful if successful > 0 else 0,
+        "avg_u_markers_per_annotation": u_body_count / successful if successful > 0 else 0
+    }

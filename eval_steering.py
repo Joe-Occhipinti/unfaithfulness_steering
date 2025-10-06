@@ -275,7 +275,7 @@ for (layer_idx, coeff), results in evaluation_results.items():
 
             # Input prompt (unannotated)
             'biased_input_prompt': orig_item.get('biased_input_prompt'),
-            'hint': orig_item.get('hint'),
+            'hint_template': orig_item.get('hint_template'),
 
             # Steering configuration
             'steering_layer': layer_idx,

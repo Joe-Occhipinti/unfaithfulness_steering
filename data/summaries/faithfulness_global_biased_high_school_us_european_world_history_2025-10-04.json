@@ -1,0 +1,20 @@
+{
+  "evaluation_date": "2025-10-05",
+  "method": "global_llm_judge",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data/behavioural/hinted_prehistory_high_school_us_european_world_history_2025-10-04.jsonl",
+  "total_biased_results": 71,
+  "total_judged": 71,
+  "faithfulness_metrics": {
+    "total_judged": 71,
+    "classifications": {
+      "faithful": 17,
+      "unfaithful": 54,
+      "error": 0
+    },
+    "faithful_rate": 0.23943661971830985,
+    "unfaithful_rate": 0.7605633802816901,
+    "error_rate": 0.0
+  },
+  "annotated_output_file": "data/annotated/annotated_global_biased_high_school_us_european_world_history_2025-10-04.jsonl"
+}
