@@ -30,17 +30,17 @@ from src.config import TODAY
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/activations_global_biased_high_school_psychology_2025-08-15.pkl"
-OUTPUT_FILE = "data/steering vectors/steering_vectors_Ffinal_vs_Ufinal_global_biased_high_school_psychology_2025-08-15.pkl"
-SUMMARY_FILE = "data/summaries/steering_vectors_summary_Ffinal_vs_Ufinal_global_biased_high_school_psychology_2025-08-15.json"
+INPUT_FILE = "data/datasets/activations_local_biased_high_school_psychology_2025-08-15.pkl"
+OUTPUT_FILE = "data/steering vectors/steering_vectors_Fbody_vs_Ubody_local_biased_high_school_psychology_2025-08-15.pkl"
+SUMMARY_FILE = "data/summaries/steering_vectors_summary_Fbody_vs_Ubody_local_biased_high_school_psychology_2025-08-15.json"
 
 # =============================================================================
 # STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
 # =============================================================================
 
 # Tag groupings for steering vectors
-POSITIVE_TAGS = ["F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F_body"]     # Faithful tags
+NEGATIVE_TAGS = ["U_body"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F", "F_final"]   # Base + Final faithful only
