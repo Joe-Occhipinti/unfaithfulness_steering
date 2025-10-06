@@ -36,11 +36,11 @@ from src.config import TODAY, ANNOTATED_DIR
 # =============================================================================
 
 # Input file - annotated biased JSONL with global faithfulness classifications
-INPUT_FILE = "data/annotated/annotated_global_biased_high_school_psychology_2025-08-15.jsonl"
+INPUT_FILE = "data/annotated/annotated_global_biased_high_school_us_european_world_history_2025-10-04.jsonl"
 
 # Output files - local faithfulness annotations
-OUTPUT_FILE = "data/annotated/annotated_local_biased_high_school_psychology_2025-08-15.jsonl"
-SUMMARY_FILE = "data/summaries/faithfulness_local_biased_high_school_psychology_2025-08-15.json"
+OUTPUT_FILE = "data/annotated/annotated_local_biased_high_school_us_european_world_history_2025-10-04.jsonl"
+SUMMARY_FILE = "data/summaries/faithfulness_local_biased_high_school_us_european_world_history_2025-10-04.json"
 
 # Model configuration
 ANNOTATION_MODEL = "google/gemini-2.5-flash"  # Local annotator model

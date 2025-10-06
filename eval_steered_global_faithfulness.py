@@ -45,7 +45,7 @@ from src.steered_plots import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/behavioural/steered_val_global_biased_high_school_psychology_faith_unfaith_2025-08-15.jsonl"
+INPUT_FILE = "data/behavioural/steered_val_global_biased_high_school_psychology_2025-08-15.jsonl"
 
 # Subject (auto-extracted from filename, or set manually)
 SUBJECT = "high_school_psychology"
