@@ -42,17 +42,17 @@ from src.config import TODAY, PLOTS_DIR
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/activations_global_biased_high_school_psychology_2025-08-15.pkl" 
-OUTPUT_DIR = "data/separability/separability_Ffinal_vs_Ufinal_global_biased_high_school_psychology_2025-08-15"
-PLOTS_DIR = "plots/separability_Ffinal_vs_Ufinal_global_biased_high_school_psychology_2025-08-15"
-SUMMARY_FILE = "data/summaries/summary_separability_Ffinal_vs_Ufinal_global_biased_high_school_psychology_2025-08-15.json"
+INPUT_FILE = "data/datasets/activations_local_biased_high_school_psychology_2025-08-15.pkl" 
+OUTPUT_DIR = "data/separability/separability_Fbody_vs_Ubody_local_biased_high_school_psychology_2025-08-15"
+PLOTS_DIR = "plots/separability_Fbody_vs_Ubody_local_biased_high_school_psychology_2025-08-15"
+SUMMARY_FILE = "data/summaries/summary_separability_Fbody_vs_Ubody_local_biased_high_school_psychology_2025-08-15.json"
 # =============================================================================
 # SEPARABILITY ANALYSIS PARAMETERS (easy to tune)
 # =============================================================================
 
 # Tag groupings for analysis
-POSITIVE_TAGS = ["F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F_body"]     # Faithful tags
+NEGATIVE_TAGS = ["U_body"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F", "F_wk"]           # Add weakly faithful variants
