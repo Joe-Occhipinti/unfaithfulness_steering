@@ -1,0 +1,683 @@
+{
+  "metadata": {
+    "date": "2025-10-06",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "input_file": "data/annotated/annotated_local_biased_high_school_psychology_2025-08-15.jsonl",
+    "steering_vectors_file": "data/steering vectors/steering_vectors_Fbody_vs_Ubody_local_biased_high_school_psychology_2025-08-15.pkl",
+    "output_file": "data/behavioural/steered_val_local_biased_high_school_psychology_2025-08-15.jsonl",
+    "num_examples": 15,
+    "layers_tested": [
+      8,
+      13,
+      18,
+      23,
+      28,
+      31
+    ],
+    "coefficients_tested": [
+      0.5,
+      -0.5,
+      0.6,
+      -0.6,
+      0.75,
+      -0.75,
+      1,
+      -1,
+      2,
+      -2,
+      3,
+      -3
+    ],
+    "processing_time_seconds": 17358.095343351364
+  },
+  "all_configurations": {
+    "layer_8_coeff_+0.5": {
+      "layer": 8,
+      "coefficient": 0.5,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_8_coeff_-0.5": {
+      "layer": 8,
+      "coefficient": -0.5,
+      "accuracy_rate": 0.875,
+      "correct_count": 7,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_8_coeff_+0.6": {
+      "layer": 8,
+      "coefficient": 0.6,
+      "accuracy_rate": 0.125,
+      "correct_count": 1,
+      "total_prompts": 8,
+      "compliance_rate": 0.8,
+      "completeness_rate": 0.8666666666666667
+    },
+    "layer_8_coeff_-0.6": {
+      "layer": 8,
+      "coefficient": -0.6,
+      "accuracy_rate": 0.75,
+      "correct_count": 6,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_8_coeff_+0.8": {
+      "layer": 8,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.6,
+      "completeness_rate": 0.6
+    },
+    "layer_8_coeff_-0.8": {
+      "layer": 8,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.875,
+      "correct_count": 7,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_8_coeff_+1.0": {
+      "layer": 8,
+      "coefficient": 1,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.4666666666666667,
+      "completeness_rate": 0.6
+    },
+    "layer_8_coeff_-1.0": {
+      "layer": 8,
+      "coefficient": -1,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_8_coeff_+2.0": {
+      "layer": 8,
+      "coefficient": 2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.2,
+      "completeness_rate": 0.2
+    },
+    "layer_8_coeff_-2.0": {
+      "layer": 8,
+      "coefficient": -2,
+      "accuracy_rate": 0.125,
+      "correct_count": 1,
+      "total_prompts": 8,
+      "compliance_rate": 0.6666666666666666,
+      "completeness_rate": 0.9333333333333333
+    },
+    "layer_8_coeff_+3.0": {
+      "layer": 8,
+      "coefficient": 3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.6,
+      "completeness_rate": 0.0
+    },
+    "layer_8_coeff_-3.0": {
+      "layer": 8,
+      "coefficient": -3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.06666666666666667
+    },
+    "layer_13_coeff_+0.5": {
+      "layer": 13,
+      "coefficient": 0.5,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 0.6,
+      "completeness_rate": 0.6666666666666666
+    },
+    "layer_13_coeff_-0.5": {
+      "layer": 13,
+      "coefficient": -0.5,
+      "accuracy_rate": 0.625,
+      "correct_count": 5,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_13_coeff_+0.6": {
+      "layer": 13,
+      "coefficient": 0.6,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 0.6666666666666666,
+      "completeness_rate": 0.8
+    },
+    "layer_13_coeff_-0.6": {
+      "layer": 13,
+      "coefficient": -0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_13_coeff_+0.8": {
+      "layer": 13,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.4666666666666667,
+      "completeness_rate": 0.4666666666666667
+    },
+    "layer_13_coeff_-0.8": {
+      "layer": 13,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_13_coeff_+1.0": {
+      "layer": 13,
+      "coefficient": 1,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.26666666666666666,
+      "completeness_rate": 0.13333333333333333
+    },
+    "layer_13_coeff_-1.0": {
+      "layer": 13,
+      "coefficient": -1,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_13_coeff_+2.0": {
+      "layer": 13,
+      "coefficient": 2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_13_coeff_-2.0": {
+      "layer": 13,
+      "coefficient": -2,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.4666666666666667,
+      "completeness_rate": 0.5333333333333333
+    },
+    "layer_13_coeff_+3.0": {
+      "layer": 13,
+      "coefficient": 3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.06666666666666667
+    },
+    "layer_13_coeff_-3.0": {
+      "layer": 13,
+      "coefficient": -3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.13333333333333333,
+      "completeness_rate": 0.0
+    },
+    "layer_18_coeff_+0.5": {
+      "layer": 18,
+      "coefficient": 0.5,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.7333333333333333,
+      "completeness_rate": 0.9333333333333333
+    },
+    "layer_18_coeff_-0.5": {
+      "layer": 18,
+      "coefficient": -0.5,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_18_coeff_+0.6": {
+      "layer": 18,
+      "coefficient": 0.6,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 0.8,
+      "completeness_rate": 0.8666666666666667
+    },
+    "layer_18_coeff_-0.6": {
+      "layer": 18,
+      "coefficient": -0.6,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_18_coeff_+0.8": {
+      "layer": 18,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.125,
+      "correct_count": 1,
+      "total_prompts": 8,
+      "compliance_rate": 0.6,
+      "completeness_rate": 0.6
+    },
+    "layer_18_coeff_-0.8": {
+      "layer": 18,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_18_coeff_+1.0": {
+      "layer": 18,
+      "coefficient": 1,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.3333333333333333,
+      "completeness_rate": 0.4
+    },
+    "layer_18_coeff_-1.0": {
+      "layer": 18,
+      "coefficient": -1,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.8666666666666667,
+      "completeness_rate": 0.9333333333333333
+    },
+    "layer_18_coeff_+2.0": {
+      "layer": 18,
+      "coefficient": 2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_18_coeff_-2.0": {
+      "layer": 18,
+      "coefficient": -2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_18_coeff_+3.0": {
+      "layer": 18,
+      "coefficient": 3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_18_coeff_-3.0": {
+      "layer": 18,
+      "coefficient": -3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.06666666666666667,
+      "completeness_rate": 0.0
+    },
+    "layer_23_coeff_+0.5": {
+      "layer": 23,
+      "coefficient": 0.5,
+      "accuracy_rate": 0.625,
+      "correct_count": 5,
+      "total_prompts": 8,
+      "compliance_rate": 0.9333333333333333,
+      "completeness_rate": 0.9333333333333333
+    },
+    "layer_23_coeff_-0.5": {
+      "layer": 23,
+      "coefficient": -0.5,
+      "accuracy_rate": 0.625,
+      "correct_count": 5,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_23_coeff_+0.6": {
+      "layer": 23,
+      "coefficient": 0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.7333333333333333,
+      "completeness_rate": 0.8666666666666667
+    },
+    "layer_23_coeff_-0.6": {
+      "layer": 23,
+      "coefficient": -0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_23_coeff_+0.8": {
+      "layer": 23,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.5333333333333333,
+      "completeness_rate": 0.6666666666666666
+    },
+    "layer_23_coeff_-0.8": {
+      "layer": 23,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_23_coeff_+1.0": {
+      "layer": 23,
+      "coefficient": 1,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.4,
+      "completeness_rate": 0.4666666666666667
+    },
+    "layer_23_coeff_-1.0": {
+      "layer": 23,
+      "coefficient": -1,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_23_coeff_+2.0": {
+      "layer": 23,
+      "coefficient": 2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_23_coeff_-2.0": {
+      "layer": 23,
+      "coefficient": -2,
+      "accuracy_rate": 0.125,
+      "correct_count": 1,
+      "total_prompts": 8,
+      "compliance_rate": 0.13333333333333333,
+      "completeness_rate": 0.06666666666666667
+    },
+    "layer_23_coeff_+3.0": {
+      "layer": 23,
+      "coefficient": 3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_23_coeff_-3.0": {
+      "layer": 23,
+      "coefficient": -3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.06666666666666667,
+      "completeness_rate": 0.0
+    },
+    "layer_28_coeff_+0.5": {
+      "layer": 28,
+      "coefficient": 0.5,
+      "accuracy_rate": 0.625,
+      "correct_count": 5,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_28_coeff_-0.5": {
+      "layer": 28,
+      "coefficient": -0.5,
+      "accuracy_rate": 0.625,
+      "correct_count": 5,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_28_coeff_+0.6": {
+      "layer": 28,
+      "coefficient": 0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.8,
+      "completeness_rate": 0.8666666666666667
+    },
+    "layer_28_coeff_-0.6": {
+      "layer": 28,
+      "coefficient": -0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_28_coeff_+0.8": {
+      "layer": 28,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 0.7333333333333333,
+      "completeness_rate": 0.8
+    },
+    "layer_28_coeff_-0.8": {
+      "layer": 28,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.25,
+      "correct_count": 2,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_28_coeff_+1.0": {
+      "layer": 28,
+      "coefficient": 1,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.8666666666666667,
+      "completeness_rate": 0.8666666666666667
+    },
+    "layer_28_coeff_-1.0": {
+      "layer": 28,
+      "coefficient": -1,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 0.9333333333333333,
+      "completeness_rate": 1.0
+    },
+    "layer_28_coeff_+2.0": {
+      "layer": 28,
+      "coefficient": 2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_28_coeff_-2.0": {
+      "layer": 28,
+      "coefficient": -2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.06666666666666667,
+      "completeness_rate": 0.0
+    },
+    "layer_28_coeff_+3.0": {
+      "layer": 28,
+      "coefficient": 3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_28_coeff_-3.0": {
+      "layer": 28,
+      "coefficient": -3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.5333333333333333,
+      "completeness_rate": 0.0
+    },
+    "layer_31_coeff_+0.5": {
+      "layer": 31,
+      "coefficient": 0.5,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.9333333333333333,
+      "completeness_rate": 0.9333333333333333
+    },
+    "layer_31_coeff_-0.5": {
+      "layer": 31,
+      "coefficient": -0.5,
+      "accuracy_rate": 0.625,
+      "correct_count": 5,
+      "total_prompts": 8,
+      "compliance_rate": 1.0,
+      "completeness_rate": 1.0
+    },
+    "layer_31_coeff_+0.6": {
+      "layer": 31,
+      "coefficient": 0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.8,
+      "completeness_rate": 1.0
+    },
+    "layer_31_coeff_-0.6": {
+      "layer": 31,
+      "coefficient": -0.6,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.9333333333333333,
+      "completeness_rate": 0.9333333333333333
+    },
+    "layer_31_coeff_+0.8": {
+      "layer": 31,
+      "coefficient": 0.75,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.5333333333333333,
+      "completeness_rate": 0.5333333333333333
+    },
+    "layer_31_coeff_-0.8": {
+      "layer": 31,
+      "coefficient": -0.75,
+      "accuracy_rate": 0.375,
+      "correct_count": 3,
+      "total_prompts": 8,
+      "compliance_rate": 0.9333333333333333,
+      "completeness_rate": 1.0
+    },
+    "layer_31_coeff_+1.0": {
+      "layer": 31,
+      "coefficient": 1,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.06666666666666667,
+      "completeness_rate": 0.06666666666666667
+    },
+    "layer_31_coeff_-1.0": {
+      "layer": 31,
+      "coefficient": -1,
+      "accuracy_rate": 0.5,
+      "correct_count": 4,
+      "total_prompts": 8,
+      "compliance_rate": 0.8,
+      "completeness_rate": 1.0
+    },
+    "layer_31_coeff_+2.0": {
+      "layer": 31,
+      "coefficient": 2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.13333333333333333,
+      "completeness_rate": 0.0
+    },
+    "layer_31_coeff_-2.0": {
+      "layer": 31,
+      "coefficient": -2,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.06666666666666667,
+      "completeness_rate": 0.13333333333333333
+    },
+    "layer_31_coeff_+3.0": {
+      "layer": 31,
+      "coefficient": 3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.0,
+      "completeness_rate": 0.0
+    },
+    "layer_31_coeff_-3.0": {
+      "layer": 31,
+      "coefficient": -3,
+      "accuracy_rate": 0.0,
+      "correct_count": 0,
+      "total_prompts": 8,
+      "compliance_rate": 0.2,
+      "completeness_rate": 0.0
+    }
+  }
+}
