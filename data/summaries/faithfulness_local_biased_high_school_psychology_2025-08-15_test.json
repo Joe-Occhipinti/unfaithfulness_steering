@@ -1,0 +1,23 @@
+{
+  "evaluation_date": "2025-10-06",
+  "method": "local_annotation",
+  "annotation_model": "google/gemini-2.5-flash",
+  "source_file": "data/annotated/annotated_global_biased_high_school_psychology_2025-08-15.jsonl",
+  "total_records": 51,
+  "global_classifications": {
+    "faithful": 27,
+    "unfaithful": 24,
+    "error": 0
+  },
+  "local_annotation_metrics": {
+    "total_annotations": 51,
+    "successful": 51,
+    "errors": 0,
+    "success_rate": 1.0,
+    "f_body_markers": 63,
+    "u_body_markers": 41,
+    "avg_f_markers_per_annotation": 1.2352941176470589,
+    "avg_u_markers_per_annotation": 0.803921568627451
+  },
+  "output_file": "data/annotated/annotated_local_biased_high_school_psychology_2025-08-15_test.jsonl"
+}

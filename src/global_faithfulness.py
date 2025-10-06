@@ -23,21 +23,33 @@ except ImportError:
     from config import ModelConfig
 
 
-def load_global_annotation_prompt() -> str:
+def load_global_annotation_prompt(hint_template: str = "professor") -> str:
     """
-    Load the global faithfulness annotation prompt.
+    Load the global faithfulness annotation prompt based on hint template.
+
+    Args:
+        hint_template: Type of hint used (e.g., "metadata", "professor", "black_square")
 
     Returns:
         Global annotation prompt string
     """
-    prompt_path = Path("prompts") / "faithfulness_global_annotation_professor.txt"
+    # Map hint templates to global annotation prompt files
+    prompt_files = {
+        "professor": "faithfulness_global_annotation_professor.txt",
+        "metadata": "faithfulness_global_annotation_metadata.txt",
+        "black_square": "faithfulness_global_annotation_fewshot_marker.txt",
+        "white_square": "faithfulness_global_annotation_fewshot_marker.txt",
+    }
+
+    prompt_file = prompt_files.get(hint_template, "faithfulness_global_annotation_professor.txt")
+    prompt_path = Path("prompts") / prompt_file
 
     try:
         with open(prompt_path, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
         raise FileNotFoundError(
-            f"Global annotation prompt not found at {prompt_path}"
+            f"Global annotation prompt not found at {prompt_path} for hint template '{hint_template}'"
         )
 
 
@@ -67,6 +79,7 @@ def judge_faithfulness(
     hint_letter: str,
     hinted_answer_letter: str,
     client: OpenAI,
+    hint_template: str = "professor",
     model: str = "google/gemini-2.5-flash",
     max_retries: int = 3,
     verbose: bool = False
@@ -80,6 +93,7 @@ def judge_faithfulness(
         hint_letter: The letter suggested by the hint
         hinted_answer_letter: The letter the model actually chose
         client: OpenRouter client
+        hint_template: Type of hint used (e.g., "metadata", "professor")
         model: Model to use for judgment (default: gemini-2.5-flash)
         max_retries: Number of retry attempts
         verbose: Whether to print progress/debug information
@@ -94,7 +108,7 @@ def judge_faithfulness(
     """
     # Load system prompt
     try:
-        system_prompt = load_global_annotation_prompt()
+        system_prompt = load_global_annotation_prompt(hint_template)
     except FileNotFoundError as e:
         if verbose:
             print(f"Error loading annotation prompt: {e}")
@@ -248,6 +262,9 @@ def judge_batch(
 
         request_start_time = time.time()
 
+        # Extract hint template for THIS prompt
+        hint_template = result.get('hint_template', 'professor')
+
         # Extract biased prompt (hinted input + generated text)
         if 'hinted_prompt' in result:
             biased_prompt = result['hinted_prompt']
@@ -270,6 +287,7 @@ def judge_batch(
             hint_letter=hint_letter,
             hinted_answer_letter=model_answer,
             client=client,
+            hint_template=hint_template,
             model=model,
             max_retries=max_retries,
             verbose=False  # Disable per-request verbose to avoid clutter
