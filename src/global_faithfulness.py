@@ -75,9 +75,6 @@ def setup_openrouter_client(api_key: Optional[str] = None) -> OpenAI:
 
 def judge_faithfulness(
     biased_prompt: str,
-    correct_answer_letter: str,
-    hint_letter: str,
-    hinted_answer_letter: str,
     client: OpenAI,
     hint_template: str = "professor",
     model: str = "google/gemini-2.5-flash",
@@ -89,9 +86,6 @@ def judge_faithfulness(
 
     Args:
         biased_prompt: The full biased prompt (hinted input + model response)
-        correct_answer_letter: The correct answer letter
-        hint_letter: The letter suggested by the hint
-        hinted_answer_letter: The letter the model actually chose
         client: OpenRouter client
         hint_template: Type of hint used (e.g., "metadata", "professor")
         model: Model to use for judgment (default: gemini-2.5-flash)
@@ -119,13 +113,8 @@ def judge_faithfulness(
             "error": str(e)
         }
 
-    # Construct user prompt with metadata
-    user_prompt = f"""Correct Answer Letter: {correct_answer_letter}
-Suggested Answer Letter (from hint): {hint_letter}
-Model Final Choice: {hinted_answer_letter}
-
-Full Model Response to Annotate:
-{biased_prompt}"""
+    # Construct user prompt with just the text to classify
+    user_prompt = biased_prompt
 
     # Retry logic for API calls
     for attempt in range(max_retries):
@@ -266,7 +255,10 @@ def judge_batch(
         hint_template = result.get('hint_template', 'professor')
 
         # Extract biased prompt (hinted input + generated text)
-        if 'hinted_prompt' in result:
+        # Priority: steered_prompt > hinted_prompt > biased_prompt > concatenated fallback
+        if 'steered_prompt' in result:
+            biased_prompt = result['steered_prompt']
+        elif 'hinted_prompt' in result:
             biased_prompt = result['hinted_prompt']
         elif 'biased_prompt' in result:
             biased_prompt = result['biased_prompt']
@@ -275,17 +267,9 @@ def judge_batch(
             generated_text = result.get('hinted_generated_text', result.get('biased_generated_text', ''))
             biased_prompt = input_prompt + generated_text
 
-        # Extract metadata
-        correct_answer = result.get('ground_truth_letter', result.get('correct_answer'))
-        hint_letter = result.get('hint_letter', result.get('hinted_answer'))
-        model_answer = result.get('hinted_answer_letter', result.get('answer_letter'))
-
         # Judge faithfulness
         judgment = judge_faithfulness(
             biased_prompt=biased_prompt,
-            correct_answer_letter=correct_answer,
-            hint_letter=hint_letter,
-            hinted_answer_letter=model_answer,
             client=client,
             hint_template=hint_template,
             model=model,

@@ -12,7 +12,6 @@ This module provides functions for:
 
 from collections import defaultdict
 from typing import Dict, Any, List, Tuple
-from scipy import stats
 from tqdm import tqdm
 
 # Import global faithfulness judge
@@ -210,67 +209,6 @@ def compute_transitions(records: List[Dict[str, Any]],
 
 
 # =============================================================================
-# STATISTICAL TESTING
-# =============================================================================
-
-def test_transition_significance(count: int, total: int, transition_name: str) -> Dict[str, Any]:
-    """
-    Test if a transition rate is significantly different from 0 using binomial test.
-
-    Args:
-        count: Number of transitions of this type
-        total: Total number of examples
-        transition_name: Name of the transition
-
-    Returns:
-        Dictionary with test results
-    """
-    rate = count / total if total > 0 else 0
-
-    # Binomial test: H0: rate = 0, H1: rate > 0
-    if count > 0:
-        result = stats.binomtest(count, total, 0, alternative='greater')
-        p_value = float(result.pvalue)
-    else:
-        p_value = 1.0
-
-    significant = bool(p_value < 0.05)
-
-    return {
-        'transition': transition_name,
-        'count': count,
-        'total': total,
-        'rate': rate,
-        'p_value': p_value,
-        'significant': significant,
-        'test_type': 'binomial',
-        'null_hypothesis': 'rate = 0',
-        'alternative': 'rate > 0'
-    }
-
-
-def compute_all_statistical_tests(transitions: Dict[str, Dict[str, Any]],
-                                  total: int) -> Dict[str, Dict[str, Any]]:
-    """
-    Compute statistical tests for all transitions in a group.
-
-    Args:
-        transitions: Transition counts and rates
-        total: Total number of examples
-
-    Returns:
-        Dictionary of test results for each transition
-    """
-    tests = {}
-
-    for transition_name, transition_data in transitions.items():
-        count = transition_data['count']
-        tests[transition_name] = test_transition_significance(count, total, transition_name)
-
-    return tests
-
-
-# =============================================================================
 # BEST CONFIG SELECTION
 # =============================================================================
 
@@ -396,7 +334,6 @@ def compute_group_metrics(group_records: List[Dict[str, Any]],
     1. Rule-based classification
     2. LLM judge for 'needs_judge' cases
     3. Compute transitions
-    4. Statistical tests
 
     Args:
         group_records: Records in this group
@@ -487,15 +424,9 @@ def compute_group_metrics(group_records: List[Dict[str, Any]],
         print(f"      Stage 3: Computing transition rates...")
     transitions = compute_transitions(group_records, classifications, original_state)
 
-    # Stage 4: Statistical tests
-    if verbose:
-        print(f"      Stage 4: Running statistical tests...")
-    statistical_tests = compute_all_statistical_tests(transitions, n)
-
     return {
         'n': n,
         'transitions': transitions,
-        'statistical_tests': statistical_tests,
         'classifications': classifications  # Store for later use
     }
 

@@ -33,7 +33,10 @@ def split_dataset_by_prompts(
     dataset: Dict[str, Any],
     train_ratio: float = 0.7,
     val_ratio: float = 0.3,
-    random_seed: int = 42
+    random_seed: int = 42,
+    balance_val_split: bool = False,
+    positive_tags: List[str] = None,
+    negative_tags: List[str] = None
 ) -> Dict[str, Dict]:
     """
     Split dataset by prompt indices to ensure activations from same prompt stay together.
@@ -43,6 +46,9 @@ def split_dataset_by_prompts(
         train_ratio: Proportion for training set
         val_ratio: Proportion for validation set
         random_seed: Random seed for reproducibility
+        balance_val_split: If True, balance positive and negative samples in val split
+        positive_tags: Tags for positive class (required if balance_val_split=True)
+        negative_tags: Tags for negative class (required if balance_val_split=True)
 
     Returns:
         Dictionary with train/val splits: {'train': dataset_subset, 'val': dataset_subset}
@@ -67,6 +73,46 @@ def split_dataset_by_prompts(
     train_prompts = prompt_indices[:train_end]
     val_prompts = prompt_indices[train_end:]
 
+    # Balance val split if requested
+    if balance_val_split:
+        if positive_tags is None or negative_tags is None:
+            raise ValueError("positive_tags and negative_tags must be provided when balance_val_split=True")
+
+        # Count samples for each prompt in val split
+        pos_counts = []
+        neg_counts = []
+
+        for prompt_idx in val_prompts:
+            prompt_data = data[prompt_idx]
+            # Count positive/negative samples at layer 0 (representative layer)
+            pos_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in positive_tags if tag in prompt_data[0])
+            neg_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in negative_tags if tag in prompt_data[0])
+            pos_counts.append(pos_count)
+            neg_counts.append(neg_count)
+
+        total_pos = sum(pos_counts)
+        total_neg = sum(neg_counts)
+
+        # Determine which class to downsample
+        min_samples = min(total_pos, total_neg)
+
+        print(f"Val split before balancing: {total_pos} positive, {total_neg} negative samples")
+        print(f"Balancing to {min_samples} samples per class")
+
+        # This is a simple approach: we keep the same prompts but will downsample during extraction
+        # A more sophisticated approach would select prompts to balance, but that's complex
+        # For now, we'll add metadata to indicate balancing should happen during extraction
+        balance_info = {
+            'balance_enabled': True,
+            'target_samples_per_class': min_samples,
+            'original_pos': total_pos,
+            'original_neg': total_neg
+        }
+    else:
+        balance_info = {'balance_enabled': False}
+
     print(f"Split dataset: {len(train_prompts)} train, {len(val_prompts)} val prompts")
 
     # Create splits by selecting specific prompts
@@ -78,14 +124,20 @@ def split_dataset_by_prompts(
         for prompt_idx in prompt_list:
             split_data[prompt_idx] = data[prompt_idx]
 
+        split_info = {
+            **info,
+            'split': split_name,
+            'num_prompts': len(prompt_list),
+            'prompt_indices': prompt_list
+        }
+
+        # Add balance info to val split if balancing is enabled
+        if split_name == 'val' and balance_val_split:
+            split_info['balance_info'] = balance_info
+
         splits[split_name] = {
             'data': split_data,
-            'info': {
-                **info,
-                'split': split_name,
-                'num_prompts': len(prompt_list),
-                'prompt_indices': prompt_list
-            }
+            'info': split_info
         }
 
     return splits
