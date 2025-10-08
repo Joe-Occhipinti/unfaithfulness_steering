@@ -279,8 +279,10 @@ def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_d
         )
 
         plt.tight_layout()
-        save_path = os.path.join(save_dir, f'steered_global_layers_coeff_{coeff}.png')
-        os.makedirs(save_dir, exist_ok=True)
+        # Create nested folder structure for layer-wise plots
+        layer_wise_dir = os.path.join(save_dir, 'school_psychology_professor', 'school_psychology_professor_local', 'layer-wise steering performance')
+        save_path = os.path.join(layer_wise_dir, f'steered_global_layers_coeff_{coeff}.png')
+        os.makedirs(layer_wise_dir, exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"   Saved layer comparison for coeff ±{coeff} to: {save_path}")

@@ -45,7 +45,7 @@ from src.steered_plots import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/behavioural/steered_val_global_biased_high_school_psychology_2025-08-15.jsonl"
+INPUT_FILE = "data/annotated/annotated_steered_local_high_school_psychology_professor_2025-10-06.jsonl"
 
 # Subject (auto-extracted from filename, or set manually)
 SUBJECT = "high_school_psychology"
@@ -54,7 +54,7 @@ SUBJECT = "high_school_psychology"
 PLOT_DIR = "plots"
 
 # Model configuration
-JUDGE_MODEL = "google/gemini-2.5-flash"
+JUDGE_MODEL = "google/gemini-2.5-flash"  # OpenRouter model name
 MAX_RETRIES = 3
 TOP_K = 5  # Number of top configs to report
 
@@ -169,8 +169,7 @@ def create_summary(all_configs, best_configs, subject, hint_template, input_file
                     'score': best_configs['positive_steering']['best']['score'],
                     'success_rate': best_configs['positive_steering']['best']['success_rate'],
                     'side_effects_rate': best_configs['positive_steering']['best']['side_effects_rate'],
-                    'transitions': best_configs['positive_steering']['best']['config']['positive_on_unfaithful']['transitions'],
-                    'statistical_tests': best_configs['positive_steering']['best']['config']['positive_on_unfaithful']['statistical_tests']
+                    'transitions': best_configs['positive_steering']['best']['config']['positive_on_unfaithful']['transitions']
                 },
                 'top_k': [
                     {
@@ -192,8 +191,7 @@ def create_summary(all_configs, best_configs, subject, hint_template, input_file
                     'score': best_configs['negative_steering']['best']['score'],
                     'success_rate': best_configs['negative_steering']['best']['success_rate'],
                     'side_effects_rate': best_configs['negative_steering']['best']['side_effects_rate'],
-                    'transitions': best_configs['negative_steering']['best']['config']['negative_on_faithful']['transitions'],
-                    'statistical_tests': best_configs['negative_steering']['best']['config']['negative_on_faithful']['statistical_tests']
+                    'transitions': best_configs['negative_steering']['best']['config']['negative_on_faithful']['transitions']
                 },
                 'top_k': [
                     {
@@ -345,10 +343,10 @@ def main():
         print_summary_table(best_configs)
 
         # 6. Save outputs for this hint template
-        OUTPUT_ANNOTATED = f"data/annotated/annotated_steered_global_{SUBJECT}_{hint_template}_{TODAY}.jsonl"
-        OUTPUT_SUMMARY = f"data/summaries/faithfulness_steered_global_{SUBJECT}_{hint_template}_{TODAY}.json"
-        PLOT_HEATMAPS = f"{PLOT_DIR}/steered_global_heatmaps_{SUBJECT}_{hint_template}_{TODAY}.png"
-        PLOT_BREAKDOWN = f"{PLOT_DIR}/steered_global_best_breakdown_{SUBJECT}_{hint_template}_{TODAY}.png"
+        OUTPUT_ANNOTATED = f"data/annotated/annotated_steered_local_{SUBJECT}_{hint_template}_{TODAY}.jsonl"
+        OUTPUT_SUMMARY = f"data/summaries/faithfulness_steered_local_{SUBJECT}_{hint_template}_{TODAY}.json"
+        PLOT_HEATMAPS = f"{PLOT_DIR}/history_metadata/steered_local_heatmaps_{SUBJECT}_{hint_template}_{TODAY}.png"
+        PLOT_BREAKDOWN = f"{PLOT_DIR}/history_metadata/steered_local_best_breakdown_{SUBJECT}_{hint_template}_{TODAY}.png"
 
         print(f"\n  Saving outputs for '{hint_template}'...")
 
