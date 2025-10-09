@@ -172,6 +172,10 @@ def plot_best_config_breakdown(best_positive: Dict[str, Any],
     pos_rates.append(pos_transitions.get('unfaithful_to_incomplete', {}).get('rate', 0) * 100)
     pos_colors.append('#f39c12')
 
+    pos_labels.append('→ Error\n(CONTAM.)')
+    pos_rates.append(pos_transitions.get('unfaithful_to_error', {}).get('rate', 0) * 100)
+    pos_colors.append('#95a5a6')
+
     # Plot positive
     axes[0].barh(pos_labels, pos_rates, color=pos_colors)
     axes[0].set_xlabel('Rate (%)')
@@ -213,6 +217,10 @@ def plot_best_config_breakdown(best_positive: Dict[str, Any],
     neg_rates.append(neg_transitions.get('faithful_to_incomplete', {}).get('rate', 0) * 100)
     neg_colors.append('#f39c12')
 
+    neg_labels.append('→ Error\n(CONTAM.)')
+    neg_rates.append(neg_transitions.get('faithful_to_error', {}).get('rate', 0) * 100)
+    neg_colors.append('#95a5a6')
+
     # Plot negative
     axes[1].barh(neg_labels, neg_rates, color=neg_colors)
     axes[1].set_xlabel('Rate (%)')
@@ -234,7 +242,8 @@ def plot_best_config_breakdown(best_positive: Dict[str, Any],
 # PLOT 3: TRANSFORMATION RATES ACROSS LAYERS (PER-COEFFICIENT)
 # =============================================================================
 
-def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_dir: str):
+def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_dir: str,
+                                      subject: str = None, hint_template: str = None):
     """
     Create 5 plots (one per coefficient magnitude).
     Each plot has 4 subplots showing transformation rates across layers.
@@ -242,9 +251,17 @@ def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_d
     Args:
         all_configs: List of all configuration results
         save_dir: Directory to save plots
+        subject: Subject name (extracted from configs if not provided)
+        hint_template: Hint template name (extracted from configs if not provided)
     """
     coeffs = sorted(set(c['coefficient_magnitude'] for c in all_configs))
     layers = sorted(set(c['layer'] for c in all_configs))
+
+    # Extract subject and hint_template from configs if not provided
+    if not subject or not hint_template:
+        if all_configs:
+            subject = subject or all_configs[0].get('subject', 'unknown_subject')
+            hint_template = hint_template or all_configs[0].get('hint_template', 'unknown_template')
 
     for coeff in coeffs:
         fig, axes = plt.subplots(2, 2, figsize=(16, 12))
@@ -279,10 +296,9 @@ def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_d
         )
 
         plt.tight_layout()
-        # Create nested folder structure for layer-wise plots
-        layer_wise_dir = os.path.join(save_dir, 'school_psychology_professor', 'school_psychology_professor_local', 'layer-wise steering performance')
-        save_path = os.path.join(layer_wise_dir, f'steered_global_layers_coeff_{coeff}.png')
-        os.makedirs(layer_wise_dir, exist_ok=True)
+        # Save to specified directory
+        save_path = os.path.join(save_dir, f'steered_global_layers_coeff_{coeff}.png')
+        os.makedirs(save_dir, exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"   Saved layer comparison for coeff ±{coeff} to: {save_path}")
@@ -312,20 +328,22 @@ def _plot_transitions_subplot(configs: List[Dict[str, Any]],
             'unfaithful_to_unfaithful',
             'unfaithful_to_correct',
             'unfaithful_to_hint_error',
-            'unfaithful_to_incomplete'
+            'unfaithful_to_incomplete',
+            'unfaithful_to_error'
         ]
-        labels = ['→ Faithful', '→ Unfaithful', '→ Correct', '→ Hint Error', '→ Incomplete']
-        colors = ['#2ecc71', '#e74c3c', '#f39c12', '#e67e22', '#95a5a6']
+        labels = ['→ Faithful', '→ Unfaithful', '→ Correct', '→ Hint Error', '→ Incomplete', '→ Error']
+        colors = ['#2ecc71', '#e74c3c', '#f39c12', '#e67e22', '#95a5a6', '#7f8c8d']
     else:  # faithful
         transition_names = [
             'faithful_to_unfaithful',
             'faithful_to_faithful',
             'faithful_to_correct',
             'faithful_to_hint_error',
-            'faithful_to_incomplete'
+            'faithful_to_incomplete',
+            'faithful_to_error'
         ]
-        labels = ['→ Unfaithful', '→ Faithful', '→ Correct', '→ Hint Error', '→ Incomplete']
-        colors = ['#2ecc71', '#e74c3c', '#f39c12', '#e67e22', '#95a5a6']
+        labels = ['→ Unfaithful', '→ Faithful', '→ Correct', '→ Hint Error', '→ Incomplete', '→ Error']
+        colors = ['#2ecc71', '#e74c3c', '#f39c12', '#e67e22', '#95a5a6', '#7f8c8d']
 
     # Build data for each transition
     for transition_name, label, color in zip(transition_names, labels, colors):

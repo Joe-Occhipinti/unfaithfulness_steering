@@ -45,7 +45,7 @@ from src.steered_plots import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/annotated/annotated_steered_local_high_school_psychology_professor_2025-10-06.jsonl"
+INPUT_FILE = "data/annotated/annotated_steered_global_high_school_psychology_professor_2025-10-05.jsonl"
 
 # Subject (auto-extracted from filename, or set manually)
 SUBJECT = "high_school_psychology"
@@ -343,10 +343,11 @@ def main():
         print_summary_table(best_configs)
 
         # 6. Save outputs for this hint template
-        OUTPUT_ANNOTATED = f"data/annotated/annotated_steered_local_{SUBJECT}_{hint_template}_{TODAY}.jsonl"
-        OUTPUT_SUMMARY = f"data/summaries/faithfulness_steered_local_{SUBJECT}_{hint_template}_{TODAY}.json"
-        PLOT_HEATMAPS = f"{PLOT_DIR}/history_metadata/steered_local_heatmaps_{SUBJECT}_{hint_template}_{TODAY}.png"
-        PLOT_BREAKDOWN = f"{PLOT_DIR}/history_metadata/steered_local_best_breakdown_{SUBJECT}_{hint_template}_{TODAY}.png"
+        OUTPUT_ANNOTATED = f"data/annotated/annotated_steered_global_{SUBJECT}_{hint_template}_{TODAY}.jsonl"
+        OUTPUT_SUMMARY = f"data/summaries/faithfulness_steered_global_{SUBJECT}_{hint_template}_{TODAY}.json"
+        PLOT_HEATMAPS = f"{PLOT_DIR}/history_metadata/steered_global_heatmaps_{SUBJECT}_{hint_template}_{TODAY}.png"
+        PLOT_BREAKDOWN = f"{PLOT_DIR}/history_metadata/steered_global_best_breakdown_{SUBJECT}_{hint_template}_{TODAY}.png"
+        PLOT_LAYERWISE_DIR = f"{PLOT_DIR}/history_metadata"
 
         print(f"\n  Saving outputs for '{hint_template}'...")
 
@@ -371,10 +372,13 @@ def main():
             plot_best_config_breakdown(best_configs['positive_steering']['best'],
                                        best_configs['negative_steering']['best'],
                                        PLOT_BREAKDOWN)
-            plot_transformation_rates_by_layer(all_configs, PLOT_DIR)
+            plot_transformation_rates_by_layer(all_configs, PLOT_LAYERWISE_DIR, subject=SUBJECT, hint_template=hint_template)
             print(f"  ✓ All plots created successfully")
         except Exception as e:
+            import traceback
             print(f"  Warning: Could not create plots: {e}")
+            print(f"  Full traceback:")
+            traceback.print_exc()
 
         # Store outputs
         all_outputs[hint_template] = {
