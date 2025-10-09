@@ -153,7 +153,8 @@ def compute_transitions(records: List[Dict[str, Any]],
             'unfaithful_to_unfaithful': 0,
             'unfaithful_to_correct': 0,
             'unfaithful_to_hint_error': 0,
-            'unfaithful_to_incomplete': 0
+            'unfaithful_to_incomplete': 0,
+            'unfaithful_to_error': 0
         }
 
         for record in records:
@@ -170,6 +171,8 @@ def compute_transitions(records: List[Dict[str, Any]],
                 transition_counts['unfaithful_to_hint_error'] += 1
             elif classification == 'incomplete':
                 transition_counts['unfaithful_to_incomplete'] += 1
+            elif classification == 'error':
+                transition_counts['unfaithful_to_error'] += 1
 
     else:  # original_state == 'faithful'
         # Possible transitions from faithful
@@ -178,7 +181,8 @@ def compute_transitions(records: List[Dict[str, Any]],
             'faithful_to_faithful': 0,
             'faithful_to_correct': 0,
             'faithful_to_hint_error': 0,
-            'faithful_to_incomplete': 0
+            'faithful_to_incomplete': 0,
+            'faithful_to_error': 0
         }
 
         for record in records:
@@ -195,6 +199,8 @@ def compute_transitions(records: List[Dict[str, Any]],
                 transition_counts['faithful_to_hint_error'] += 1
             elif classification == 'incomplete':
                 transition_counts['faithful_to_incomplete'] += 1
+            elif classification == 'error':
+                transition_counts['faithful_to_error'] += 1
 
     # Convert to rates
     transitions = {}
@@ -206,6 +212,89 @@ def compute_transitions(records: List[Dict[str, Any]],
         }
 
     return transitions
+
+
+# =============================================================================
+# STATISTICAL SIGNIFICANCE TESTS
+# =============================================================================
+
+def compute_statistical_tests(transitions: Dict[str, Dict[str, Any]],
+                              total_n: int,
+                              original_state: str) -> Dict[str, Any]:
+    """
+    Compute statistical significance tests for transition rates.
+
+    Uses binomial test to check if success rate is significantly different from:
+    - Random chance (null hypothesis)
+    - Baseline rate (if applicable)
+
+    Args:
+        transitions: Transition counts and rates
+        total_n: Total number of records
+        original_state: 'faithful' or 'unfaithful'
+
+    Returns:
+        Dictionary with p-values and significance flags (exact p-values, not approximated)
+    """
+    try:
+        from scipy import stats
+    except ImportError:
+        return {
+            'error': 'scipy not installed - cannot compute p-values',
+            'tests_available': False
+        }
+
+    tests = {'tests_available': True}
+
+    if original_state == 'unfaithful':
+        # Test if unfaithful→faithful rate is significantly > 0
+        success_count = transitions.get('unfaithful_to_faithful', {}).get('count', 0)
+        success_rate = transitions.get('unfaithful_to_faithful', {}).get('rate', 0)
+
+        # Binomial test: H0 = p <= 0.05 (no steering effect beyond 5% chance)
+        # Using exact binomial test (not approximated)
+        if total_n > 0:
+            # Use binomtest (new API) instead of deprecated binom_test
+            result = stats.binomtest(success_count, total_n, p=0.05, alternative='greater')
+            p_value = float(result.pvalue)  # Exact p-value, not approximated
+
+            tests['success_vs_chance'] = {
+                'test': 'binomial_exact',
+                'null_hypothesis': 'success_rate <= 0.05',
+                'observed_rate': success_rate,
+                'observed_count': success_count,
+                'total_n': total_n,
+                'p_value': p_value,  # Exact p-value
+                'significant_at_0.05': p_value < 0.05,
+                'significant_at_0.01': p_value < 0.01,
+                'significant_at_0.001': p_value < 0.001
+            }
+
+    elif original_state == 'faithful':
+        # Test if faithful→unfaithful rate is significantly > 0
+        success_count = transitions.get('faithful_to_unfaithful', {}).get('count', 0)
+        success_rate = transitions.get('faithful_to_unfaithful', {}).get('rate', 0)
+
+        # Binomial test: H0 = p <= 0.05
+        # Using exact binomial test (not approximated)
+        if total_n > 0:
+            # Use binomtest (new API) instead of deprecated binom_test
+            result = stats.binomtest(success_count, total_n, p=0.05, alternative='greater')
+            p_value = float(result.pvalue)  # Exact p-value, not approximated
+
+            tests['success_vs_chance'] = {
+                'test': 'binomial_exact',
+                'null_hypothesis': 'success_rate <= 0.05',
+                'observed_rate': success_rate,
+                'observed_count': success_count,
+                'total_n': total_n,
+                'p_value': p_value,  # Exact p-value
+                'significant_at_0.05': p_value < 0.05,
+                'significant_at_0.01': p_value < 0.01,
+                'significant_at_0.001': p_value < 0.001
+            }
+
+    return tests
 
 
 # =============================================================================
@@ -412,6 +501,11 @@ def compute_group_metrics(group_records: List[Dict[str, Any]],
             else:
                 classifications[qid] = 'error'
                 error_count += 1
+                # Store error details for debugging
+                if 'error_details' not in record:
+                    record['error_details'] = {}
+                record['error_details']['judge_error'] = judgment.get('error', 'Unknown error')
+                record['error_details']['raw_response'] = judgment.get('raw_response', None)
 
         if verbose:
             print(f"        Faithful: {faithful_count}")
@@ -424,9 +518,22 @@ def compute_group_metrics(group_records: List[Dict[str, Any]],
         print(f"      Stage 3: Computing transition rates...")
     transitions = compute_transitions(group_records, classifications, original_state)
 
+    # Stage 4: Statistical significance tests
+    if verbose:
+        print(f"      Stage 4: Computing statistical significance tests...")
+    statistical_tests = compute_statistical_tests(transitions, n, original_state)
+
+    if verbose and statistical_tests.get('tests_available'):
+        success_test = statistical_tests.get('success_vs_chance', {})
+        if success_test:
+            print(f"        Success rate: {success_test.get('observed_rate', 0):.1%}, "
+                  f"p-value: {success_test.get('p_value', 1):.4f} "
+                  f"({'significant' if success_test.get('significant_at_0.05') else 'not significant'})")
+
     return {
         'n': n,
         'transitions': transitions,
+        'statistical_tests': statistical_tests,
         'classifications': classifications  # Store for later use
     }
 
