@@ -1329,6 +1329,353 @@ def plot_steered_faithfulness_comparison(
         plt.close()
 
 
+def plot_text_length_histogram(
+    data: List[Dict[str, Any]],
+    text_field: str,
+    threshold: Optional[int] = None,
+    save_path: Optional[str] = None,
+    show_plot: bool = True,
+    title_suffix: str = ""
+) -> None:
+    """
+    Plot histogram of word lengths for a text field across all records.
+
+    Args:
+        data: List of dictionaries (records from JSONL)
+        text_field: Name of the field containing text to analyze
+        threshold: Optional threshold to display as vertical line
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+        title_suffix: Optional suffix for plot title
+
+    Example:
+        >>> data = load_jsonl("data.jsonl")
+        >>> plot_text_length_histogram(
+        ...     data,
+        ...     text_field="hinted_generated_text",
+        ...     threshold=150,
+        ...     save_path="plots/length_histogram.png"
+        ... )
+    """
+    from src.text_utils import count_words
+
+    setup_plot_style()
+
+    # Calculate word lengths
+    word_lengths = []
+    for record in data:
+        text = record.get(text_field, '')
+        if text:
+            word_lengths.append(count_words(text))
+
+    if not word_lengths:
+        print(f"No valid texts found in field '{text_field}'")
+        return
+
+    # Create histogram
+    fig, ax = plt.subplots(figsize=(12, 7))
+
+    n_bins = min(50, max(20, len(word_lengths) // 10))
+    counts, bins, patches = ax.hist(word_lengths, bins=n_bins, alpha=0.7,
+                                     color='steelblue', edgecolor='black', linewidth=0.5)
+
+    # Add threshold line if specified
+    if threshold is not None:
+        ax.axvline(x=threshold, color='red', linestyle='--', linewidth=2.5,
+                   label=f'Threshold: {threshold} words')
+
+        # Shade regions and calculate percentages
+        for patch in patches:
+            if patch.get_x() + patch.get_width() / 2 < threshold:
+                patch.set_facecolor('lightgreen')
+                patch.set_alpha(0.7)
+
+        # Calculate percentages
+        below_threshold = sum(1 for length in word_lengths if length <= threshold)
+        above_threshold = len(word_lengths) - below_threshold
+        pct_below = (below_threshold / len(word_lengths)) * 100
+        pct_above = (above_threshold / len(word_lengths)) * 100
+
+        # Add percentage labels in the middle of each region
+        y_max = ax.get_ylim()[1]
+        x_max = max(word_lengths)
+
+        # Left region (below threshold) - green area
+        x_left = threshold / 2
+        ax.text(x_left, y_max * 0.75,
+                f'Below threshold\n{below_threshold} texts\n({pct_below:.1f}%)',
+                ha='center', va='center', fontsize=11, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8, edgecolor='darkgreen', linewidth=2))
+
+        # Right region (above threshold) - red area
+        x_right = threshold + (x_max - threshold) / 2
+        ax.text(x_right, y_max * 0.75,
+                f'Above threshold\n{above_threshold} texts\n({pct_above:.1f}%)',
+                ha='center', va='center', fontsize=11, fontweight='bold',
+                bbox=dict(boxstyle='round', facecolor='lightcoral', alpha=0.8, edgecolor='darkred', linewidth=2))
+
+    # Calculate and display statistics
+    mean_length = np.mean(word_lengths)
+    median_length = np.median(word_lengths)
+
+    ax.axvline(x=mean_length, color='blue', linestyle=':', linewidth=2, alpha=0.7,
+               label=f'Mean: {mean_length:.1f} words')
+    ax.axvline(x=median_length, color='purple', linestyle='-.', linewidth=2, alpha=0.7,
+               label=f'Median: {median_length:.1f} words')
+
+    # Labels and title
+    ax.set_xlabel('Word Count', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Frequency', fontsize=12, fontweight='bold')
+
+    title = f'Distribution of Text Lengths: {text_field}'
+    if title_suffix:
+        title += f'\n{title_suffix}'
+    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
+
+    ax.legend(fontsize=10)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Add statistics text box
+    stats_text = f'Total: {len(word_lengths)}\n'
+    stats_text += f'Min: {min(word_lengths)}\n'
+    stats_text += f'Max: {max(word_lengths)}\n'
+    stats_text += f'Std: {np.std(word_lengths):.1f}'
+
+    ax.text(0.98, 0.97, stats_text, transform=ax.transAxes,
+            verticalalignment='top', horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+            fontsize=10)
+
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Length histogram saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
+def plot_text_length_sorted_bar(
+    data: List[Dict[str, Any]],
+    text_field: str,
+    threshold: Optional[int] = None,
+    max_items: int = 100,
+    save_path: Optional[str] = None,
+    show_plot: bool = True,
+    title_suffix: str = ""
+) -> None:
+    """
+    Plot sorted bar chart showing word length for each record.
+
+    Each bar represents one record, sorted by increasing word length.
+    Useful for identifying specific short/long texts.
+
+    Args:
+        data: List of dictionaries (records from JSONL)
+        text_field: Name of the field containing text to analyze
+        threshold: Optional threshold to display as horizontal line
+        max_items: Maximum number of items to plot (default: 100)
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+        title_suffix: Optional suffix for plot title
+
+    Example:
+        >>> data = load_jsonl("data.jsonl")
+        >>> plot_text_length_sorted_bar(
+        ...     data,
+        ...     text_field="hinted_generated_text",
+        ...     threshold=150,
+        ...     save_path="plots/length_sorted.png"
+        ... )
+    """
+    from src.text_utils import count_words
+
+    setup_plot_style()
+
+    # Calculate word lengths with indices
+    length_data = []
+    for idx, record in enumerate(data):
+        text = record.get(text_field, '')
+        if text:
+            length_data.append((idx, count_words(text)))
+
+    if not length_data:
+        print(f"No valid texts found in field '{text_field}'")
+        return
+
+    # Sort by word length
+    length_data.sort(key=lambda x: x[1])
+
+    # Limit to max_items if needed
+    if len(length_data) > max_items:
+        print(f"Showing {max_items} of {len(length_data)} items")
+        # Sample evenly across the range
+        step = len(length_data) // max_items
+        length_data = length_data[::step][:max_items]
+
+    indices, lengths = zip(*length_data)
+
+    # Create bar chart
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    x_pos = np.arange(len(lengths))
+
+    # Color bars based on threshold
+    if threshold is not None:
+        colors = ['lightgreen' if l <= threshold else 'lightcoral' for l in lengths]
+    else:
+        colors = 'steelblue'
+
+    bars = ax.bar(x_pos, lengths, color=colors, alpha=0.7, edgecolor='black', linewidth=0.3)
+
+    # Add threshold line if specified
+    if threshold is not None:
+        ax.axhline(y=threshold, color='red', linestyle='--', linewidth=2,
+                   label=f'Threshold: {threshold} words')
+        ax.legend()
+
+    # Labels and title
+    ax.set_xlabel('Text Index (sorted by length)', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Word Count', fontsize=12, fontweight='bold')
+
+    title = f'Sorted Word Lengths: {text_field}'
+    if title_suffix:
+        title += f'\n{title_suffix}'
+    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
+
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Add statistics text box
+    stats_text = f'Showing: {len(lengths)} texts\n'
+    stats_text += f'Min: {min(lengths)}\n'
+    stats_text += f'Max: {max(lengths)}\n'
+    stats_text += f'Median: {np.median(lengths):.1f}'
+
+    ax.text(0.02, 0.97, stats_text, transform=ax.transAxes,
+            verticalalignment='top', horizontalalignment='left',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+            fontsize=10)
+
+    # Reduce x-axis tick density for readability
+    if len(x_pos) > 20:
+        ax.set_xticks(x_pos[::len(x_pos)//10])
+
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Sorted length plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
+def plot_filtering_comparison(
+    original_data: List[Dict[str, Any]],
+    filtered_data: List[Dict[str, Any]],
+    text_field: str,
+    threshold: int,
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> None:
+    """
+    Plot side-by-side comparison of length distributions before and after filtering.
+
+    Args:
+        original_data: Original dataset before filtering
+        filtered_data: Filtered dataset after applying threshold
+        text_field: Name of the field containing text
+        threshold: Threshold used for filtering
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+
+    Example:
+        >>> original = load_jsonl("original.jsonl")
+        >>> filtered = load_jsonl("filtered.jsonl")
+        >>> plot_filtering_comparison(
+        ...     original, filtered,
+        ...     text_field="hinted_generated_text",
+        ...     threshold=150,
+        ...     save_path="plots/filtering_comparison.png"
+        ... )
+    """
+    from src.text_utils import count_words
+
+    setup_plot_style()
+
+    # Calculate word lengths for both datasets
+    original_lengths = [count_words(r.get(text_field, ''))
+                       for r in original_data if r.get(text_field)]
+    filtered_lengths = [count_words(r.get(text_field, ''))
+                       for r in filtered_data if r.get(text_field)]
+
+    # Create side-by-side histograms
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+
+    # Original data histogram
+    n_bins = min(50, max(20, len(original_lengths) // 10))
+    ax1.hist(original_lengths, bins=n_bins, alpha=0.7,
+             color='steelblue', edgecolor='black', linewidth=0.5)
+    ax1.axvline(x=threshold, color='red', linestyle='--', linewidth=2,
+                label=f'Threshold: {threshold}')
+    ax1.axvline(x=np.median(original_lengths), color='purple',
+                linestyle='-.', linewidth=2, alpha=0.7,
+                label=f'Median: {np.median(original_lengths):.1f}')
+
+    ax1.set_xlabel('Word Count', fontsize=12, fontweight='bold')
+    ax1.set_ylabel('Frequency', fontsize=12, fontweight='bold')
+    ax1.set_title(f'Original Data\n(n={len(original_lengths)})',
+                  fontsize=13, fontweight='bold')
+    ax1.legend()
+    ax1.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Filtered data histogram
+    n_bins_filtered = min(50, max(20, len(filtered_lengths) // 10))
+    ax2.hist(filtered_lengths, bins=n_bins_filtered, alpha=0.7,
+             color='lightgreen', edgecolor='black', linewidth=0.5)
+    ax2.axvline(x=threshold, color='red', linestyle='--', linewidth=2,
+                label=f'Threshold: {threshold}')
+    ax2.axvline(x=np.median(filtered_lengths), color='purple',
+                linestyle='-.', linewidth=2, alpha=0.7,
+                label=f'Median: {np.median(filtered_lengths):.1f}')
+
+    ax2.set_xlabel('Word Count', fontsize=12, fontweight='bold')
+    ax2.set_ylabel('Frequency', fontsize=12, fontweight='bold')
+    ax2.set_title(f'Filtered Data\n(n={len(filtered_lengths)}, {len(filtered_lengths)/len(original_lengths)*100:.1f}% retained)',
+                  fontsize=13, fontweight='bold')
+    ax2.legend()
+    ax2.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Overall title
+    fig.suptitle(f'Filtering Effect on {text_field} Length Distribution',
+                 fontsize=15, fontweight='bold')
+
+    plt.tight_layout()
+
+    # Save plot
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Filtering comparison plot saved to {save_path}")
+
+    # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
 # Utility function for quick plotting from command line
 if __name__ == "__main__":
     import sys
