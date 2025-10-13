@@ -30,9 +30,9 @@ from src.config import TODAY
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/activations_global_biased_history_2025-10-12.pkl"
-OUTPUT_FILE = "data/steering vectors/steering_vectors_global_F_vs_U_biased_history_metadata_2025-10-12.pkl"
-SUMMARY_FILE = "data/summaries/steering/steering_vectors_summary_global_F_vs_U_biased_history_metadata_2025-10-12.json"
+INPUT_FILE = "data/datasets/cut_activations_global_biased_psychology_2025-10-12.pkl"
+OUTPUT_FILE = "data/steering vectors/steering_vectors_cut_global_F_vs_U_biased_psychology_professor_2025-10-12.pkl"
+SUMMARY_FILE = "data/summaries/steering/steering_vectors_summary_cut_global_F_vs_U_biased_psychology_professor_2025-10-12.json"
 # =============================================================================
 # STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
 # =============================================================================
@@ -52,8 +52,8 @@ LAYERS_TO_COMPUTE = list(range(32))  # All layers for DeepSeek (tunable)
 # LAYERS_TO_COMPUTE = [15, 20, 25, 30, 31]  # Specific layers only
 
 # Split configuration (same as separability analysis)
-TRAIN_RATIO = 0.7
-VAL_RATIO = 0.3
+TRAIN_RATIO = 1
+VAL_RATIO = 0.0
 RANDOM_SEED = 42
 
 # Output configuration
