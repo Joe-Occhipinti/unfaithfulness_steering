@@ -1,0 +1,386 @@
+{
+  "0": {
+    "explained_variance": [
+      0.31130272150039673,
+      0.2121666669845581
+    ],
+    "explained_variance_cumulative": [
+      0.31130272150039673,
+      0.5234693884849548
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "1": {
+    "explained_variance": [
+      0.19082121551036835,
+      0.12564511597156525
+    ],
+    "explained_variance_cumulative": [
+      0.19082121551036835,
+      0.3164663314819336
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "2": {
+    "explained_variance": [
+      0.18218345940113068,
+      0.12329109758138657
+    ],
+    "explained_variance_cumulative": [
+      0.18218345940113068,
+      0.30547454953193665
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "3": {
+    "explained_variance": [
+      0.14934301376342773,
+      0.11338087171316147
+    ],
+    "explained_variance_cumulative": [
+      0.14934301376342773,
+      0.2627238929271698
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "4": {
+    "explained_variance": [
+      0.13922910392284393,
+      0.10402867943048477
+    ],
+    "explained_variance_cumulative": [
+      0.13922910392284393,
+      0.2432577908039093
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "5": {
+    "explained_variance": [
+      0.15463460981845856,
+      0.09691135585308075
+    ],
+    "explained_variance_cumulative": [
+      0.15463460981845856,
+      0.2515459656715393
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "6": {
+    "explained_variance": [
+      0.14454373717308044,
+      0.08717993646860123
+    ],
+    "explained_variance_cumulative": [
+      0.14454373717308044,
+      0.23172366619110107
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "7": {
+    "explained_variance": [
+      0.13151048123836517,
+      0.08221416920423508
+    ],
+    "explained_variance_cumulative": [
+      0.13151048123836517,
+      0.21372464299201965
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "8": {
+    "explained_variance": [
+      0.11599495261907578,
+      0.08483652025461197
+    ],
+    "explained_variance_cumulative": [
+      0.11599495261907578,
+      0.20083147287368774
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "9": {
+    "explained_variance": [
+      0.10932902246713638,
+      0.0942574143409729
+    ],
+    "explained_variance_cumulative": [
+      0.10932902246713638,
+      0.2035864293575287
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "10": {
+    "explained_variance": [
+      0.10525396466255188,
+      0.09541631489992142
+    ],
+    "explained_variance_cumulative": [
+      0.10525396466255188,
+      0.2006702721118927
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "11": {
+    "explained_variance": [
+      0.11766145378351212,
+      0.09273889660835266
+    ],
+    "explained_variance_cumulative": [
+      0.11766145378351212,
+      0.21040034294128418
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "12": {
+    "explained_variance": [
+      0.1156235784292221,
+      0.10809420794248581
+    ],
+    "explained_variance_cumulative": [
+      0.1156235784292221,
+      0.22371777892112732
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "13": {
+    "explained_variance": [
+      0.1287028193473816,
+      0.1158733069896698
+    ],
+    "explained_variance_cumulative": [
+      0.1287028193473816,
+      0.2445761263370514
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "14": {
+    "explained_variance": [
+      0.14097170531749725,
+      0.11364711076021194
+    ],
+    "explained_variance_cumulative": [
+      0.14097170531749725,
+      0.2546188235282898
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "15": {
+    "explained_variance": [
+      0.1492595225572586,
+      0.12424924224615097
+    ],
+    "explained_variance_cumulative": [
+      0.1492595225572586,
+      0.273508757352829
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "16": {
+    "explained_variance": [
+      0.14964911341667175,
+      0.1235465481877327
+    ],
+    "explained_variance_cumulative": [
+      0.14964911341667175,
+      0.27319565415382385
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "17": {
+    "explained_variance": [
+      0.1517232060432434,
+      0.1194145604968071
+    ],
+    "explained_variance_cumulative": [
+      0.1517232060432434,
+      0.2711377739906311
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "18": {
+    "explained_variance": [
+      0.1510276049375534,
+      0.12387360632419586
+    ],
+    "explained_variance_cumulative": [
+      0.1510276049375534,
+      0.27490121126174927
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "19": {
+    "explained_variance": [
+      0.15740185976028442,
+      0.13337461650371552
+    ],
+    "explained_variance_cumulative": [
+      0.15740185976028442,
+      0.29077649116516113
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "20": {
+    "explained_variance": [
+      0.15641215443611145,
+      0.13113264739513397
+    ],
+    "explained_variance_cumulative": [
+      0.15641215443611145,
+      0.28754478693008423
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "21": {
+    "explained_variance": [
+      0.15478511154651642,
+      0.12920640408992767
+    ],
+    "explained_variance_cumulative": [
+      0.15478511154651642,
+      0.2839915156364441
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "22": {
+    "explained_variance": [
+      0.16340233385562897,
+      0.12834136188030243
+    ],
+    "explained_variance_cumulative": [
+      0.16340233385562897,
+      0.2917436957359314
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "23": {
+    "explained_variance": [
+      0.16301609575748444,
+      0.12763173878192902
+    ],
+    "explained_variance_cumulative": [
+      0.16301609575748444,
+      0.29064783453941345
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "24": {
+    "explained_variance": [
+      0.1618579626083374,
+      0.12739838659763336
+    ],
+    "explained_variance_cumulative": [
+      0.1618579626083374,
+      0.28925633430480957
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "25": {
+    "explained_variance": [
+      0.16627652943134308,
+      0.1219194158911705
+    ],
+    "explained_variance_cumulative": [
+      0.16627652943134308,
+      0.288195937871933
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "26": {
+    "explained_variance": [
+      0.16623228788375854,
+      0.12081575393676758
+    ],
+    "explained_variance_cumulative": [
+      0.16623228788375854,
+      0.2870480418205261
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "27": {
+    "explained_variance": [
+      0.1707407683134079,
+      0.11894074827432632
+    ],
+    "explained_variance_cumulative": [
+      0.1707407683134079,
+      0.2896815240383148
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "28": {
+    "explained_variance": [
+      0.16785883903503418,
+      0.1150442436337471
+    ],
+    "explained_variance_cumulative": [
+      0.16785883903503418,
+      0.2829030752182007
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "29": {
+    "explained_variance": [
+      0.16062766313552856,
+      0.11585763841867447
+    ],
+    "explained_variance_cumulative": [
+      0.16062766313552856,
+      0.27648529410362244
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "30": {
+    "explained_variance": [
+      0.16146618127822876,
+      0.13310101628303528
+    ],
+    "explained_variance_cumulative": [
+      0.16146618127822876,
+      0.29456719756126404
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  },
+  "31": {
+    "explained_variance": [
+      0.28170663118362427,
+      0.1468532383441925
+    ],
+    "explained_variance_cumulative": [
+      0.28170663118362427,
+      0.4285598695278168
+    ],
+    "n_positive": 61,
+    "n_negative": 41
+  }
+}

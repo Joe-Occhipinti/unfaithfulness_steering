@@ -26,7 +26,7 @@ load_dotenv()
 # Import existing modules
 from src.data import load_jsonl, save_jsonl
 from src.global_faithfulness import setup_openrouter_client
-from src.config import TODAY, ANNOTATED_DIR, SUMMARIES_DIR
+from src.config import TODAY
 
 # Import new modules
 from src.steered_global_faithfulness import (
@@ -45,18 +45,35 @@ from src.steered_plots import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/annotated/annotated_steered_global_high_school_psychology_professor_2025-10-05.jsonl"
-
+INPUT_FILE = "annotated_steered_local_high_school_psychology_professor_2025-10-06.jsonl"
 # Subject (auto-extracted from filename, or set manually)
 SUBJECT = "high_school_psychology"
-
-# Plotting
-PLOT_DIR = "plots"
 
 # Model configuration
 JUDGE_MODEL = "google/gemini-2.5-flash"  # OpenRouter model name
 MAX_RETRIES = 3
 TOP_K = 5  # Number of top configs to report
+
+# =============================================================================
+# OUTPUT PATHS CONFIGURATION
+# =============================================================================
+# Set all output file paths manually here.
+# The script will save exactly to these paths (creating directories as needed).
+
+# Output 1: Annotated dataset (JSONL with classifications)
+OUTPUT_ANNOTATED = "data/annotated/steered/test2_psychology_professor_2025-08-15/annotated_steered_global_val_biased_psychology_professor_2025-10-12.jsonl"
+
+# Output 2: Summary JSON (all metrics, best configs)
+OUTPUT_SUMMARY = "data/summaries/test2_steered_faithfulness/faithfulness_steered_global_val_biased_psychology_professor_2025-10-12.json"
+
+# Output 3: Heatmaps plot (2x2 grid)
+OUTPUT_PLOT_HEATMAPS = "plots/test2_psychology_professor_2025-08-15/test_steering_global_F_vs_U_psychology_professor_2025-10-12/heatmaps_steered_global_val_biased_psychology_professor_2025-10-12.png"
+\
+# Output 4: Best config breakdown plot
+OUTPUT_PLOT_BREAKDOWN = "plots/test2_psychology_professor_2025-08-15/test_steering_global_F_vs_U_psychology_professor_2025-10-12/best_breakdown_steered_global_val_biased_psychology_professor_2025-10-12.png"
+
+# Outputs 5+: Layer-wise plots directory (individual files generated automatically as steered_global_layers_coeff_{coeff}.png)
+OUTPUT_PLOT_LAYERS_DIR = "plots/test2_psychology_professor_2025-08-15/test_steering_global_F_vs_U_psychology_professor_2025-10-12"
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -343,24 +360,18 @@ def main():
         print_summary_table(best_configs)
 
         # 6. Save outputs for this hint template
-        OUTPUT_ANNOTATED = f"data/annotated/annotated_steered_global_{SUBJECT}_{hint_template}_{TODAY}.jsonl"
-        OUTPUT_SUMMARY = f"data/summaries/faithfulness_steered_global_{SUBJECT}_{hint_template}_{TODAY}.json"
-        PLOT_HEATMAPS = f"{PLOT_DIR}/history_metadata/steered_global_heatmaps_{SUBJECT}_{hint_template}_{TODAY}.png"
-        PLOT_BREAKDOWN = f"{PLOT_DIR}/history_metadata/steered_global_best_breakdown_{SUBJECT}_{hint_template}_{TODAY}.png"
-        PLOT_LAYERWISE_DIR = f"{PLOT_DIR}/history_metadata"
-
         print(f"\n  Saving outputs for '{hint_template}'...")
 
         # 6a. Save annotated dataset (filter records for this hint template)
         template_records = [r for r in all_records if r.get('hint_template', 'unknown') == hint_template]
         annotated_records = create_annotated_records(all_configs, template_records)
-        os.makedirs(ANNOTATED_DIR, exist_ok=True)
+        os.makedirs(os.path.dirname(OUTPUT_ANNOTATED), exist_ok=True)
         save_jsonl(annotated_records, OUTPUT_ANNOTATED)
         print(f"  ✓ Saved annotated dataset ({len(annotated_records)} records): {OUTPUT_ANNOTATED}")
 
         # 6b. Save summary
         summary = create_summary(all_configs, best_configs, SUBJECT, hint_template, INPUT_FILE)
-        os.makedirs(SUMMARIES_DIR, exist_ok=True)
+        os.makedirs(os.path.dirname(OUTPUT_SUMMARY), exist_ok=True)
         with open(OUTPUT_SUMMARY, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
         print(f"  ✓ Saved summary: {OUTPUT_SUMMARY}")
@@ -368,11 +379,53 @@ def main():
         # 7. Create plots
         print(f"\n  Creating visualizations for '{hint_template}'...")
         try:
-            plot_steering_heatmaps(all_configs, SUBJECT, hint_template, PLOT_HEATMAPS)
+            # Create heatmaps
+            os.makedirs(os.path.dirname(OUTPUT_PLOT_HEATMAPS), exist_ok=True)
+            plot_steering_heatmaps(all_configs, SUBJECT, hint_template, OUTPUT_PLOT_HEATMAPS)
+
+            # Create breakdown
             plot_best_config_breakdown(best_configs['positive_steering']['best'],
                                        best_configs['negative_steering']['best'],
-                                       PLOT_BREAKDOWN)
-            plot_transformation_rates_by_layer(all_configs, PLOT_LAYERWISE_DIR, subject=SUBJECT, hint_template=hint_template)
+                                       OUTPUT_PLOT_BREAKDOWN)
+
+            # Create layer-wise plots (automatically generate filenames in configured directory)
+            os.makedirs(OUTPUT_PLOT_LAYERS_DIR, exist_ok=True)
+
+            # Get unique coefficient magnitudes from data
+            coeffs = sorted(set(c['coefficient_magnitude'] for c in all_configs))
+            layer_plot_paths = []
+
+            for coeff in coeffs:
+                # Generate filename automatically: steered_global_layers_coeff_{coeff}.png
+                save_path = os.path.join(OUTPUT_PLOT_LAYERS_DIR, f"steered_global_layers_coeff_{coeff}.png")
+                layer_plot_paths.append(save_path)
+
+                # Filter configs for this coefficient
+                coeff_configs = [c for c in all_configs if c['coefficient_magnitude'] == coeff]
+
+                # Create the layer-wise plot
+                import matplotlib.pyplot as plt
+                from src.steered_plots import _plot_transitions_subplot
+                layers = sorted(set(c['layer'] for c in all_configs))
+
+                fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+                fig.suptitle(f'Transformation Rates Across Layers (Coefficient = ±{coeff})',
+                            fontsize=16, fontweight='bold')
+
+                _plot_transitions_subplot(coeff_configs, layers, 'positive_on_unfaithful', 'unfaithful',
+                                        axes[0, 0], f'Unfaithful Origin + Positive Steering (coeff = +{coeff})')
+                _plot_transitions_subplot(coeff_configs, layers, 'negative_on_unfaithful', 'unfaithful',
+                                        axes[0, 1], f'Unfaithful Origin + Negative Steering (coeff = -{coeff})')
+                _plot_transitions_subplot(coeff_configs, layers, 'positive_on_faithful', 'faithful',
+                                        axes[1, 0], f'Faithful Origin + Positive Steering (coeff = +{coeff})')
+                _plot_transitions_subplot(coeff_configs, layers, 'negative_on_faithful', 'faithful',
+                                        axes[1, 1], f'Faithful Origin + Negative Steering (coeff = -{coeff})')
+
+                plt.tight_layout()
+                plt.savefig(save_path, dpi=300, bbox_inches='tight')
+                plt.close()
+                print(f"   Saved layer comparison for coeff ±{coeff} to: {save_path}")
+
             print(f"  ✓ All plots created successfully")
         except Exception as e:
             import traceback
@@ -387,8 +440,9 @@ def main():
             'annotated_file': OUTPUT_ANNOTATED,
             'summary_file': OUTPUT_SUMMARY,
             'plots': {
-                'heatmaps': PLOT_HEATMAPS,
-                'breakdown': PLOT_BREAKDOWN
+                'heatmaps': OUTPUT_PLOT_HEATMAPS,
+                'breakdown': OUTPUT_PLOT_BREAKDOWN,
+                'layers': layer_plot_paths
             }
         }
 
@@ -414,6 +468,8 @@ def main():
         print(f"      - {outputs['summary_file']}")
         print(f"      - {outputs['plots']['heatmaps']}")
         print(f"      - {outputs['plots']['breakdown']}")
+        for layer_plot in outputs['plots']['layers']:
+            print(f"      - {layer_plot}")
 
     print(f"\n{'=' * 80}\n")
 
