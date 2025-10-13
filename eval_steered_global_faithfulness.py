@@ -45,8 +45,9 @@ from src.steered_plots import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "annotated_steered_local_high_school_psychology_professor_2025-10-06.jsonl"
-# Subject (auto-extracted from filename, or set manually)
+INPUT_FILE = "data/behavioural/steered/history_metadata_2025-10-10/steered_val_global_biased_history_metadata_2025-10-12.jsonl"
+# Subject (auto-extracted from filename, or set manually)"
+
 SUBJECT = "high_school_psychology"
 
 # Model configuration
@@ -61,19 +62,19 @@ TOP_K = 5  # Number of top configs to report
 # The script will save exactly to these paths (creating directories as needed).
 
 # Output 1: Annotated dataset (JSONL with classifications)
-OUTPUT_ANNOTATED = "data/annotated/steered/test2_psychology_professor_2025-08-15/annotated_steered_global_val_biased_psychology_professor_2025-10-12.jsonl"
+OUTPUT_ANNOTATED = "data/annotated/steered/history_metadata_2025-10-08/annotated_steered_global_val_biased_history_metadata_2025-10-12.jsonl"
 
 # Output 2: Summary JSON (all metrics, best configs)
-OUTPUT_SUMMARY = "data/summaries/test2_steered_faithfulness/faithfulness_steered_global_val_biased_psychology_professor_2025-10-12.json"
+OUTPUT_SUMMARY = "data/summaries/steered_faithfulness/history_metadata_2025-10-08/summary_faithfulness_steered_global_val_biased_history_metadata_2025-10-12.json"
 
 # Output 3: Heatmaps plot (2x2 grid)
-OUTPUT_PLOT_HEATMAPS = "plots/test2_psychology_professor_2025-08-15/test_steering_global_F_vs_U_psychology_professor_2025-10-12/heatmaps_steered_global_val_biased_psychology_professor_2025-10-12.png"
+OUTPUT_PLOT_HEATMAPS = "plots/history_metadata/steering_global_F_vs_U_history_metadata_2025-10-12/heatmaps_steered_global_val_biased_history_metadata_2025-10-12.png"
 \
 # Output 4: Best config breakdown plot
-OUTPUT_PLOT_BREAKDOWN = "plots/test2_psychology_professor_2025-08-15/test_steering_global_F_vs_U_psychology_professor_2025-10-12/best_breakdown_steered_global_val_biased_psychology_professor_2025-10-12.png"
+OUTPUT_PLOT_BREAKDOWN = "plots/history_metadata/steering_global_F_vs_U_history_metadata_2025-10-12/best_breakdown_steered_global_val_biased_history_metadata_2025-10-12.png"
 
 # Outputs 5+: Layer-wise plots directory (individual files generated automatically as steered_global_layers_coeff_{coeff}.png)
-OUTPUT_PLOT_LAYERS_DIR = "plots/test2_psychology_professor_2025-08-15/test_steering_global_F_vs_U_psychology_professor_2025-10-12"
+OUTPUT_PLOT_LAYERS_DIR = "plots/history_metadata/steering_global_F_vs_U_history_metadata_2025-10-12"
 
 # =============================================================================
 # HELPER FUNCTIONS
