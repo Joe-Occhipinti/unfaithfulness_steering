@@ -73,45 +73,65 @@ def split_dataset_by_prompts(
     train_prompts = prompt_indices[:train_end]
     val_prompts = prompt_indices[train_end:]
 
-    # Balance val split if requested
+    # Calculate balance info for both splits if requested
+    train_balance_info = {'balance_enabled': False}
+    val_balance_info = {'balance_enabled': False}
+
     if balance_val_split:
         if positive_tags is None or negative_tags is None:
             raise ValueError("positive_tags and negative_tags must be provided when balance_val_split=True")
 
-        # Count samples for each prompt in val split
-        pos_counts = []
-        neg_counts = []
-
-        for prompt_idx in val_prompts:
+        # Calculate balance info for TRAIN split
+        train_pos_counts = []
+        train_neg_counts = []
+        for prompt_idx in train_prompts:
             prompt_data = data[prompt_idx]
-            # Count positive/negative samples at layer 0 (representative layer)
             pos_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
                           for tag in positive_tags if tag in prompt_data[0])
             neg_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
                           for tag in negative_tags if tag in prompt_data[0])
-            pos_counts.append(pos_count)
-            neg_counts.append(neg_count)
+            train_pos_counts.append(pos_count)
+            train_neg_counts.append(neg_count)
 
-        total_pos = sum(pos_counts)
-        total_neg = sum(neg_counts)
+        train_total_pos = sum(train_pos_counts)
+        train_total_neg = sum(train_neg_counts)
+        train_min_samples = min(train_total_pos, train_total_neg)
 
-        # Determine which class to downsample
-        min_samples = min(total_pos, total_neg)
+        print(f"Train split before balancing: {train_total_pos} positive, {train_total_neg} negative samples")
+        print(f"Balancing to {train_min_samples} samples per class")
 
-        print(f"Val split before balancing: {total_pos} positive, {total_neg} negative samples")
-        print(f"Balancing to {min_samples} samples per class")
-
-        # This is a simple approach: we keep the same prompts but will downsample during extraction
-        # A more sophisticated approach would select prompts to balance, but that's complex
-        # For now, we'll add metadata to indicate balancing should happen during extraction
-        balance_info = {
+        train_balance_info = {
             'balance_enabled': True,
-            'target_samples_per_class': min_samples,
-            'original_pos': total_pos,
-            'original_neg': total_neg
+            'target_samples_per_class': train_min_samples,
+            'original_pos': train_total_pos,
+            'original_neg': train_total_neg
         }
-    else:
-        balance_info = {'balance_enabled': False}
+
+        # Calculate balance info for VAL split
+        val_pos_counts = []
+        val_neg_counts = []
+        for prompt_idx in val_prompts:
+            prompt_data = data[prompt_idx]
+            pos_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in positive_tags if tag in prompt_data[0])
+            neg_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in negative_tags if tag in prompt_data[0])
+            val_pos_counts.append(pos_count)
+            val_neg_counts.append(neg_count)
+
+        val_total_pos = sum(val_pos_counts)
+        val_total_neg = sum(val_neg_counts)
+        val_min_samples = min(val_total_pos, val_total_neg)
+
+        print(f"Val split before balancing: {val_total_pos} positive, {val_total_neg} negative samples")
+        print(f"Balancing to {val_min_samples} samples per class")
+
+        val_balance_info = {
+            'balance_enabled': True,
+            'target_samples_per_class': val_min_samples,
+            'original_pos': val_total_pos,
+            'original_neg': val_total_neg
+        }
 
     print(f"Split dataset: {len(train_prompts)} train, {len(val_prompts)} val prompts")
 
@@ -131,9 +151,11 @@ def split_dataset_by_prompts(
             'prompt_indices': prompt_list
         }
 
-        # Add balance info to val split if balancing is enabled
-        if split_name == 'val' and balance_val_split:
-            split_info['balance_info'] = balance_info
+        # Add balance info to each split
+        if split_name == 'train' and balance_val_split:
+            split_info['balance_info'] = train_balance_info
+        elif split_name == 'val' and balance_val_split:
+            split_info['balance_info'] = val_balance_info
 
         splits[split_name] = {
             'data': split_data,
@@ -340,6 +362,10 @@ def train_linear_probes_by_layer(
 
     print(f"\nTraining linear probes for {len(train_pos)} layers...")
 
+    # Check if we need to apply balancing
+    train_balance_info = dataset_splits['train']['info'].get('balance_info', {'balance_enabled': False})
+    val_balance_info = dataset_splits['val']['info'].get('balance_info', {'balance_enabled': False})
+
     for layer_idx in tqdm(train_pos, desc="Training probes"):
         # Get activations for this layer
         train_pos_acts = train_pos[layer_idx]
@@ -361,12 +387,40 @@ def train_linear_probes_by_layer(
             }
             continue
 
+        # Apply downbalancing to training data if enabled
+        if train_balance_info['balance_enabled']:
+            target_samples = train_balance_info['target_samples_per_class']
+            n_pos = train_pos_acts.shape[0]
+            n_neg = train_neg_acts.shape[0]
+
+            # Downsample the larger class
+            if n_pos > target_samples:
+                indices = torch.randperm(n_pos, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
+                train_pos_acts = train_pos_acts[indices]
+            if n_neg > target_samples:
+                indices = torch.randperm(n_neg, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
+                train_neg_acts = train_neg_acts[indices]
+
         # Prepare training data
         X_train = torch.cat([train_pos_acts, train_neg_acts], dim=0).float().numpy()
         y_train = torch.cat([
             torch.zeros(train_pos_acts.shape[0]),  # 0 for positive
             torch.ones(train_neg_acts.shape[0])    # 1 for negative
         ]).numpy()
+
+        # Apply downbalancing to validation data if enabled
+        if val_balance_info['balance_enabled']:
+            target_samples = val_balance_info['target_samples_per_class']
+            n_pos = val_pos_acts.shape[0]
+            n_neg = val_neg_acts.shape[0]
+
+            # Downsample the larger class
+            if n_pos > target_samples:
+                indices = torch.randperm(n_pos, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
+                val_pos_acts = val_pos_acts[indices]
+            if n_neg > target_samples:
+                indices = torch.randperm(n_neg, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
+                val_neg_acts = val_neg_acts[indices]
 
         # Prepare validation data
         X_val = torch.cat([val_pos_acts, val_neg_acts], dim=0).float().numpy()
