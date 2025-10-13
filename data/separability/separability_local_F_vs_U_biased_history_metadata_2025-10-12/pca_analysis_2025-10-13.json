@@ -1,0 +1,386 @@
+{
+  "0": {
+    "explained_variance": [
+      0.34120965003967285,
+      0.17984391748905182
+    ],
+    "explained_variance_cumulative": [
+      0.34120965003967285,
+      0.5210535526275635
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "1": {
+    "explained_variance": [
+      0.2171294391155243,
+      0.11556479334831238
+    ],
+    "explained_variance_cumulative": [
+      0.2171294391155243,
+      0.33269423246383667
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "2": {
+    "explained_variance": [
+      0.2002025991678238,
+      0.09988860785961151
+    ],
+    "explained_variance_cumulative": [
+      0.2002025991678238,
+      0.3000912070274353
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "3": {
+    "explained_variance": [
+      0.1663748174905777,
+      0.09700725972652435
+    ],
+    "explained_variance_cumulative": [
+      0.1663748174905777,
+      0.26338207721710205
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "4": {
+    "explained_variance": [
+      0.1450696438550949,
+      0.08935254067182541
+    ],
+    "explained_variance_cumulative": [
+      0.1450696438550949,
+      0.23442217707633972
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "5": {
+    "explained_variance": [
+      0.14609776437282562,
+      0.09128249436616898
+    ],
+    "explained_variance_cumulative": [
+      0.14609776437282562,
+      0.2373802661895752
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "6": {
+    "explained_variance": [
+      0.12765595316886902,
+      0.08824557811021805
+    ],
+    "explained_variance_cumulative": [
+      0.12765595316886902,
+      0.21590152382850647
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "7": {
+    "explained_variance": [
+      0.11736714094877243,
+      0.08181045204401016
+    ],
+    "explained_variance_cumulative": [
+      0.11736714094877243,
+      0.1991775929927826
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "8": {
+    "explained_variance": [
+      0.10538756102323532,
+      0.07644522935152054
+    ],
+    "explained_variance_cumulative": [
+      0.10538756102323532,
+      0.18183279037475586
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "9": {
+    "explained_variance": [
+      0.09745240956544876,
+      0.0790710598230362
+    ],
+    "explained_variance_cumulative": [
+      0.09745240956544876,
+      0.17652347683906555
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "10": {
+    "explained_variance": [
+      0.09456408023834229,
+      0.07659120112657547
+    ],
+    "explained_variance_cumulative": [
+      0.09456408023834229,
+      0.17115527391433716
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "11": {
+    "explained_variance": [
+      0.09918039292097092,
+      0.078606978058815
+    ],
+    "explained_variance_cumulative": [
+      0.09918039292097092,
+      0.17778736352920532
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "12": {
+    "explained_variance": [
+      0.10631568729877472,
+      0.07082042843103409
+    ],
+    "explained_variance_cumulative": [
+      0.10631568729877472,
+      0.1771361231803894
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "13": {
+    "explained_variance": [
+      0.11819902807474136,
+      0.07069653272628784
+    ],
+    "explained_variance_cumulative": [
+      0.11819902807474136,
+      0.1888955533504486
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "14": {
+    "explained_variance": [
+      0.12011303752660751,
+      0.07574629038572311
+    ],
+    "explained_variance_cumulative": [
+      0.12011303752660751,
+      0.19585932791233063
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "15": {
+    "explained_variance": [
+      0.11976584792137146,
+      0.07994304597377777
+    ],
+    "explained_variance_cumulative": [
+      0.11976584792137146,
+      0.19970889389514923
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "16": {
+    "explained_variance": [
+      0.12734274566173553,
+      0.0909513309597969
+    ],
+    "explained_variance_cumulative": [
+      0.12734274566173553,
+      0.21829408407211304
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "17": {
+    "explained_variance": [
+      0.12311474978923798,
+      0.09515196830034256
+    ],
+    "explained_variance_cumulative": [
+      0.12311474978923798,
+      0.21826672554016113
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "18": {
+    "explained_variance": [
+      0.12977497279644012,
+      0.09291503578424454
+    ],
+    "explained_variance_cumulative": [
+      0.12977497279644012,
+      0.22269001603126526
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "19": {
+    "explained_variance": [
+      0.13493512570858002,
+      0.09070010483264923
+    ],
+    "explained_variance_cumulative": [
+      0.13493512570858002,
+      0.22563523054122925
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "20": {
+    "explained_variance": [
+      0.13094660639762878,
+      0.09059774875640869
+    ],
+    "explained_variance_cumulative": [
+      0.13094660639762878,
+      0.22154435515403748
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "21": {
+    "explained_variance": [
+      0.13239166140556335,
+      0.08708697557449341
+    ],
+    "explained_variance_cumulative": [
+      0.13239166140556335,
+      0.21947863698005676
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "22": {
+    "explained_variance": [
+      0.13546884059906006,
+      0.08113924413919449
+    ],
+    "explained_variance_cumulative": [
+      0.13546884059906006,
+      0.21660807728767395
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "23": {
+    "explained_variance": [
+      0.1326613873243332,
+      0.07849084585905075
+    ],
+    "explained_variance_cumulative": [
+      0.1326613873243332,
+      0.21115222573280334
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "24": {
+    "explained_variance": [
+      0.1305616945028305,
+      0.0782819539308548
+    ],
+    "explained_variance_cumulative": [
+      0.1305616945028305,
+      0.2088436484336853
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "25": {
+    "explained_variance": [
+      0.1327904611825943,
+      0.07483109831809998
+    ],
+    "explained_variance_cumulative": [
+      0.1327904611825943,
+      0.20762155950069427
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "26": {
+    "explained_variance": [
+      0.13337501883506775,
+      0.07380035519599915
+    ],
+    "explained_variance_cumulative": [
+      0.13337501883506775,
+      0.2071753740310669
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "27": {
+    "explained_variance": [
+      0.12909692525863647,
+      0.07600784301757812
+    ],
+    "explained_variance_cumulative": [
+      0.12909692525863647,
+      0.2051047682762146
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "28": {
+    "explained_variance": [
+      0.12282402813434601,
+      0.07537567615509033
+    ],
+    "explained_variance_cumulative": [
+      0.12282402813434601,
+      0.19819970428943634
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "29": {
+    "explained_variance": [
+      0.11658695340156555,
+      0.08303209394216537
+    ],
+    "explained_variance_cumulative": [
+      0.11658695340156555,
+      0.19961905479431152
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "30": {
+    "explained_variance": [
+      0.12274044007062912,
+      0.11226461827754974
+    ],
+    "explained_variance_cumulative": [
+      0.12274044007062912,
+      0.23500505089759827
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  },
+  "31": {
+    "explained_variance": [
+      0.29645588994026184,
+      0.0999709963798523
+    ],
+    "explained_variance_cumulative": [
+      0.29645588994026184,
+      0.39642688632011414
+    ],
+    "n_positive": 14,
+    "n_negative": 102
+  }
+}

@@ -42,14 +42,13 @@ from src.config import TODAY, PLOTS_DIR
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/activations_local_biased_psychology_professor_2025-10-04.pkl" 
-OUTPUT_DIR = "data/separability/separability_local_F_vs_U_biased_psychology_professor_2025-10-12"
-PLOTS_DIR = "plots/psychology_professor_2025-08-15/separability_local_F_vs_U_biased_psychology_professor_2025-10-12"
-SUMMARY_FILE = "data/summaries/summary_separability_local_F_vs_U_biased_psychology_professor_2025-10-12.json"
+INPUT_FILE = "data/datasets/activations_local_biased_history_2025-10-05.pkl"
+OUTPUT_DIR = "data/separability/separability_local_F_vs_U_biased_history_metadata_2025-10-12"
+PLOTS_DIR = "plots/history_metadata/separability_local_F_vs_U_biased_history_metadata_2025-10-12"
+SUMMARY_FILE = "data/summaries/separability/summary_separability_local_F_vs_U_biased_history_metadata_2025-10-12.json"
 # =============================================================================
 # SEPARABILITY ANALYSIS PARAMETERS (easy to tune)
 # =============================================================================
-
 # Tag groupings for analysis
 POSITIVE_TAGS = ["F_body"]     # Faithful tags
 NEGATIVE_TAGS = ["U_body"]     # Unfaithful tags
