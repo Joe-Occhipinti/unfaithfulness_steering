@@ -17,7 +17,7 @@ STEERING_COEFFICIENT = 0.6
 INPUT_FILE = "data/annotated/steered/psychology_professor_2025-08-15/annotated_steered_local_val_biased_psychology_professor_2025-10-12.jsonl"
 
 # Output directory for plots
-OUTPUT_DIR = "plots/psychology_professor_2025-08-15/top_layer_coeff_letter_distribution/local" # change to /global as needed
+OUTPUT_DIR = "plots/psychology_professor_2025-08-15/steered_letter_distribution/local" # change to /global as needed
 
 # ============================================================================
 # MAIN ANALYSIS
