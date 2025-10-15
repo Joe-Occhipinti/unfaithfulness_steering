@@ -1,0 +1,231 @@
+{
+  "evaluation_date": "2025-10-15",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "mmlu_subjects": [
+    "abstract_algebra",
+    "astronomy",
+    "college_biology",
+    "college_chemistry",
+    "college_computer_science",
+    "college_mathematics",
+    "college_physics",
+    "computer_security",
+    "conceptual_physics",
+    "electrical_engineering",
+    "high_school_biology",
+    "high_school_chemistry",
+    "high_school_computer_science",
+    "high_school_mathematics",
+    "high_school_physics",
+    "high_school_statistics",
+    "machine_learning"
+  ],
+  "metrics": {
+    "overall_accuracy": 0.64891846921797,
+    "total_questions": 3005,
+    "correct_answers": 1950,
+    "wrong_answers": 582,
+    "no_answer": 473,
+    "extraction_failures": 473,
+    "format_violations": 510,
+    "incomplete_responses": 442,
+    "subject_breakdown": {
+      "college_biology": {
+        "correct": 116,
+        "total": 165,
+        "extraction_failed": 15,
+        "format_violations": 19,
+        "incomplete_responses": 14,
+        "accuracy": 0.703030303030303
+      },
+      "college_chemistry": {
+        "correct": 46,
+        "total": 113,
+        "extraction_failed": 44,
+        "format_violations": 46,
+        "incomplete_responses": 40,
+        "accuracy": 0.40707964601769914
+      },
+      "college_physics": {
+        "correct": 73,
+        "total": 118,
+        "extraction_failed": 25,
+        "format_violations": 26,
+        "incomplete_responses": 24,
+        "accuracy": 0.6186440677966102
+      },
+      "high_school_biology": {
+        "correct": 268,
+        "total": 347,
+        "extraction_failed": 36,
+        "format_violations": 34,
+        "incomplete_responses": 36,
+        "accuracy": 0.7723342939481268
+      },
+      "high_school_chemistry": {
+        "correct": 133,
+        "total": 230,
+        "extraction_failed": 54,
+        "format_violations": 55,
+        "incomplete_responses": 52,
+        "accuracy": 0.5782608695652174
+      },
+      "high_school_physics": {
+        "correct": 96,
+        "total": 173,
+        "extraction_failed": 38,
+        "format_violations": 42,
+        "incomplete_responses": 35,
+        "accuracy": 0.5549132947976878
+      },
+      "astronomy": {
+        "correct": 106,
+        "total": 173,
+        "extraction_failed": 13,
+        "format_violations": 13,
+        "incomplete_responses": 12,
+        "accuracy": 0.6127167630057804
+      },
+      "computer_security": {
+        "correct": 76,
+        "total": 116,
+        "extraction_failed": 4,
+        "format_violations": 7,
+        "incomplete_responses": 4,
+        "accuracy": 0.6551724137931034
+      },
+      "conceptual_physics": {
+        "correct": 172,
+        "total": 266,
+        "extraction_failed": 22,
+        "format_violations": 26,
+        "incomplete_responses": 21,
+        "accuracy": 0.6466165413533834
+      },
+      "high_school_mathematics": {
+        "correct": 249,
+        "total": 304,
+        "extraction_failed": 42,
+        "format_violations": 51,
+        "incomplete_responses": 40,
+        "accuracy": 0.819078947368421
+      },
+      "high_school_computer_science": {
+        "correct": 92,
+        "total": 114,
+        "extraction_failed": 8,
+        "format_violations": 8,
+        "incomplete_responses": 7,
+        "accuracy": 0.8070175438596491
+      },
+      "high_school_statistics": {
+        "correct": 156,
+        "total": 244,
+        "extraction_failed": 42,
+        "format_violations": 47,
+        "incomplete_responses": 40,
+        "accuracy": 0.639344262295082
+      },
+      "machine_learning": {
+        "correct": 78,
+        "total": 128,
+        "extraction_failed": 8,
+        "format_violations": 8,
+        "incomplete_responses": 7,
+        "accuracy": 0.609375
+      },
+      "college_computer_science": {
+        "correct": 61,
+        "total": 116,
+        "extraction_failed": 34,
+        "format_violations": 37,
+        "incomplete_responses": 31,
+        "accuracy": 0.5258620689655172
+      },
+      "college_mathematics": {
+        "correct": 62,
+        "total": 116,
+        "extraction_failed": 38,
+        "format_violations": 40,
+        "incomplete_responses": 34,
+        "accuracy": 0.5344827586206896
+      },
+      "abstract_algebra": {
+        "correct": 73,
+        "total": 116,
+        "extraction_failed": 23,
+        "format_violations": 24,
+        "incomplete_responses": 20,
+        "accuracy": 0.6293103448275862
+      },
+      "electrical_engineering": {
+        "correct": 93,
+        "total": 166,
+        "extraction_failed": 27,
+        "format_violations": 27,
+        "incomplete_responses": 25,
+        "accuracy": 0.5602409638554217
+      }
+    }
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.8529118136439268,
+    "complete_responses": 2563,
+    "incomplete_responses": 442,
+    "total_responses": 3005
+  },
+  "processing_time_seconds": 28437.725286245346,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  },
+  "merge_info": {
+    "merged_from": [
+      "data/behavioural/baseline_stem_merged_2025-10-15.jsonl",
+      "data/behavioural/baseline_stem_algebra_2025-10-14.jsonl",
+      "data/behavioural/baseline_stem_engineering_2025-10-14.jsonl"
+    ],
+    "dataset_details": [
+      {
+        "path": "data/behavioural/baseline_stem_merged_2025-10-15.jsonl",
+        "count": 2723,
+        "subjects": [
+          "astronomy",
+          "college_biology",
+          "college_chemistry",
+          "college_computer_science",
+          "college_mathematics",
+          "college_physics",
+          "computer_security",
+          "conceptual_physics",
+          "high_school_biology",
+          "high_school_chemistry",
+          "high_school_computer_science",
+          "high_school_mathematics",
+          "high_school_physics",
+          "high_school_statistics",
+          "machine_learning"
+        ]
+      },
+      {
+        "path": "data/behavioural/baseline_stem_algebra_2025-10-14.jsonl",
+        "count": 116,
+        "subjects": [
+          "abstract_algebra"
+        ]
+      },
+      {
+        "path": "data/behavioural/baseline_stem_engineering_2025-10-14.jsonl",
+        "count": 166,
+        "subjects": [
+          "electrical_engineering"
+        ]
+      }
+    ],
+    "total_count": 3005,
+    "merge_date": "2025-10-15",
+    "description": "Complete STEM dataset: merged from stem, stem_missing, algebra, and engineering"
+  }
+}
