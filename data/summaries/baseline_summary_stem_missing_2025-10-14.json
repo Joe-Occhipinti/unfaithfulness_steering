@@ -1,0 +1,49 @@
+{
+  "evaluation_date": "2025-10-15",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "mmlu_subjects": [
+    "college_computer_science",
+    "college_mathematics"
+  ],
+  "metrics": {
+    "overall_accuracy": 0.5301724137931034,
+    "total_questions": 232,
+    "correct_answers": 123,
+    "wrong_answers": 37,
+    "no_answer": 72,
+    "extraction_failures": 72,
+    "format_violations": 77,
+    "incomplete_responses": 65,
+    "subject_breakdown": {
+      "college_computer_science": {
+        "correct": 61,
+        "total": 116,
+        "extraction_failed": 34,
+        "format_violations": 37,
+        "incomplete_responses": 31,
+        "accuracy": 0.5258620689655172
+      },
+      "college_mathematics": {
+        "correct": 62,
+        "total": 116,
+        "extraction_failed": 38,
+        "format_violations": 40,
+        "incomplete_responses": 34,
+        "accuracy": 0.5344827586206896
+      }
+    }
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.7198275862068966,
+    "complete_responses": 167,
+    "incomplete_responses": 65,
+    "total_responses": 232
+  },
+  "processing_time_seconds": 4076.1545598506927,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
