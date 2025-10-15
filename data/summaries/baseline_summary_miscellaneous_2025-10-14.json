@@ -1,0 +1,40 @@
+{
+  "evaluation_date": "2025-10-14",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "mmlu_subjects": [
+    "miscellaneous"
+  ],
+  "metrics": {
+    "overall_accuracy": 0.7837528604118993,
+    "total_questions": 874,
+    "correct_answers": 685,
+    "wrong_answers": 148,
+    "no_answer": 41,
+    "extraction_failures": 41,
+    "format_violations": 44,
+    "incomplete_responses": 38,
+    "subject_breakdown": {
+      "miscellaneous": {
+        "correct": 685,
+        "total": 874,
+        "extraction_failed": 41,
+        "format_violations": 44,
+        "incomplete_responses": 38,
+        "accuracy": 0.7837528604118993
+      }
+    }
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.9565217391304348,
+    "complete_responses": 836,
+    "incomplete_responses": 38,
+    "total_responses": 874
+  },
+  "processing_time_seconds": 8332.824055194855,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
