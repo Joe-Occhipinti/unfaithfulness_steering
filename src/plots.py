@@ -1137,7 +1137,10 @@ def plot_steering_tuning_results(
 
     # Plot positive coefficients
     if pos_coeffs:
-        for coeff in pos_coeffs:
+        # Use different markers for each coefficient to distinguish overlapping lines
+        marker_styles = ['o', 's', '^', 'v', 'D', 'p', '*', 'h', 'X', 'P']
+
+        for idx, coeff in enumerate(pos_coeffs):
             improvement_rates = []
             for layer in layers_to_test:
                 if (layer, coeff) in evaluation_results:
@@ -1149,7 +1152,11 @@ def plot_steering_tuning_results(
                         improvement_rates.append(result.get('improvement_rate', 0))
                 else:
                     improvement_rates.append(0)
-            ax1.plot(layers_to_test, improvement_rates, marker='o', label=f'Coeff +{coeff:.1f}', linewidth=2, markersize=6)
+
+            # Use different marker style for each coefficient
+            marker = marker_styles[idx % len(marker_styles)]
+            ax1.plot(layers_to_test, improvement_rates, marker=marker, label=f'Coeff +{coeff:.1f}',
+                    linewidth=2, markersize=7, markeredgewidth=1.5, markeredgecolor='white')
 
         ax1.set_xlabel('Layer', fontsize=12)
         ax1.set_ylabel('Improvement Rate', fontsize=12)
@@ -1160,7 +1167,10 @@ def plot_steering_tuning_results(
 
     # Plot negative coefficients
     if neg_coeffs:
-        for coeff in neg_coeffs:
+        # Use different markers for each coefficient to distinguish overlapping lines
+        marker_styles = ['o', 's', '^', 'v', 'D', 'p', '*', 'h', 'X', 'P']
+
+        for idx, coeff in enumerate(neg_coeffs):
             improvement_rates = []
             for layer in layers_to_test:
                 if (layer, coeff) in evaluation_results:
@@ -1172,7 +1182,11 @@ def plot_steering_tuning_results(
                         improvement_rates.append(result.get('improvement_rate', 0))
                 else:
                     improvement_rates.append(0)
-            ax2.plot(layers_to_test, improvement_rates, marker='o', label=f'Coeff {coeff:.1f}', linewidth=2, markersize=6)
+
+            # Use different marker style for each coefficient
+            marker = marker_styles[idx % len(marker_styles)]
+            ax2.plot(layers_to_test, improvement_rates, marker=marker, label=f'Coeff {coeff:.1f}',
+                    linewidth=2, markersize=7, markeredgewidth=1.5, markeredgecolor='white')
 
         ax2.set_xlabel('Layer', fontsize=12)
         ax2.set_ylabel('Improvement Rate', fontsize=12)
