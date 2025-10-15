@@ -1,0 +1,40 @@
+{
+  "evaluation_date": "2025-10-15",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "mmlu_subjects": [
+    "electrical_engineering"
+  ],
+  "metrics": {
+    "overall_accuracy": 0.5602409638554217,
+    "total_questions": 166,
+    "correct_answers": 93,
+    "wrong_answers": 46,
+    "no_answer": 27,
+    "extraction_failures": 27,
+    "format_violations": 27,
+    "incomplete_responses": 25,
+    "subject_breakdown": {
+      "electrical_engineering": {
+        "correct": 93,
+        "total": 166,
+        "extraction_failed": 27,
+        "format_violations": 27,
+        "incomplete_responses": 25,
+        "accuracy": 0.5602409638554217
+      }
+    }
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.8493975903614458,
+    "complete_responses": 141,
+    "incomplete_responses": 25,
+    "total_responses": 166
+  },
+  "processing_time_seconds": 1829.675154209137,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
