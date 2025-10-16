@@ -725,6 +725,204 @@ def plot_hint_breakdown(
         plt.close()
 
 
+def plot_hinted_outcomes_by_template(
+    hinted_results: List[Dict[str, Any]],
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> None:
+    """
+    Plot multi-panel stacked bar chart showing hinted evaluation outcomes by hint template.
+
+    Creates one panel per hint template, each showing two groups:
+    - Hint Incorrect (baseline correct + wrong hint)
+    - Hint Correct (baseline wrong + correct hint)
+
+    For each group, shows breakdown:
+    - No Change (stayed with baseline answer)
+    - Followed Hint (biased - changed to hint)
+    - Hint-Induced Error (changed to different answer)
+    - No Answer (extraction failed)
+
+    Args:
+        hinted_results: List of hinted evaluation results with hint_template field
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+    """
+    setup_plot_style()
+
+    # Group results by hint template
+    template_groups = {}
+    for result in hinted_results:
+        template = result.get('hint_template', 'unknown')
+        if template not in template_groups:
+            template_groups[template] = []
+        template_groups[template].append(result)
+
+    templates = sorted(template_groups.keys())
+    n_templates = len(templates)
+
+    if n_templates == 0:
+        print("No hint templates found in results")
+        return
+
+    # Create subplots - one per template
+    n_cols = min(3, n_templates)  # Max 3 columns
+    n_rows = (n_templates + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 5*n_rows))
+    if n_templates == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten() if n_templates > 1 else [axes]
+
+    # Colors
+    color_no_change = '#A0A0A0'      # Gray - stayed with baseline
+    color_followed = '#90C290'        # Green - followed hint (biased)
+    color_hint_error = '#E89B9B'      # Pink/Red - hint-induced error
+    color_no_answer = '#505050'       # Dark gray - no answer
+
+    for idx, template in enumerate(templates):
+        ax = axes[idx]
+        results = template_groups[template]
+
+        # Separate by hint correctness
+        hint_incorrect = []  # baseline correct + wrong hint
+        hint_correct = []    # baseline wrong + correct hint
+
+        for result in results:
+            baseline_ans = result.get('baseline_answer_letter')
+            ground_truth = result.get('ground_truth_letter')
+
+            if baseline_ans == ground_truth:
+                # Baseline correct, so hint is incorrect
+                hint_incorrect.append(result)
+            else:
+                # Baseline wrong, so hint is correct
+                hint_correct.append(result)
+
+        # Count outcomes for each group
+        def count_outcomes(results_list):
+            no_change = sum(1 for r in results_list if r.get('bias_label') == 'not-biased')
+            followed = sum(1 for r in results_list if r.get('bias_label') == 'biased')
+            hint_error = sum(1 for r in results_list if r.get('bias_label') == 'hint-induced error')
+            no_answer = sum(1 for r in results_list if r.get('bias_label') == 'no_answer')
+            total = len(results_list)
+            return {
+                'no_change': no_change,
+                'followed': followed,
+                'hint_error': hint_error,
+                'no_answer': no_answer,
+                'total': total
+            }
+
+        incorrect_counts = count_outcomes(hint_incorrect)
+        correct_counts = count_outcomes(hint_correct)
+        average_counts = count_outcomes(results)  # All results for this template
+
+        # Calculate percentages
+        groups = ['Hint Incorrect', 'Hint Correct', 'Average']
+        counts_list = [incorrect_counts, correct_counts, average_counts]
+
+        no_change_pcts = []
+        followed_pcts = []
+        hint_error_pcts = []
+        no_answer_pcts = []
+
+        for counts in counts_list:
+            total = counts['total']
+            if total > 0:
+                no_change_pcts.append(100 * counts['no_change'] / total)
+                followed_pcts.append(100 * counts['followed'] / total)
+                hint_error_pcts.append(100 * counts['hint_error'] / total)
+                no_answer_pcts.append(100 * counts['no_answer'] / total)
+            else:
+                no_change_pcts.append(0)
+                followed_pcts.append(0)
+                hint_error_pcts.append(0)
+                no_answer_pcts.append(0)
+
+        # Create stacked bars
+        x = np.arange(len(groups))
+        width = 0.6
+
+        p1 = ax.bar(x, no_change_pcts, width, label='No Change',
+                    color=color_no_change, edgecolor='black', linewidth=0.5)
+        p2 = ax.bar(x, followed_pcts, width, bottom=no_change_pcts,
+                    label='Followed Hint',
+                    color=color_followed, edgecolor='black', linewidth=0.5)
+        p3 = ax.bar(x, hint_error_pcts, width,
+                    bottom=np.array(no_change_pcts) + np.array(followed_pcts),
+                    label='Hint-Induced Error',
+                    color=color_hint_error, edgecolor='black', linewidth=0.5)
+        p4 = ax.bar(x, no_answer_pcts, width,
+                    bottom=np.array(no_change_pcts) + np.array(followed_pcts) + np.array(hint_error_pcts),
+                    label='No Answer',
+                    color=color_no_answer, edgecolor='black', linewidth=0.5)
+
+        # Add absolute count labels
+        for i, counts in enumerate(counts_list):
+            total = counts['total']
+            if total == 0:
+                continue
+
+            bottom = 0
+
+            # No change
+            if counts['no_change'] > 0:
+                pct = 100 * counts['no_change'] / total
+                ax.text(i, bottom + pct/2, f"{counts['no_change']}",
+                       ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+            bottom += no_change_pcts[i]
+
+            # Followed
+            if counts['followed'] > 0:
+                pct = 100 * counts['followed'] / total
+                ax.text(i, bottom + pct/2, f"{counts['followed']}",
+                       ha='center', va='center', fontweight='bold', fontsize=9)
+            bottom += followed_pcts[i]
+
+            # Hint error
+            if counts['hint_error'] > 0:
+                pct = 100 * counts['hint_error'] / total
+                ax.text(i, bottom + pct/2, f"{counts['hint_error']}",
+                       ha='center', va='center', fontweight='bold', fontsize=9)
+            bottom += hint_error_pcts[i]
+
+            # No answer
+            if counts['no_answer'] > 0:
+                pct = 100 * counts['no_answer'] / total
+                ax.text(i, bottom + pct/2, f"{counts['no_answer']}",
+                       ha='center', va='center', fontweight='bold', fontsize=9, color='white')
+
+        # Formatting
+        ax.set_ylabel('Fraction of Examples (%)', fontsize=10)
+        ax.set_title(f'{template}', fontsize=11, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(groups, fontsize=9)
+        ax.set_ylim(0, 100)
+        if idx == 0:  # Only show legend on first plot
+            ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), framealpha=0.9, fontsize=8)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    # Hide unused subplots
+    for idx in range(n_templates, len(axes)):
+        axes[idx].axis('off')
+
+    plt.suptitle('Hinted Evaluation Outcomes by Template and Hint Correctness',
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to {save_path}")
+
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+
 def plot_faithfulness_distribution(
     hinted_results: List[Dict],
     save_path: Optional[str] = None,
