@@ -1,0 +1,178 @@
+{
+  "evaluation_date": "2025-10-16",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "baseline_input_file": "data/behavioural/baseline_stem_2025-10-15.jsonl",
+  "metrics": {
+    "overall_accuracy": 0.6563981042654028,
+    "total_questions": 2532,
+    "correct_answers": 1662,
+    "wrong_answers": 643,
+    "no_answer": 227,
+    "extraction_failures": 227,
+    "format_violations": 253,
+    "incomplete_responses": 215,
+    "subject_breakdown": {
+      "college_biology": {
+        "correct": 98,
+        "total": 150,
+        "extraction_failed": 15,
+        "format_violations": 15,
+        "incomplete_responses": 15,
+        "accuracy": 0.6533333333333333
+      },
+      "college_chemistry": {
+        "correct": 47,
+        "total": 69,
+        "extraction_failed": 5,
+        "format_violations": 6,
+        "incomplete_responses": 5,
+        "accuracy": 0.6811594202898551
+      },
+      "college_physics": {
+        "correct": 66,
+        "total": 93,
+        "extraction_failed": 7,
+        "format_violations": 11,
+        "incomplete_responses": 7,
+        "accuracy": 0.7096774193548387
+      },
+      "high_school_biology": {
+        "correct": 222,
+        "total": 311,
+        "extraction_failed": 24,
+        "format_violations": 21,
+        "incomplete_responses": 23,
+        "accuracy": 0.7138263665594855
+      },
+      "high_school_chemistry": {
+        "correct": 105,
+        "total": 176,
+        "extraction_failed": 23,
+        "format_violations": 24,
+        "incomplete_responses": 22,
+        "accuracy": 0.5965909090909091
+      },
+      "high_school_physics": {
+        "correct": 82,
+        "total": 135,
+        "extraction_failed": 21,
+        "format_violations": 21,
+        "incomplete_responses": 20,
+        "accuracy": 0.6074074074074074
+      },
+      "astronomy": {
+        "correct": 93,
+        "total": 160,
+        "extraction_failed": 6,
+        "format_violations": 7,
+        "incomplete_responses": 6,
+        "accuracy": 0.58125
+      },
+      "computer_security": {
+        "correct": 73,
+        "total": 112,
+        "extraction_failed": 6,
+        "format_violations": 7,
+        "incomplete_responses": 6,
+        "accuracy": 0.6517857142857143
+      },
+      "conceptual_physics": {
+        "correct": 132,
+        "total": 244,
+        "extraction_failed": 11,
+        "format_violations": 13,
+        "incomplete_responses": 10,
+        "accuracy": 0.5409836065573771
+      },
+      "high_school_mathematics": {
+        "correct": 235,
+        "total": 262,
+        "extraction_failed": 22,
+        "format_violations": 28,
+        "incomplete_responses": 19,
+        "accuracy": 0.8969465648854962
+      },
+      "high_school_computer_science": {
+        "correct": 72,
+        "total": 106,
+        "extraction_failed": 6,
+        "format_violations": 14,
+        "incomplete_responses": 6,
+        "accuracy": 0.6792452830188679
+      },
+      "high_school_statistics": {
+        "correct": 134,
+        "total": 202,
+        "extraction_failed": 25,
+        "format_violations": 24,
+        "incomplete_responses": 24,
+        "accuracy": 0.6633663366336634
+      },
+      "machine_learning": {
+        "correct": 66,
+        "total": 120,
+        "extraction_failed": 13,
+        "format_violations": 13,
+        "incomplete_responses": 10,
+        "accuracy": 0.55
+      },
+      "college_computer_science": {
+        "correct": 43,
+        "total": 82,
+        "extraction_failed": 10,
+        "format_violations": 16,
+        "incomplete_responses": 10,
+        "accuracy": 0.524390243902439
+      },
+      "college_mathematics": {
+        "correct": 58,
+        "total": 78,
+        "extraction_failed": 13,
+        "format_violations": 13,
+        "incomplete_responses": 12,
+        "accuracy": 0.7435897435897436
+      },
+      "abstract_algebra": {
+        "correct": 64,
+        "total": 93,
+        "extraction_failed": 7,
+        "format_violations": 7,
+        "incomplete_responses": 7,
+        "accuracy": 0.6881720430107527
+      },
+      "electrical_engineering": {
+        "correct": 72,
+        "total": 139,
+        "extraction_failed": 13,
+        "format_violations": 13,
+        "incomplete_responses": 13,
+        "accuracy": 0.5179856115107914
+      }
+    }
+  },
+  "bias_metrics": {
+    "total_hinted_questions": 2532,
+    "biased_answers": 688,
+    "hint_induced_error_answers": 145,
+    "not_biased_answers": 1472,
+    "no_answer": 227,
+    "bias_rate": 0.2984815618221258,
+    "hint_induced_error_rate": 0.06290672451193059,
+    "total_wrong_rate": 0.3613882863340564,
+    "hint_resistance_rate": 0.6386117136659436,
+    "no_answer_rate": 0.089652448657188
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.915086887835703,
+    "complete_responses": 2317,
+    "incomplete_responses": 215,
+    "total_responses": 2532
+  },
+  "processing_time_seconds": 28045.963556051254,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
