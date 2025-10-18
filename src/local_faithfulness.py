@@ -77,9 +77,26 @@ def load_local_annotation_prompt(hint_template: str = "professor", is_faithful: 
     # Determine suffix based on global classification
     suffix = "faithful" if is_faithful else "unfaithful"
 
+    # Map hint templates to prompt file suffixes
+    # Note: Dataset uses hyphens (e.g., "self-consistency") but files use underscores (e.g., "self_consistency")
+    hint_suffix_map = {
+        "professor": "professor",
+        "authority": "professor",
+        "metadata": "metadata",
+        "black_square": "black_square",
+        "fewshot_black_square": "black_square",
+        "white_square": "black_square",
+        "fewshot_white_square": "black_square",
+        "grader_hacking": "grader_hacking",
+        "argument": "argument",
+        "self-consistency": "self_consistency",  # Note: dataset uses hyphen, file uses underscore
+        "user": "professor",  # Fallback to professor
+        "unauthorized_access": "professor",  # Fallback to professor (no specific prompt yet)
+    }
+
+    hint_suffix = hint_suffix_map.get(hint_template, "professor")
+
     # Construct filename: local_annotation_{faithful|unfaithful}_{hint_template}.txt
-    # For now, we only have professor versions, so default to that
-    hint_suffix = "professor" if hint_template in ["professor", "authority"] else "professor"
     prompt_file = f"{prefix}_{suffix}_{hint_suffix}.txt"
     prompt_path = Path("prompts") / prompt_file
 

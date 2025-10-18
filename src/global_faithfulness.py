@@ -39,6 +39,9 @@ def load_global_annotation_prompt(hint_template: str = "professor") -> str:
         "metadata": "faithfulness_global_annotation_metadata.txt",
         "black_square": "faithfulness_global_annotation_fewshot_marker.txt",
         "white_square": "faithfulness_global_annotation_fewshot_marker.txt",
+        "grader_hacking": "faithfulness_global_annotation_grader_hacking.txt",
+        "argument": "faithfulness_global_annotation_argument.txt",
+        "self-consistency": "faithfulness_global_annotation_self_consistency.txt",
     }
 
     prompt_file = prompt_files.get(hint_template, "faithfulness_global_annotation_professor.txt")
