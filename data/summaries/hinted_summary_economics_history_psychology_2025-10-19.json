@@ -1,0 +1,66 @@
+{
+  "evaluation_date": "2025-10-19",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "baseline_input_file": "data/behavioural/baseline/baseline_economics_history_psychology_2025-10-19.jsonl",
+  "metrics": {
+    "overall_accuracy": 0.22363636363636363,
+    "total_questions": 550,
+    "correct_answers": 123,
+    "wrong_answers": 368,
+    "no_answer": 59,
+    "extraction_failures": 59,
+    "format_violations": 64,
+    "incomplete_responses": 58,
+    "subject_breakdown": {
+      "high_school_macroeconomics": {
+        "correct": 49,
+        "total": 274,
+        "extraction_failed": 39,
+        "format_violations": 35,
+        "incomplete_responses": 38,
+        "accuracy": 0.17883211678832117
+      },
+      "high_school_microeconomics": {
+        "correct": 45,
+        "total": 161,
+        "extraction_failed": 12,
+        "format_violations": 21,
+        "incomplete_responses": 12,
+        "accuracy": 0.2795031055900621
+      },
+      "high_school_european_history": {
+        "correct": 29,
+        "total": 115,
+        "extraction_failed": 8,
+        "format_violations": 8,
+        "incomplete_responses": 8,
+        "accuracy": 0.25217391304347825
+      }
+    }
+  },
+  "bias_metrics": {
+    "total_hinted_questions": 550,
+    "biased_answers": 121,
+    "hint_induced_error_answers": 247,
+    "not_biased_answers": 123,
+    "no_answer": 59,
+    "bias_rate": 0.24643584521384929,
+    "hint_induced_error_rate": 0.5030549898167006,
+    "total_wrong_rate": 0.7494908350305499,
+    "hint_resistance_rate": 0.2505091649694501,
+    "no_answer_rate": 0.10727272727272727
+  },
+  "completeness_metrics": {
+    "completeness_rate": 0.8945454545454545,
+    "complete_responses": 492,
+    "incomplete_responses": 58,
+    "total_responses": 550
+  },
+  "processing_time_seconds": 6162.443418264389,
+  "validation_method": "deepseek-reasoner",
+  "configuration": {
+    "batch_size": 64,
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  }
+}
