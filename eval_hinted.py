@@ -114,23 +114,13 @@ print(f"Found {len(correct_baseline)} correct and {len(wrong_baseline)} wrong an
 
 # Set distribution of hint templates by subject (for "by_subject" strategy)
 subject_to_template = {
-    "college_mathematics": 1,
-    "high_school_mathematics":1,
-    "abstract_algebra":1,
-    "high_school_statistics":1,
-    "college_computer_science": 0,
-    "high_school_computer_science": 0,
-    "computer_security": 0,
-    "machine_learning": 0,
-    "electrical_engineering": 0,
-    "college_physics": 3,
-    "high_school_physics": 3,
-    "conceptual_physics": 3,
-    "astronomy": 3,
-    "college_biology": 2,
-    "high_school_biology": 2,
-    "college_chemistry": 2,
-    "high_school_chemistry": 2
+    "high_school_psychology": 0,
+    "high_school_macroeconomics":2,
+    "high_school_microeconomics":2,
+    "high_school_european_history": 1,
+    "high_school_us_history": 1,
+    "high_school_world_history": 1,
+    "prehistory": 1
 }
 
 # Loop 1: Create wrong hints for correct baseline answers
@@ -171,7 +161,7 @@ print("\n=== CELL 3: Text Generation ===")
 all_answers = batch_generate(
     model=model,
     tokenizer=tokenizer,
-    prompts=hinted_prompts,
+    prompts=correct_hint_prompts,
     batch_size=BATCH_SIZE,
     max_new_tokens=MAX_NEW_TOKENS,
     max_input_length=MAX_INPUT_LENGTH
