@@ -28,11 +28,11 @@ from src.config import TODAY, ANNOTATED_DIR
 # =============================================================================
 
 # Input file - hinted evaluation results
-HINTED_INPUT_FILE = "data/behavioural/hinted_stem_2025-10-15.jsonl"
+HINTED_INPUT_FILE = "data/behavioural/hinted_correct_economics_history_psychology_2025-10-19.jsonl"
 
 # Output files - global faithfulness annotations
-ANNOTATED_OUTPUT_FILE = "data/annotated/hinted/annotated_global_biased_stem_2025-10-15.jsonl"
-SUMMARY_OUTPUT_FILE = "data/summaries/faithfulness/faithfulness_global_biased_stem_2025-10-15.json"
+ANNOTATED_OUTPUT_FILE = "data/annotated/hinted/annotated_global_correct_biased_economics_history_psychology_2025-10-19.jsonl"
+SUMMARY_OUTPUT_FILE = "data/summaries/faithfulness/faithfulness_correct_global_biased_economics_history_psychology_2025-10-19.json"
 
 # Model configuration
 JUDGE_MODEL = "google/gemini-2.5-flash"  # LLM judge model
