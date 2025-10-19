@@ -327,32 +327,42 @@ def print_activation_statistics(stats: Dict[str, Any]) -> None:
 
 def build_activation_dataset(
     activations_dir: str,
+    source_jsonl: str = None,
     target_tags: List[str] = None,
     num_layers: int = 32,
-    hidden_dim: int = 4096
+    hidden_dim: int = 4096,
+    metadata_fields: List[str] = None
 ) -> Dict[str, Any]:
     """
     Build aggregated activation dataset from individual prompt activation files.
     Aggregates all activations across prompts, organized by layer and tag.
+    Preserves metadata from source JSONL file.
 
     Args:
         activations_dir: Directory containing prompt_*_activations.pt files
+        source_jsonl: Path to original annotated JSONL file to extract metadata
         target_tags: Tags to include in dataset
         num_layers: Number of model layers
         hidden_dim: Hidden dimension size
+        metadata_fields: List of fields to preserve from source JSONL (e.g., ["hint_template", "faithfulness_classification"])
 
     Returns:
-        Dataset dictionary with structure: {data: {layer: {tag: tensor}}, info: {...}}
+        Dataset dictionary with structure: {data: {prompt_idx: {metadata: {...}, layers: {layer: {tag: tensor}}}}, info: {...}}
     """
     from .config import ActivationConfig
 
     if target_tags is None:
         target_tags = ActivationConfig.TARGET_TAGS
 
+    if metadata_fields is None:
+        metadata_fields = ["hint_template", "faithfulness_classification"]
+
     print(f"\n--- Building Activation Dataset ---")
     print(f"Source Directory: {activations_dir}")
+    print(f"Source JSONL: {source_jsonl}")
     print(f"Target Tags: {target_tags}")
     print(f"Layers: 0-{num_layers-1}")
+    print(f"Metadata Fields: {metadata_fields}")
 
     # Load activation files
     activation_files = []
@@ -366,7 +376,25 @@ def build_activation_dataset(
 
     print(f"Found {len(activation_files)} activation files to process.")
 
-    # Structure: prompt_wise_data[prompt_idx][layer][tag] = tensor
+    # Load metadata from source JSONL if provided
+    metadata_by_index = {}
+    if source_jsonl and os.path.exists(source_jsonl):
+        print(f"\n--- Loading metadata from {source_jsonl} ---")
+        with open(source_jsonl, 'r', encoding='utf-8') as f:
+            for idx, line in enumerate(f):
+                try:
+                    record = json.loads(line)
+                    metadata_by_index[idx] = {
+                        field: record.get(field)
+                        for field in metadata_fields
+                    }
+                except json.JSONDecodeError:
+                    print(f"Warning: Skipping malformed line {idx} in {source_jsonl}")
+        print(f"Loaded metadata for {len(metadata_by_index)} prompts")
+    elif source_jsonl:
+        print(f"Warning: Source JSONL {source_jsonl} not found, proceeding without metadata")
+
+    # Structure: prompt_wise_data[prompt_idx] = {metadata: {...}, layers: {layer: {tag: tensor}}}
     prompt_wise_data = {}
 
     # Statistics tracking
@@ -386,12 +414,15 @@ def build_activation_dataset(
             prompt_data = torch.load(file_path, map_location='cpu')
             has_data_for_prompt = False
 
-            # Initialize prompt entry
-            prompt_wise_data[prompt_idx] = {}
+            # Initialize prompt entry with metadata and layers structure
+            prompt_wise_data[prompt_idx] = {
+                "metadata": metadata_by_index.get(prompt_idx, {}),
+                "layers": {}
+            }
 
             # Extract data for each layer
             for layer_idx in range(num_layers):
-                prompt_wise_data[prompt_idx][layer_idx] = {}
+                prompt_wise_data[prompt_idx]["layers"][layer_idx] = {}
 
                 if layer_idx in prompt_data:
                     layer_data = prompt_data[layer_idx]
@@ -402,7 +433,7 @@ def build_activation_dataset(
                             # layer_data[tag] is a list of individual activation tensors
                             # Stack them into a single tensor for this prompt/layer/tag
                             tag_activations = torch.stack(layer_data[tag], dim=0)
-                            prompt_wise_data[prompt_idx][layer_idx][tag] = tag_activations
+                            prompt_wise_data[prompt_idx]["layers"][layer_idx][tag] = tag_activations
 
                             # Update statistics
                             num_activations = tag_activations.shape[0]
@@ -411,11 +442,11 @@ def build_activation_dataset(
                             has_data_for_prompt = True
                         else:
                             # No data for this tag - create empty tensor
-                            prompt_wise_data[prompt_idx][layer_idx][tag] = torch.empty(0, hidden_dim)
+                            prompt_wise_data[prompt_idx]["layers"][layer_idx][tag] = torch.empty(0, hidden_dim)
                 else:
                     # No data for this layer - create empty tensors for all tags
                     for tag in target_tags:
-                        prompt_wise_data[prompt_idx][layer_idx][tag] = torch.empty(0, hidden_dim)
+                        prompt_wise_data[prompt_idx]["layers"][layer_idx][tag] = torch.empty(0, hidden_dim)
 
             if has_data_for_prompt:
                 files_with_data += 1
@@ -445,7 +476,9 @@ def build_activation_dataset(
         "total_files": total_files_processed,
         "files_with_data": files_with_data,
         "total_stats": total_stats,
-        "layer_stats": layer_stats
+        "layer_stats": layer_stats,
+        "metadata_fields": metadata_fields,
+        "source_jsonl": source_jsonl
     }
 
     final_dataset_structure = {
@@ -486,6 +519,25 @@ def print_dataset_summary(dataset: Dict[str, Any]) -> None:
     print(f"Files processed: {info['total_files']}")
     print(f"Files with data: {info['files_with_data']}")
 
+    # Display metadata information
+    if 'metadata_fields' in info and info['metadata_fields']:
+        print(f"\nMetadata fields: {info['metadata_fields']}")
+
+        # Count distribution of metadata values
+        if data:
+            metadata_distributions = {field: {} for field in info['metadata_fields']}
+            for prompt_idx in data.keys():
+                metadata = data[prompt_idx].get("metadata", {})
+                for field in info['metadata_fields']:
+                    value = metadata.get(field, "missing")
+                    metadata_distributions[field][value] = metadata_distributions[field].get(value, 0) + 1
+
+            print(f"\nMetadata distributions:")
+            for field, distribution in metadata_distributions.items():
+                print(f"  {field}:")
+                for value, count in distribution.items():
+                    print(f"    {value}: {count} prompts")
+
     print(f"\nTotal activations by tag:")
     for tag, count in info['total_stats'].items():
         print(f"  {tag}: {count}")
@@ -495,14 +547,15 @@ def print_dataset_summary(dataset: Dict[str, Any]) -> None:
         print(f"  Layer {layer_idx}:")
         for tag in info['tags']:
             count = info['layer_stats'][layer_idx][tag]
-            # For prompt-wise data, we need to check actual data from prompts
+            # For prompt-wise data with nested structure, we need to check actual data from prompts
             if count > 0:
                 # Find a prompt that has data for this layer/tag combination
                 sample_shape = None
                 for prompt_idx in data.keys():
-                    if layer_idx in data[prompt_idx] and tag in data[prompt_idx][layer_idx]:
-                        if data[prompt_idx][layer_idx][tag].numel() > 0:  # Non-empty tensor
-                            sample_shape = data[prompt_idx][layer_idx][tag].shape
+                    layers = data[prompt_idx].get("layers", {})
+                    if layer_idx in layers and tag in layers[layer_idx]:
+                        if layers[layer_idx][tag].numel() > 0:  # Non-empty tensor
+                            sample_shape = layers[layer_idx][tag].shape
                             break
                 if sample_shape is not None:
                     print(f"    {tag}: {count} activations, sample tensor shape: {sample_shape}")
@@ -511,5 +564,7 @@ def print_dataset_summary(dataset: Dict[str, Any]) -> None:
             else:
                 print(f"    {tag}: 0 activations")
 
-    print(f"\nDataset structure: dataset['data'][prompt_idx][layer_idx][tag] = tensor([num_activations, {info['hidden_dim']}])")
+    print(f"\nDataset structure:")
+    print(f"  dataset['data'][prompt_idx]['metadata'] = {{field: value, ...}}")
+    print(f"  dataset['data'][prompt_idx]['layers'][layer_idx][tag] = tensor([num_activations, {info['hidden_dim']}])")
     print(f"\n--- Dataset building complete! ---")

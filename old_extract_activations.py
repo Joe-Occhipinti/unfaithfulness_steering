@@ -117,11 +117,9 @@ print("\n=== CELL 3: Build Activation Dataset ===")
 # Build aggregated dataset (layer-wise, all activations across prompts)
 dataset = build_activation_dataset(
     activations_dir=OUTPUT_DIR,
-    source_jsonl=INPUT_FILE,
     target_tags=config['target_tags'],
     num_layers=len(config['layers_to_extract']),
-    hidden_dim=4096,  # DeepSeek hidden dimension
-    metadata_fields=["hint_template", "faithfulness_classification"]
+    hidden_dim=4096  # DeepSeek hidden dimension
 )
 
 # Save dataset
