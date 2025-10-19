@@ -36,7 +36,8 @@ def split_dataset_by_prompts(
     random_seed: int = 42,
     balance_val_split: bool = False,
     positive_tags: List[str] = None,
-    negative_tags: List[str] = None
+    negative_tags: List[str] = None,
+    stratify_by_metadata: bool = True
 ) -> Dict[str, Dict]:
     """
     Split dataset by prompt indices to ensure activations from same prompt stay together.
@@ -49,6 +50,7 @@ def split_dataset_by_prompts(
         balance_val_split: If True, balance positive and negative samples in val split
         positive_tags: Tags for positive class (required if balance_val_split=True)
         negative_tags: Tags for negative class (required if balance_val_split=True)
+        stratify_by_metadata: If True, use stratified splitting by (faithfulness_classification, hint_template)
 
     Returns:
         Dictionary with train/val splits: {'train': dataset_subset, 'val': dataset_subset}
@@ -58,20 +60,98 @@ def split_dataset_by_prompts(
     data = dataset['data']
     info = dataset['info']
 
-    # Get actual prompt indices from the dataset
-    prompt_indices = list(data.keys())
-    total_prompts = len(prompt_indices)
-
-    # Shuffle prompt indices
+    # Set random seeds
     torch.manual_seed(random_seed)
     np.random.seed(random_seed)
-    np.random.shuffle(prompt_indices)
 
-    # Split indices
-    train_end = int(train_ratio * total_prompts)
+    # Choose splitting strategy
+    if stratify_by_metadata and 'metadata_fields' in info and info['metadata_fields']:
+        # STRATIFIED SPLITTING by (faithfulness_classification, hint_template)
+        print("Using stratified splitting by metadata (faithfulness × hint_template)")
 
-    train_prompts = prompt_indices[:train_end]
-    val_prompts = prompt_indices[train_end:]
+        # Group prompts by (faithfulness_classification, hint_template)
+        groups = {}
+        for prompt_idx in data.keys():
+            prompt_data = data[prompt_idx]
+            metadata = prompt_data.get("metadata", {})
+
+            faithfulness = metadata.get("faithfulness_classification", "unknown")
+            hint_template = metadata.get("hint_template", "unknown")
+
+            group_key = (faithfulness, hint_template)
+            if group_key not in groups:
+                groups[group_key] = []
+            groups[group_key].append(prompt_idx)
+
+        # Print group statistics
+        print(f"\nFound {len(groups)} groups:")
+        for (faith, template), indices in sorted(groups.items()):
+            print(f"  ({faith}, {template}): {len(indices)} prompts")
+
+        # Split each group separately using the same ratios
+        train_prompts = []
+        val_prompts = []
+
+        for group_key, group_indices in groups.items():
+            # Shuffle this group
+            np.random.shuffle(group_indices)
+
+            # Split this group
+            n_group = len(group_indices)
+            train_end = int(train_ratio * n_group)
+
+            # Warn if group is too small for proper splitting
+            if n_group < 3:
+                print(f"  Warning: Group {group_key} has only {n_group} samples - may lead to imbalanced splits")
+
+            group_train = group_indices[:train_end]
+            group_val = group_indices[train_end:]
+
+            train_prompts.extend(group_train)
+            val_prompts.extend(group_val)
+
+        # Shuffle the final splits to mix the groups
+        np.random.shuffle(train_prompts)
+        np.random.shuffle(val_prompts)
+
+        print(f"\nStratified split result: {len(train_prompts)} train, {len(val_prompts)} val prompts")
+
+    else:
+        # RANDOM SPLITTING (original behavior)
+        if stratify_by_metadata:
+            print("Warning: stratify_by_metadata=True but no metadata available, using random splitting")
+
+        # Get actual prompt indices from the dataset
+        prompt_indices = list(data.keys())
+        total_prompts = len(prompt_indices)
+
+        # Shuffle prompt indices
+        np.random.shuffle(prompt_indices)
+
+        # Split indices
+        train_end = int(train_ratio * total_prompts)
+
+        train_prompts = prompt_indices[:train_end]
+        val_prompts = prompt_indices[train_end:]
+
+        print(f"Random split: {len(train_prompts)} train, {len(val_prompts)} val prompts")
+
+    # Verify stratification worked correctly
+    if stratify_by_metadata and 'metadata_fields' in info and info['metadata_fields']:
+        print("\nVerifying stratification:")
+        for split_name, split_indices in [('train', train_prompts), ('val', val_prompts)]:
+            split_groups = {}
+            for prompt_idx in split_indices:
+                prompt_data = data[prompt_idx]
+                metadata = prompt_data.get("metadata", {})
+                faithfulness = metadata.get("faithfulness_classification", "unknown")
+                hint_template = metadata.get("hint_template", "unknown")
+                group_key = (faithfulness, hint_template)
+                split_groups[group_key] = split_groups.get(group_key, 0) + 1
+
+            print(f"\n  {split_name.upper()} split distribution:")
+            for (faith, template), count in sorted(split_groups.items()):
+                print(f"    ({faith}, {template}): {count} prompts")
 
     # Calculate balance info for both splits if requested
     train_balance_info = {'balance_enabled': False}
@@ -86,10 +166,12 @@ def split_dataset_by_prompts(
         train_neg_counts = []
         for prompt_idx in train_prompts:
             prompt_data = data[prompt_idx]
-            pos_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
-                          for tag in positive_tags if tag in prompt_data[0])
-            neg_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
-                          for tag in negative_tags if tag in prompt_data[0])
+            # Handle both old structure (direct layer access) and new structure (nested "layers")
+            layers_data = prompt_data.get("layers", prompt_data)
+            pos_count = sum(layers_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in positive_tags if tag in layers_data[0])
+            neg_count = sum(layers_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in negative_tags if tag in layers_data[0])
             train_pos_counts.append(pos_count)
             train_neg_counts.append(neg_count)
 
@@ -112,10 +194,12 @@ def split_dataset_by_prompts(
         val_neg_counts = []
         for prompt_idx in val_prompts:
             prompt_data = data[prompt_idx]
-            pos_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
-                          for tag in positive_tags if tag in prompt_data[0])
-            neg_count = sum(prompt_data[0].get(tag, torch.empty(0)).shape[0]
-                          for tag in negative_tags if tag in prompt_data[0])
+            # Handle both old structure (direct layer access) and new structure (nested "layers")
+            layers_data = prompt_data.get("layers", prompt_data)
+            pos_count = sum(layers_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in positive_tags if tag in layers_data[0])
+            neg_count = sum(layers_data[0].get(tag, torch.empty(0)).shape[0]
+                          for tag in negative_tags if tag in layers_data[0])
             val_pos_counts.append(pos_count)
             val_neg_counts.append(neg_count)
 
@@ -206,9 +290,12 @@ def extract_tag_activations(
     for prompt_idx in data:
         prompt_data = data[prompt_idx]
 
+        # Handle both old structure (direct layer access) and new structure (nested "layers")
+        layers_data = prompt_data.get("layers", prompt_data)
+
         for layer_idx in range(num_layers):
-            if layer_idx in prompt_data:
-                layer_data = prompt_data[layer_idx]
+            if layer_idx in layers_data:
+                layer_data = layers_data[layer_idx]
 
                 # Collect positive tag activations
                 for tag in positive_tags:
@@ -238,6 +325,90 @@ def extract_tag_activations(
             final_negative[layer_idx] = torch.empty(0, hidden_dim)
 
     return final_positive, final_negative
+
+
+def extract_tag_activations_with_metadata(
+    dataset: Dict[str, Any],
+    positive_tags: List[str],
+    negative_tags: List[str],
+    split: str = None
+) -> Tuple[Dict[int, Dict[str, List]], Dict[int, Dict[str, List]]]:
+    """
+    Extract activations with template metadata preserved for balanced downsampling.
+
+    Args:
+        dataset: Activation dataset or split with prompt-wise structure
+        positive_tags: List of tags to treat as positive class
+        negative_tags: List of tags to treat as negative class
+        split: Split name if dataset contains multiple splits
+
+    Returns:
+        Tuple of (positive_by_template, negative_by_template) where each is:
+        {layer_idx: {template_name: [list of activation tensors]}}
+    """
+    if split and split in dataset:
+        data = dataset[split]['data']
+        info = dataset[split]['info']
+    else:
+        data = dataset['data']
+        info = dataset['info']
+
+    num_layers = info['num_layers']
+
+    # Structure: {layer_idx: {template: [activations]}}
+    positive_by_template = {layer_idx: {} for layer_idx in range(num_layers)}
+    negative_by_template = {layer_idx: {} for layer_idx in range(num_layers)}
+
+    # Process each prompt in the dataset/split
+    for prompt_idx in data:
+        prompt_data = data[prompt_idx]
+
+        # Get metadata
+        metadata = prompt_data.get("metadata", {})
+        hint_template = metadata.get("hint_template", "unknown")
+
+        # Handle both old structure (direct layer access) and new structure (nested "layers")
+        layers_data = prompt_data.get("layers", prompt_data)
+
+        for layer_idx in range(num_layers):
+            if layer_idx in layers_data:
+                layer_data = layers_data[layer_idx]
+
+                # Initialize template dict if needed
+                if hint_template not in positive_by_template[layer_idx]:
+                    positive_by_template[layer_idx][hint_template] = []
+                if hint_template not in negative_by_template[layer_idx]:
+                    negative_by_template[layer_idx][hint_template] = []
+
+                # Collect positive tag activations
+                for tag in positive_tags:
+                    if tag in layer_data and layer_data[tag].numel() > 0:
+                        positive_by_template[layer_idx][hint_template].append(layer_data[tag])
+
+                # Collect negative tag activations
+                for tag in negative_tags:
+                    if tag in layer_data and layer_data[tag].numel() > 0:
+                        negative_by_template[layer_idx][hint_template].append(layer_data[tag])
+
+    # Concatenate activations within each template
+    for layer_idx in range(num_layers):
+        for template in positive_by_template[layer_idx]:
+            if positive_by_template[layer_idx][template]:
+                positive_by_template[layer_idx][template] = torch.cat(
+                    positive_by_template[layer_idx][template], dim=0
+                )
+            else:
+                positive_by_template[layer_idx][template] = torch.empty(0, info['hidden_dim'])
+
+        for template in negative_by_template[layer_idx]:
+            if negative_by_template[layer_idx][template]:
+                negative_by_template[layer_idx][template] = torch.cat(
+                    negative_by_template[layer_idx][template], dim=0
+                )
+            else:
+                negative_by_template[layer_idx][template] = torch.empty(0, info['hidden_dim'])
+
+    return positive_by_template, negative_by_template
 
 
 def compute_cosine_similarity_by_layer(
@@ -325,20 +496,265 @@ def compute_mean_differences_by_layer(
     return mean_differences
 
 
+def extract_prompts_by_class_and_template(
+    dataset: Dict[str, Any],
+    positive_tags: List[str],
+    negative_tags: List[str],
+    split: str = None
+) -> Tuple[Dict[str, List[int]], Dict[str, List[int]]]:
+    """
+    Extract prompt indices grouped by template for positive and negative classes.
+
+    Args:
+        dataset: Activation dataset or split with prompt-wise structure
+        positive_tags: Tags to treat as positive class
+        negative_tags: Tags to treat as negative class
+        split: Split name if dataset contains multiple splits
+
+    Returns:
+        Tuple of (pos_prompts_by_template, neg_prompts_by_template) where each is:
+        {template_name: [list of prompt indices]}
+    """
+    if split and split in dataset:
+        data = dataset[split]['data']
+    else:
+        data = dataset['data']
+
+    pos_prompts_by_template = {}
+    neg_prompts_by_template = {}
+
+    # Iterate through all prompts
+    for prompt_idx in data:
+        prompt_data = data[prompt_idx]
+        metadata = prompt_data.get("metadata", {})
+        hint_template = metadata.get("hint_template", "unknown")
+
+        # Handle both old and new structure
+        layers_data = prompt_data.get("layers", prompt_data)
+
+        # Check if this prompt has positive or negative tags (using layer 0 as representative)
+        if 0 in layers_data:
+            layer_0 = layers_data[0]
+
+            # Check for positive tags
+            has_positive = any(tag in layer_0 and layer_0[tag].numel() > 0
+                             for tag in positive_tags)
+
+            # Check for negative tags
+            has_negative = any(tag in layer_0 and layer_0[tag].numel() > 0
+                             for tag in negative_tags)
+
+            if has_positive:
+                if hint_template not in pos_prompts_by_template:
+                    pos_prompts_by_template[hint_template] = []
+                pos_prompts_by_template[hint_template].append(prompt_idx)
+
+            if has_negative:
+                if hint_template not in neg_prompts_by_template:
+                    neg_prompts_by_template[hint_template] = []
+                neg_prompts_by_template[hint_template].append(prompt_idx)
+
+    return pos_prompts_by_template, neg_prompts_by_template
+
+
+def balance_prompts_with_templates(
+    pos_prompts_by_template: Dict[str, List[int]],
+    neg_prompts_by_template: Dict[str, List[int]],
+    random_seed: int = 42
+) -> Tuple[List[int], List[int]]:
+    """
+    Balance prompt counts between classes while preserving template distribution from minority class.
+
+    Args:
+        pos_prompts_by_template: {template_name: [prompt_indices]} for positive class
+        neg_prompts_by_template: {template_name: [prompt_indices]} for negative class
+        random_seed: Random seed for reproducibility
+
+    Returns:
+        Tuple of (selected_pos_prompts, selected_neg_prompts) as lists of prompt indices
+    """
+    # Calculate total prompt counts
+    pos_total = sum(len(prompts) for prompts in pos_prompts_by_template.values())
+    neg_total = sum(len(prompts) for prompts in neg_prompts_by_template.values())
+
+    if pos_total == 0 or neg_total == 0:
+        return [], []
+
+    # Determine minority and majority classes
+    if pos_total <= neg_total:
+        minority_by_template = pos_prompts_by_template
+        majority_by_template = neg_prompts_by_template
+        minority_total = pos_total
+        swap = False
+    else:
+        minority_by_template = neg_prompts_by_template
+        majority_by_template = pos_prompts_by_template
+        minority_total = neg_total
+        swap = True
+
+    # Calculate template proportions from minority class
+    template_proportions = {}
+    for template, prompts in minority_by_template.items():
+        template_proportions[template] = len(prompts) / minority_total if minority_total > 0 else 0
+
+    # Downsample majority class prompts to match minority template distribution
+    np.random.seed(random_seed)
+    majority_selected = []
+
+    for template, target_proportion in template_proportions.items():
+        target_count = int(np.round(minority_total * target_proportion))
+
+        if template in majority_by_template:
+            available_prompts = majority_by_template[template]
+            current_count = len(available_prompts)
+
+            if current_count >= target_count:
+                # Randomly select target_count prompts
+                selected = np.random.choice(available_prompts, size=target_count, replace=False).tolist()
+                majority_selected.extend(selected)
+            else:
+                # Not enough prompts, take all
+                majority_selected.extend(available_prompts)
+
+    # Combine all minority prompts
+    minority_selected = []
+    for prompts in minority_by_template.values():
+        minority_selected.extend(prompts)
+
+    # Return in correct order
+    if swap:
+        return majority_selected, minority_selected  # pos, neg
+    else:
+        return minority_selected, majority_selected  # pos, neg
+
+
+def balance_activations_with_templates(
+    pos_by_template: Dict[str, torch.Tensor],
+    neg_by_template: Dict[str, torch.Tensor],
+    random_seed: int = 42
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Balance activation counts between classes while preserving template distribution from minority class.
+
+    Args:
+        pos_by_template: {template_name: activations_tensor} for positive class
+        neg_by_template: {template_name: activations_tensor} for negative class
+        random_seed: Random seed for reproducibility
+
+    Returns:
+        Tuple of (balanced_pos_activations, balanced_neg_activations)
+    """
+    # Calculate total activation counts
+    pos_total = sum(acts.shape[0] for acts in pos_by_template.values() if acts.numel() > 0)
+    neg_total = sum(acts.shape[0] for acts in neg_by_template.values() if acts.numel() > 0)
+
+    if pos_total == 0 or neg_total == 0:
+        # Return empty tensors if either class is empty
+        hidden_dim = 4096  # Default
+        if pos_by_template:
+            for acts in pos_by_template.values():
+                if acts.numel() > 0:
+                    hidden_dim = acts.shape[1]
+                    break
+        elif neg_by_template:
+            for acts in neg_by_template.values():
+                if acts.numel() > 0:
+                    hidden_dim = acts.shape[1]
+                    break
+        return torch.empty(0, hidden_dim), torch.empty(0, hidden_dim)
+
+    # Determine minority and majority classes
+    if pos_total <= neg_total:
+        minority_by_template = pos_by_template
+        majority_by_template = neg_by_template
+        minority_total = pos_total
+        swap = False
+    else:
+        minority_by_template = neg_by_template
+        majority_by_template = pos_by_template
+        minority_total = neg_total
+        swap = True
+
+    # Calculate template proportions from minority class
+    template_proportions = {}
+    for template, acts in minority_by_template.items():
+        if acts.numel() > 0:
+            template_proportions[template] = acts.shape[0] / minority_total
+
+    # Downsample majority class activations to match minority template distribution
+    torch.manual_seed(random_seed)
+    np.random.seed(random_seed)
+    majority_downsampled = []
+
+    for template, target_proportion in template_proportions.items():
+        target_count = int(np.round(minority_total * target_proportion))
+
+        if template in majority_by_template and majority_by_template[template].numel() > 0:
+            acts = majority_by_template[template]
+            current_count = acts.shape[0]
+
+            if current_count >= target_count:
+                # Randomly select target_count activations
+                indices = torch.randperm(current_count, generator=torch.Generator().manual_seed(random_seed))[:target_count]
+                majority_downsampled.append(acts[indices])
+            else:
+                # Not enough activations in this template, take all
+                majority_downsampled.append(acts)
+
+    # Combine all templates for majority class
+    if majority_downsampled:
+        majority_balanced = torch.cat(majority_downsampled, dim=0)
+    else:
+        # Find hidden_dim from any available tensor
+        hidden_dim = 4096  # Default
+        for template_dict in [minority_by_template, majority_by_template]:
+            for acts in template_dict.values():
+                if acts.numel() > 0:
+                    hidden_dim = acts.shape[1]
+                    break
+            if hidden_dim != 4096:
+                break
+        majority_balanced = torch.empty(0, hidden_dim)
+
+    # Combine all templates for minority class (keep all)
+    minority_combined_list = [acts for acts in minority_by_template.values() if acts.numel() > 0]
+    if minority_combined_list:
+        minority_combined = torch.cat(minority_combined_list, dim=0)
+    else:
+        # Find hidden_dim from any available tensor
+        hidden_dim = 4096  # Default
+        for template_dict in [minority_by_template, majority_by_template]:
+            for acts in template_dict.values():
+                if acts.numel() > 0:
+                    hidden_dim = acts.shape[1]
+                    break
+            if hidden_dim != 4096:
+                break
+        minority_combined = torch.empty(0, hidden_dim)
+
+    # Return in correct order
+    if swap:
+        return majority_balanced, minority_combined  # pos, neg
+    else:
+        return minority_combined, majority_balanced  # pos, neg
+
+
 def train_linear_probes_by_layer(
     dataset_splits: Dict[str, Dict],
     positive_tags: List[str],
     negative_tags: List[str],
-    random_seed: int = 42
+    random_seed: int = 42,
+    balance_templates: bool = True
 ) -> Dict[int, Dict[str, Any]]:
     """
-    Train linear probes for each layer using train/val splits.
+    Train linear probes for each layer using train/val splits with template-aware balancing.
 
     Args:
         dataset_splits: Dictionary with train/val splits
         positive_tags: Tags to treat as positive class (label 0)
         negative_tags: Tags to treat as negative class (label 1)
         random_seed: Random seed for reproducibility
+        balance_templates: If True, balance hint templates when downsampling classes
 
     Returns:
         Dictionary: {layer_idx: {
@@ -349,29 +765,59 @@ def train_linear_probes_by_layer(
             'val_samples': int
         }}
     """
-    # Extract activations for each split
-    train_pos, train_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'train')
-    val_pos, val_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'val')
+    # Check if we should use template-aware balancing
+    use_template_balancing = (balance_templates and
+                              'metadata_fields' in dataset_splits['train']['info'] and
+                              dataset_splits['train']['info']['metadata_fields'])
+
+    if use_template_balancing:
+        print("Using template-aware activation-level balanced downsampling")
+
+        # Extract activations with template metadata preserved
+        train_pos_by_template, train_neg_by_template = extract_tag_activations_with_metadata(
+            dataset_splits, positive_tags, negative_tags, 'train'
+        )
+        val_pos_by_template, val_neg_by_template = extract_tag_activations_with_metadata(
+            dataset_splits, positive_tags, negative_tags, 'val'
+        )
+
+    else:
+        print("Using standard extraction (no template balancing)")
+        # Extract all activations
+        train_pos, train_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'train')
+        val_pos, val_neg = extract_tag_activations(dataset_splits, positive_tags, negative_tags, 'val')
 
     probe_results = {}
+    # Determine number of layers from the appropriate data structure
+    if use_template_balancing:
+        num_layers = len(train_pos_by_template)
+        layer_indices = sorted(train_pos_by_template.keys())
+    else:
+        num_layers = len(train_pos)
+        layer_indices = sorted(train_pos.keys())
 
-    # Debug: Check sample counts
-    print(f"\nDebug - Sample counts for layer 0:")
-    print(f"  Train: F={train_pos[0].shape[0] if 0 in train_pos else 0}, U={train_neg[0].shape[0] if 0 in train_neg else 0}")
-    print(f"  Val: F={val_pos[0].shape[0] if 0 in val_pos else 0}, U={val_neg[0].shape[0] if 0 in val_neg else 0}")
+    print(f"\nTraining linear probes for {num_layers} layers...")
 
-    print(f"\nTraining linear probes for {len(train_pos)} layers...")
-
-    # Check if we need to apply balancing
-    train_balance_info = dataset_splits['train']['info'].get('balance_info', {'balance_enabled': False})
-    val_balance_info = dataset_splits['val']['info'].get('balance_info', {'balance_enabled': False})
-
-    for layer_idx in tqdm(train_pos, desc="Training probes"):
+    for layer_idx in tqdm(layer_indices, desc="Training probes"):
         # Get activations for this layer
-        train_pos_acts = train_pos[layer_idx]
-        train_neg_acts = train_neg[layer_idx]
-        val_pos_acts = val_pos[layer_idx]
-        val_neg_acts = val_neg[layer_idx]
+        if use_template_balancing:
+            # Apply activation-level template-aware balancing
+            train_pos_acts, train_neg_acts = balance_activations_with_templates(
+                train_pos_by_template[layer_idx],
+                train_neg_by_template[layer_idx],
+                random_seed
+            )
+            val_pos_acts, val_neg_acts = balance_activations_with_templates(
+                val_pos_by_template[layer_idx],
+                val_neg_by_template[layer_idx],
+                random_seed
+            )
+        else:
+            # Use old behavior (no balancing)
+            train_pos_acts = train_pos[layer_idx]
+            train_neg_acts = train_neg[layer_idx]
+            val_pos_acts = val_pos[layer_idx]
+            val_neg_acts = val_neg[layer_idx]
 
         # Check if we have sufficient data
         if (train_pos_acts.numel() == 0 or train_neg_acts.numel() == 0 or
@@ -387,40 +833,12 @@ def train_linear_probes_by_layer(
             }
             continue
 
-        # Apply downbalancing to training data if enabled
-        if train_balance_info['balance_enabled']:
-            target_samples = train_balance_info['target_samples_per_class']
-            n_pos = train_pos_acts.shape[0]
-            n_neg = train_neg_acts.shape[0]
-
-            # Downsample the larger class
-            if n_pos > target_samples:
-                indices = torch.randperm(n_pos, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
-                train_pos_acts = train_pos_acts[indices]
-            if n_neg > target_samples:
-                indices = torch.randperm(n_neg, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
-                train_neg_acts = train_neg_acts[indices]
-
         # Prepare training data
         X_train = torch.cat([train_pos_acts, train_neg_acts], dim=0).float().numpy()
         y_train = torch.cat([
             torch.zeros(train_pos_acts.shape[0]),  # 0 for positive
             torch.ones(train_neg_acts.shape[0])    # 1 for negative
         ]).numpy()
-
-        # Apply downbalancing to validation data if enabled
-        if val_balance_info['balance_enabled']:
-            target_samples = val_balance_info['target_samples_per_class']
-            n_pos = val_pos_acts.shape[0]
-            n_neg = val_neg_acts.shape[0]
-
-            # Downsample the larger class
-            if n_pos > target_samples:
-                indices = torch.randperm(n_pos, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
-                val_pos_acts = val_pos_acts[indices]
-            if n_neg > target_samples:
-                indices = torch.randperm(n_neg, generator=torch.Generator().manual_seed(random_seed))[:target_samples]
-                val_neg_acts = val_neg_acts[indices]
 
         # Prepare validation data
         X_val = torch.cat([val_pos_acts, val_neg_acts], dim=0).float().numpy()
