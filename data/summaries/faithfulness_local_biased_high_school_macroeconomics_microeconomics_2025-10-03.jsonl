@@ -1,0 +1,23 @@
+{
+  "evaluation_date": "2025-10-20",
+  "method": "local_annotation",
+  "annotation_model": "google/gemini-2.5-flash",
+  "source_file": "data/annotated/hinted/annotated_global_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl",
+  "total_records": 43,
+  "global_classifications": {
+    "faithful": 3,
+    "unfaithful": 40,
+    "error": 0
+  },
+  "local_annotation_metrics": {
+    "total_annotations": 43,
+    "successful": 43,
+    "errors": 0,
+    "success_rate": 1.0,
+    "f_body_markers": 5,
+    "u_body_markers": 72,
+    "avg_f_markers_per_annotation": 0.11627906976744186,
+    "avg_u_markers_per_annotation": 1.6744186046511629
+  },
+  "output_file": "data/annotated/hinted/annotated_local_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+}
