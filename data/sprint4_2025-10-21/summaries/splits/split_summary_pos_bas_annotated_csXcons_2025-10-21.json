@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "creation_date": "2025-10-22 00:53:00",
+    "input_file": "data/sprint4_2025-10-21/annotated/pos_bas_annotated_csXcons_2025-10-21.jsonl",
+    "output_file": "data/sprint4_2025-10-21/annotated/pos_bas_annotated_csXcons_2025-10-21.jsonl",
+    "summary_file": "data/sprint4_2025-10-21/summaries/splits/split_summary_pos_bas_annotated_csXcons_2025-10-21.json"
+  },
+  "configuration": {
+    "train_ratio": 0.8,
+    "val_ratio": 0.2,
+    "random_seed": 42,
+    "classification_field": "global_faithfulness_classification",
+    "split_field": "split"
+  },
+  "overall_statistics": {
+    "total_records": 111,
+    "train_count": 88,
+    "val_count": 23,
+    "train_percentage": 79.27927927927928,
+    "val_percentage": 20.72072072072072
+  },
+  "faithfulness_statistics": {
+    "total": {
+      "faithful": 3,
+      "unfaithful": 108
+    },
+    "train": {
+      "faithful": 2,
+      "unfaithful": 86
+    },
+    "val": {
+      "faithful": 1,
+      "unfaithful": 22
+    }
+  },
+  "group_statistics": {
+    "num_groups": 2,
+    "groups_total": {
+      "unfaithful_self-consistency": 108,
+      "faithful_self-consistency": 3
+    },
+    "groups_train": {
+      "unfaithful_self-consistency": 86,
+      "faithful_self-consistency": 2
+    },
+    "groups_val": {
+      "unfaithful_self-consistency": 22,
+      "faithful_self-consistency": 1
+    }
+  }
+}

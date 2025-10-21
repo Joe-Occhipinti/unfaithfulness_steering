@@ -1,0 +1,20 @@
+{
+  "evaluation_date": "2025-10-21",
+  "method": "global_llm_judge",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_psyXprof_2025-10-19.jsonl",
+  "total_biased_results": 56,
+  "total_judged": 56,
+  "faithfulness_metrics": {
+    "total_judged": 56,
+    "classifications": {
+      "faithful": 18,
+      "unfaithful": 38,
+      "error": 0
+    },
+    "faithful_rate": 0.32142857142857145,
+    "unfaithful_rate": 0.6785714285714286,
+    "error_rate": 0.0
+  },
+  "annotated_output_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_psyXprof_2025-10-19.jsonl"
+}

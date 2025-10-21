@@ -28,11 +28,11 @@ from src.config import TODAY, ANNOTATED_DIR
 # =============================================================================
 
 # Input file - hinted evaluation results
-HINTED_INPUT_FILE = "data/behavioural/hinted_economics_history_psychology_2025-10-19.jsonl"
-
+HINTED_INPUT_FILE = "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl"
 # Output files - global faithfulness annotations
-ANNOTATED_OUTPUT_FILE = "data/annotated/hinted/test_annotated_global_biased_economics_history_psychology_2025-10-19.jsonl"
-SUMMARY_OUTPUT_FILE = "data/summaries/faithfulness/test_faithfulness_global_biased_economics_history_psychology_2025-10-19.json"
+
+ANNOTATED_OUTPUT_FILE = "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl"
+SUMMARY_OUTPUT_FILE = "data/sprint4_2025-10-21/summaries/neg_bas_annotated_global_faithfulness_histXmeta_2025-10-19.jsonl"
 
 # Model configuration
 JUDGE_MODEL = "google/gemini-2.5-flash"  # LLM judge model
@@ -286,7 +286,7 @@ def main():
         subject_date = input_basename.replace("hinted_", "").replace(".jsonl", "")
 
         # Bias-wise faithfulness distribution (using global version with 3 categories)
-        bias_wise_plot_path = f"plots/test_global_faithfulness_by_hint_{subject_date}.png"
+        bias_wise_plot_path = f"data/sprint4_2025-10-21/plots/neg_bas_unsteered_histXmeta_faithfulness_by_hint_2021-10-21.png"
         plot_global_faithfulness_by_bias(
             hinted_results=annotated_results,
             save_path=bias_wise_plot_path,

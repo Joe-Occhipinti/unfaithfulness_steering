@@ -37,20 +37,22 @@ def split_dataset_by_prompts(
     balance_val_split: bool = False,
     positive_tags: List[str] = None,
     negative_tags: List[str] = None,
-    stratify_by_metadata: bool = True
+    stratify_by_metadata: bool = True,
+    use_existing_split: bool = True
 ) -> Dict[str, Dict]:
     """
     Split dataset by prompt indices to ensure activations from same prompt stay together.
 
     Args:
         dataset: Activation dataset with prompt-wise structure
-        train_ratio: Proportion for training set
-        val_ratio: Proportion for validation set
+        train_ratio: Proportion for training set (ignored if use_existing_split finds splits)
+        val_ratio: Proportion for validation set (ignored if use_existing_split finds splits)
         random_seed: Random seed for reproducibility
         balance_val_split: If True, balance positive and negative samples in val split
         positive_tags: Tags for positive class (required if balance_val_split=True)
         negative_tags: Tags for negative class (required if balance_val_split=True)
         stratify_by_metadata: If True, use stratified splitting by (faithfulness_classification, hint_template)
+        use_existing_split: If True, use existing "split" field from metadata if available (default: True)
 
     Returns:
         Dictionary with train/val splits: {'train': dataset_subset, 'val': dataset_subset}
@@ -64,77 +66,111 @@ def split_dataset_by_prompts(
     torch.manual_seed(random_seed)
     np.random.seed(random_seed)
 
-    # Choose splitting strategy
-    if stratify_by_metadata and 'metadata_fields' in info and info['metadata_fields']:
-        # STRATIFIED SPLITTING by (faithfulness_classification, hint_template)
-        print("Using stratified splitting by metadata (faithfulness × hint_template)")
+    # Check if existing split field should be used
+    train_prompts = None
+    val_prompts = None
 
-        # Group prompts by (faithfulness_classification, hint_template)
-        groups = {}
+    if use_existing_split and 'split' in info.get('metadata_fields', []):
+        # Check if prompts actually have split values
+        prompts_with_split = []
         for prompt_idx in data.keys():
-            prompt_data = data[prompt_idx]
-            metadata = prompt_data.get("metadata", {})
+            split_val = data[prompt_idx].get('metadata', {}).get('split')
+            if split_val in ['train', 'val']:
+                prompts_with_split.append(prompt_idx)
 
-            faithfulness = metadata.get("faithfulness_classification", "unknown")
-            hint_template = metadata.get("hint_template", "unknown")
+        if prompts_with_split:
+            print(f"Found 'split' field in metadata - using existing splits")
+            train_prompts = []
+            val_prompts = []
 
-            group_key = (faithfulness, hint_template)
-            if group_key not in groups:
-                groups[group_key] = []
-            groups[group_key].append(prompt_idx)
+            for prompt_idx in data.keys():
+                split_val = data[prompt_idx].get('metadata', {}).get('split')
+                if split_val == 'train':
+                    train_prompts.append(prompt_idx)
+                elif split_val == 'val':
+                    val_prompts.append(prompt_idx)
+                elif split_val is None or split_val == '':
+                    # No split assigned - default to train
+                    train_prompts.append(prompt_idx)
+                else:
+                    # Unknown split value (e.g., 'test') - skip or warn
+                    print(f"  Warning: Prompt {prompt_idx} has split='{split_val}', assigning to train")
+                    train_prompts.append(prompt_idx)
 
-        # Print group statistics
-        print(f"\nFound {len(groups)} groups:")
-        for (faith, template), indices in sorted(groups.items()):
-            print(f"  ({faith}, {template}): {len(indices)} prompts")
+            print(f"Loaded existing splits: {len(train_prompts)} train, {len(val_prompts)} val prompts")
 
-        # Split each group separately using the same ratios
-        train_prompts = []
-        val_prompts = []
+    # Fallback to stratified or random splitting if no existing splits
+    if train_prompts is None:
+        if stratify_by_metadata and 'metadata_fields' in info and info['metadata_fields']:
+            # STRATIFIED SPLITTING by (faithfulness_classification, hint_template)
+            print("Using stratified splitting by metadata (faithfulness × hint_template)")
 
-        for group_key, group_indices in groups.items():
-            # Shuffle this group
-            np.random.shuffle(group_indices)
+            # Group prompts by (faithfulness_classification, hint_template)
+            groups = {}
+            for prompt_idx in data.keys():
+                prompt_data = data[prompt_idx]
+                metadata = prompt_data.get("metadata", {})
 
-            # Split this group
-            n_group = len(group_indices)
-            train_end = int(train_ratio * n_group)
+                faithfulness = metadata.get("faithfulness_classification", "unknown")
+                hint_template = metadata.get("hint_template", "unknown")
 
-            # Warn if group is too small for proper splitting
-            if n_group < 3:
-                print(f"  Warning: Group {group_key} has only {n_group} samples - may lead to imbalanced splits")
+                group_key = (faithfulness, hint_template)
+                if group_key not in groups:
+                    groups[group_key] = []
+                groups[group_key].append(prompt_idx)
 
-            group_train = group_indices[:train_end]
-            group_val = group_indices[train_end:]
+            # Print group statistics
+            print(f"\nFound {len(groups)} groups:")
+            for (faith, template), indices in sorted(groups.items()):
+                print(f"  ({faith}, {template}): {len(indices)} prompts")
 
-            train_prompts.extend(group_train)
-            val_prompts.extend(group_val)
+            # Split each group separately using the same ratios
+            train_prompts = []
+            val_prompts = []
 
-        # Shuffle the final splits to mix the groups
-        np.random.shuffle(train_prompts)
-        np.random.shuffle(val_prompts)
+            for group_key, group_indices in groups.items():
+                # Shuffle this group
+                np.random.shuffle(group_indices)
 
-        print(f"\nStratified split result: {len(train_prompts)} train, {len(val_prompts)} val prompts")
+                # Split this group
+                n_group = len(group_indices)
+                train_end = int(train_ratio * n_group)
 
-    else:
-        # RANDOM SPLITTING (original behavior)
-        if stratify_by_metadata:
-            print("Warning: stratify_by_metadata=True but no metadata available, using random splitting")
+                # Warn if group is too small for proper splitting
+                if n_group < 3:
+                    print(f"  Warning: Group {group_key} has only {n_group} samples - may lead to imbalanced splits")
 
-        # Get actual prompt indices from the dataset
-        prompt_indices = list(data.keys())
-        total_prompts = len(prompt_indices)
+                group_train = group_indices[:train_end]
+                group_val = group_indices[train_end:]
 
-        # Shuffle prompt indices
-        np.random.shuffle(prompt_indices)
+                train_prompts.extend(group_train)
+                val_prompts.extend(group_val)
 
-        # Split indices
-        train_end = int(train_ratio * total_prompts)
+            # Shuffle the final splits to mix the groups
+            np.random.shuffle(train_prompts)
+            np.random.shuffle(val_prompts)
 
-        train_prompts = prompt_indices[:train_end]
-        val_prompts = prompt_indices[train_end:]
+            print(f"\nStratified split result: {len(train_prompts)} train, {len(val_prompts)} val prompts")
 
-        print(f"Random split: {len(train_prompts)} train, {len(val_prompts)} val prompts")
+        else:
+            # RANDOM SPLITTING (original behavior)
+            if stratify_by_metadata:
+                print("Warning: stratify_by_metadata=True but no metadata available, using random splitting")
+
+            # Get actual prompt indices from the dataset
+            prompt_indices = list(data.keys())
+            total_prompts = len(prompt_indices)
+
+            # Shuffle prompt indices
+            np.random.shuffle(prompt_indices)
+
+            # Split indices
+            train_end = int(train_ratio * total_prompts)
+
+            train_prompts = prompt_indices[:train_end]
+            val_prompts = prompt_indices[train_end:]
+
+            print(f"Random split: {len(train_prompts)} train, {len(val_prompts)} val prompts")
 
     # Verify stratification worked correctly
     if stratify_by_metadata and 'metadata_fields' in info and info['metadata_fields']:

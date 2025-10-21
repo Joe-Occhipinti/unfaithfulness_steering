@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "creation_date": "2025-10-22 00:48:33",
+    "input_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl",
+    "output_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl",
+    "summary_file": "data/sprint4_2025-10-21/summaries/splits/split_summary_neg_bas_annotated_psyXprof_2025-10-19.json"
+  },
+  "configuration": {
+    "train_ratio": 0.8,
+    "val_ratio": 0.2,
+    "random_seed": 42,
+    "classification_field": "global_faithfulness_classification",
+    "split_field": "split"
+  },
+  "overall_statistics": {
+    "total_records": 125,
+    "train_count": 100,
+    "val_count": 25,
+    "train_percentage": 80.0,
+    "val_percentage": 20.0
+  },
+  "faithfulness_statistics": {
+    "total": {
+      "faithful": 15,
+      "unfaithful": 110
+    },
+    "train": {
+      "faithful": 12,
+      "unfaithful": 88
+    },
+    "val": {
+      "faithful": 3,
+      "unfaithful": 22
+    }
+  },
+  "group_statistics": {
+    "num_groups": 2,
+    "groups_total": {
+      "unfaithful_metadata": 110,
+      "faithful_metadata": 15
+    },
+    "groups_train": {
+      "unfaithful_metadata": 88,
+      "faithful_metadata": 12
+    },
+    "groups_val": {
+      "unfaithful_metadata": 22,
+      "faithful_metadata": 3
+    }
+  }
+}
