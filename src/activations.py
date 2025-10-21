@@ -355,7 +355,7 @@ def build_activation_dataset(
         target_tags = ActivationConfig.TARGET_TAGS
 
     if metadata_fields is None:
-        metadata_fields = ["hint_template", "faithfulness_classification"]
+        metadata_fields = ["hint_template", "faithfulness_classification", "split"]
 
     print(f"\n--- Building Activation Dataset ---")
     print(f"Source Directory: {activations_dir}")

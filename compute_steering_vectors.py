@@ -38,8 +38,8 @@ SUMMARY_FILE = "data/summaries/steering/steering_vectors_summary_cut_global_F_vs
 # =============================================================================
 
 # Tag groupings for steering vectors
-POSITIVE_TAGS = ["F_final"]     # Faithful tags
-NEGATIVE_TAGS = ["U_final"]     # Unfaithful tags
+POSITIVE_TAGS = ["F_body"]     # Faithful tags
+NEGATIVE_TAGS = ["U_body"]     # Unfaithful tags
 
 # Alternative tag groupings (uncomment to use):
 # POSITIVE_TAGS = ["F", "F_final"]   # Base + Final faithful only

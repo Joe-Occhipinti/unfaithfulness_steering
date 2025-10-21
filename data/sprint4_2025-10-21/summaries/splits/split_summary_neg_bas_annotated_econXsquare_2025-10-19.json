@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "creation_date": "2025-10-22 00:54:00",
+    "input_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_econXsquare_2025-10-19.jsonl",
+    "output_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_econXsquare_2025-10-19.jsonl",
+    "summary_file": "data/sprint4_2025-10-21/summaries/splits/split_summary_neg_bas_annotated_econXsquare_2025-10-19.json"
+  },
+  "configuration": {
+    "train_ratio": 0.8,
+    "val_ratio": 0.2,
+    "random_seed": 42,
+    "classification_field": "global_faithfulness_classification",
+    "split_field": "split"
+  },
+  "overall_statistics": {
+    "total_records": 43,
+    "train_count": 34,
+    "val_count": 9,
+    "train_percentage": 79.06976744186046,
+    "val_percentage": 20.930232558139537
+  },
+  "faithfulness_statistics": {
+    "total": {
+      "faithful": 4,
+      "unfaithful": 39
+    },
+    "train": {
+      "faithful": 3,
+      "unfaithful": 31
+    },
+    "val": {
+      "faithful": 1,
+      "unfaithful": 8
+    }
+  },
+  "group_statistics": {
+    "num_groups": 2,
+    "groups_total": {
+      "unfaithful_fewshot_black_square": 39,
+      "faithful_fewshot_black_square": 4
+    },
+    "groups_train": {
+      "unfaithful_fewshot_black_square": 31,
+      "faithful_fewshot_black_square": 3
+    },
+    "groups_val": {
+      "unfaithful_fewshot_black_square": 8,
+      "faithful_fewshot_black_square": 1
+    }
+  }
+}

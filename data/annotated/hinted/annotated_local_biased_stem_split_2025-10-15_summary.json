@@ -1,0 +1,23 @@
+{
+  "date": "2025-10-22",
+  "input_file": "data/annotated/hinted/annotated_local_biased_stem_2025-10-15.jsonl",
+  "output_file": "data/annotated/hinted/annotated_local_biased_stem_split_2025-10-15.jsonl",
+  "train_ratio": 0.8,
+  "val_ratio": 0.2,
+  "random_seed": 42,
+  "total_records": 643,
+  "train_count": 513,
+  "val_count": 130,
+  "faithful_total": 241,
+  "unfaithful_total": 402,
+  "other_total": 0,
+  "num_groups": 6,
+  "groups": {
+    "unfaithful_grader_hacking": 70,
+    "faithful_grader_hacking": 10,
+    "faithful_argument": 218,
+    "unfaithful_argument": 107,
+    "unfaithful_self-consistency": 225,
+    "faithful_self-consistency": 13
+  }
+}

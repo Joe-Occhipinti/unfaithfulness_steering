@@ -1,0 +1,20 @@
+{
+  "evaluation_date": "2025-10-21",
+  "method": "global_llm_judge",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data/sprint4_2025-10-21/annotated/pos_bas_annotated_csXcons_2025-10-21.jsonl",
+  "total_biased_results": 111,
+  "total_judged": 111,
+  "faithfulness_metrics": {
+    "total_judged": 111,
+    "classifications": {
+      "faithful": 3,
+      "unfaithful": 108,
+      "error": 0
+    },
+    "faithful_rate": 0.02702702702702703,
+    "unfaithful_rate": 0.972972972972973,
+    "error_rate": 0.0
+  },
+  "annotated_output_file": "data/sprint4_2025-10-21/annotated/pos_bas_annotated_csXcons_2025-10-21.jsonl"
+}
