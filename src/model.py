@@ -8,7 +8,7 @@ Reusable across baseline, hinted, and steering evaluation scripts.
 import torch
 import gc
 from typing import List, Tuple, Any
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from tqdm import tqdm
 
 def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tuple[Any, Any]:
@@ -30,12 +30,19 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
         tokenizer.pad_token = tokenizer.eos_token
         print("Tokenizer pad_token set to eos_token.")
 
+    # Configure 4-bit quantization (new API)
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=True
+    )
+
     # Load model with optimizations
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        load_in_4bit=True,
-        device_map="auto",
-        torch_dtype=torch.bfloat16,
+        quantization_config=bnb_config,
+        device_map="auto"
     )
 
     print(f"Model loaded successfully")
