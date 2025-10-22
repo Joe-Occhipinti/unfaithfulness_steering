@@ -174,9 +174,10 @@ def extract_activations_from_annotated_prompts(
         token_count = len(inputs_cpu['input_ids'][0])
         if verbose:
             print(f"\n=== DEBUGGING PROMPT {i} ===")
+            print(f"Annotated text length: {len(annotated_text)}")
             print(f"Clean text length: {len(clean_text)}")
             print(f"Token count: {token_count}")
-            print(f"Clean text preview: '{clean_text[:200]}...'")
+            print(f"Annotated text preview: '{annotated_text[:200]}...'")
 
             # Show the tokenized sequence
             tokens = tokenizer.convert_ids_to_tokens(inputs_cpu['input_ids'][0])
@@ -190,17 +191,31 @@ def extract_activations_from_annotated_prompts(
             if verbose:
                 print(f"\nProcessing tag '{tag}' with {len(char_indices_list)} character indices: {char_indices_list}")
             for char_idx in char_indices_list:
-                # Show what character we're looking at
+                # Show what character we're looking at IN ANNOTATED TEXT
+                # Need to find the corresponding position in annotated text
+                # For now, show context in clean text AND try to find in annotated
                 if char_idx < len(clean_text):
                     if verbose:
                         char_at_idx = clean_text[char_idx]
-                        # Show context around the character (20 chars before and after)
-                        context_start = max(0, char_idx - 20)
-                        context_end = min(len(clean_text), char_idx + 21)
-                        context_before = clean_text[context_start:char_idx]
-                        context_after = clean_text[char_idx + 1:context_end]
-                        print(f"  Char at index {char_idx}: '{char_at_idx}'")
-                        print(f"    Context: ...{context_before}[{char_at_idx}]{context_after}...")
+                        # Show context in CLEAN text (for char_to_token mapping)
+                        clean_context_start = max(0, char_idx - 30)
+                        clean_context_end = min(len(clean_text), char_idx + 31)
+                        clean_context_before = clean_text[clean_context_start:char_idx]
+                        clean_context_after = clean_text[char_idx + 1:clean_context_end]
+
+                        # Try to find the same context in annotated text to show tags
+                        # Search for the period with surrounding context in annotated text
+                        search_pattern = f"{clean_context_before}.{clean_context_after[:10]}"
+                        if search_pattern in annotated_text:
+                            ann_idx = annotated_text.index(search_pattern) + len(clean_context_before)
+                            ann_context_start = max(0, ann_idx - 30)
+                            ann_context_end = min(len(annotated_text), ann_idx + 31)
+                            ann_context = annotated_text[ann_context_start:ann_context_end]
+                            print(f"  Char at CLEAN index {char_idx}: '{char_at_idx}'")
+                            print(f"    ANNOTATED context: ...{ann_context}...")
+                        else:
+                            print(f"  Char at CLEAN index {char_idx}: '{char_at_idx}'")
+                            print(f"    CLEAN context: ...{clean_context_before}[{char_at_idx}]{clean_context_after}...")
                 else:
                     if verbose:
                         print(f"  ERROR: Char index {char_idx} is beyond clean text length {len(clean_text)}!")

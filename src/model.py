@@ -24,7 +24,7 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
     """
     print(f"\n--- Loading model: {model_id} ---")
 
-    # Load tokenizer
+    # Load tokenizer (requires transformers==4.44.2 for proper char_to_token mapping)
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
