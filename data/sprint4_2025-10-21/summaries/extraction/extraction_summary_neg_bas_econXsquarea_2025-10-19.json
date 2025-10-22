@@ -1,0 +1,314 @@
+{
+  "date": "2025-10-22",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "input_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_econXsquare_2025-10-19.jsonl",
+  "output_dir": "data/sprint4_2025-10-21/activations/acts_neg_bas_econXsquare_2025-10-19",
+  "dataset_file": "data/sprint4_2025-10-21/datasets/acts_neg_bas_econXsquare_2025-10-19.pkl",
+  "prompt_field": "local_annotated_biased_prompt",
+  "target_tags": [
+    "U_final",
+    "F_final",
+    "F_body",
+    "U_body"
+  ],
+  "layers_extracted": 32,
+  "activation_statistics": {
+    "total_prompts": 41,
+    "tags_found": [
+      "F_body",
+      "U_body"
+    ],
+    "layers_found": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "activations_per_tag": {
+      "U_body": 2336,
+      "F_body": 96
+    },
+    "activations_per_layer": {
+      "0": 76,
+      "1": 76,
+      "2": 76,
+      "3": 76,
+      "4": 76,
+      "5": 76,
+      "6": 76,
+      "7": 76,
+      "8": 76,
+      "9": 76,
+      "10": 76,
+      "11": 76,
+      "12": 76,
+      "13": 76,
+      "14": 76,
+      "15": 76,
+      "16": 76,
+      "17": 76,
+      "18": 76,
+      "19": 76,
+      "20": 76,
+      "21": 76,
+      "22": 76,
+      "23": 76,
+      "24": 76,
+      "25": 76,
+      "26": 76,
+      "27": 76,
+      "28": 76,
+      "29": 76,
+      "30": 76,
+      "31": 76
+    }
+  },
+  "dataset_info": {
+    "tags": [
+      "U_final",
+      "F_final",
+      "F_body",
+      "U_body"
+    ],
+    "num_layers": 32,
+    "num_prompts": 41,
+    "hidden_dim": 4096,
+    "total_files": 41,
+    "files_with_data": 41,
+    "total_stats": {
+      "U_final": 0,
+      "F_final": 0,
+      "F_body": 96,
+      "U_body": 2336
+    },
+    "layer_stats": {
+      "0": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "1": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "2": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "3": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "4": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "5": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "6": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "7": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "8": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "9": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "10": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "11": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "12": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "13": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "14": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "15": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "16": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "17": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "18": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "19": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "20": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "21": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "22": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "23": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "24": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "25": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "26": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "27": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "28": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "29": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "30": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      },
+      "31": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 3,
+        "U_body": 73
+      }
+    },
+    "metadata_fields": [
+      "hint_template",
+      "faithfulness_classification",
+      "split"
+    ],
+    "source_jsonl": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_econXsquare_2025-10-19.jsonl"
+  },
+  "processing_time_seconds": 82.5505621433258
+}
