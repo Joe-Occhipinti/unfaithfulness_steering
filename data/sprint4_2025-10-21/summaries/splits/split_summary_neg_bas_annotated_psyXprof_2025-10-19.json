@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "creation_date": "2025-10-22 00:48:33",
-    "input_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl",
-    "output_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl",
+    "creation_date": "2025-10-22 21:58:26",
+    "input_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_psyXprof_2025-10-19.jsonl",
+    "output_file": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_psyXprof_2025-10-19.jsonl",
     "summary_file": "data/sprint4_2025-10-21/summaries/splits/split_summary_neg_bas_annotated_psyXprof_2025-10-19.json"
   },
   "configuration": {
@@ -13,39 +13,39 @@
     "split_field": "split"
   },
   "overall_statistics": {
-    "total_records": 125,
-    "train_count": 100,
-    "val_count": 25,
-    "train_percentage": 80.0,
-    "val_percentage": 20.0
+    "total_records": 56,
+    "train_count": 44,
+    "val_count": 12,
+    "train_percentage": 78.57142857142857,
+    "val_percentage": 21.428571428571427
   },
   "faithfulness_statistics": {
     "total": {
-      "faithful": 15,
-      "unfaithful": 110
+      "faithful": 18,
+      "unfaithful": 38
     },
     "train": {
-      "faithful": 12,
-      "unfaithful": 88
+      "faithful": 14,
+      "unfaithful": 30
     },
     "val": {
-      "faithful": 3,
-      "unfaithful": 22
+      "faithful": 4,
+      "unfaithful": 8
     }
   },
   "group_statistics": {
     "num_groups": 2,
     "groups_total": {
-      "unfaithful_metadata": 110,
-      "faithful_metadata": 15
+      "faithful_professor": 18,
+      "unfaithful_professor": 38
     },
     "groups_train": {
-      "unfaithful_metadata": 88,
-      "faithful_metadata": 12
+      "faithful_professor": 14,
+      "unfaithful_professor": 30
     },
     "groups_val": {
-      "unfaithful_metadata": 22,
-      "faithful_metadata": 3
+      "faithful_professor": 4,
+      "unfaithful_professor": 8
     }
   }
 }
