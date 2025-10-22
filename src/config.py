@@ -100,7 +100,7 @@ class ValidationConfig:
 class ActivationConfig:
     """Configuration specific to activation extraction"""
 
-    PROMPT_FIELD = "annotated_biased_prompt"
+    PROMPT_FIELD = "local_annotated_biased_prompt"
     VERBOSE = True
     TARGET_TAGS = ["U_final", "F_final", "F_body", "U_body"]
 
