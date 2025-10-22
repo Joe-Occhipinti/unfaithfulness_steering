@@ -1,0 +1,314 @@
+{
+  "date": "2025-10-22",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "input_file": "data/sprint4_2025-10-21/annotated/pos_bas_annotated_scienceXgrader_2025-10-21.jsonl",
+  "output_dir": "data/sprint4_2025-10-21/activations/acts_pos_bas_scienceXgrader_2025-10-21",
+  "dataset_file": "data/sprint4_2025-10-21/datasets/acts_pos_bas_scienceXgrader_2025-10-21.pkl",
+  "prompt_field": "local_annotated_biased_prompt",
+  "target_tags": [
+    "U_final",
+    "F_final",
+    "F_body",
+    "U_body"
+  ],
+  "layers_extracted": 32,
+  "activation_statistics": {
+    "total_prompts": 39,
+    "tags_found": [
+      "F_body",
+      "U_body"
+    ],
+    "layers_found": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "activations_per_tag": {
+      "U_body": 1952,
+      "F_body": 448
+    },
+    "activations_per_layer": {
+      "0": 75,
+      "1": 75,
+      "2": 75,
+      "3": 75,
+      "4": 75,
+      "5": 75,
+      "6": 75,
+      "7": 75,
+      "8": 75,
+      "9": 75,
+      "10": 75,
+      "11": 75,
+      "12": 75,
+      "13": 75,
+      "14": 75,
+      "15": 75,
+      "16": 75,
+      "17": 75,
+      "18": 75,
+      "19": 75,
+      "20": 75,
+      "21": 75,
+      "22": 75,
+      "23": 75,
+      "24": 75,
+      "25": 75,
+      "26": 75,
+      "27": 75,
+      "28": 75,
+      "29": 75,
+      "30": 75,
+      "31": 75
+    }
+  },
+  "dataset_info": {
+    "tags": [
+      "U_final",
+      "F_final",
+      "F_body",
+      "U_body"
+    ],
+    "num_layers": 32,
+    "num_prompts": 39,
+    "hidden_dim": 4096,
+    "total_files": 39,
+    "files_with_data": 39,
+    "total_stats": {
+      "U_final": 0,
+      "F_final": 0,
+      "F_body": 448,
+      "U_body": 1952
+    },
+    "layer_stats": {
+      "0": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "1": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "2": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "3": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "4": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "5": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "6": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "7": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "8": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "9": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "10": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "11": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "12": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "13": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "14": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "15": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "16": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "17": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "18": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "19": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "20": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "21": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "22": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "23": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "24": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "25": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "26": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "27": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "28": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "29": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "30": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      },
+      "31": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 14,
+        "U_body": 61
+      }
+    },
+    "metadata_fields": [
+      "hint_template",
+      "faithfulness_classification",
+      "split"
+    ],
+    "source_jsonl": "data/sprint4_2025-10-21/annotated/pos_bas_annotated_scienceXgrader_2025-10-21.jsonl"
+  },
+  "processing_time_seconds": 40.47314429283142
+}
