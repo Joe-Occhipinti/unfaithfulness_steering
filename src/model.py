@@ -30,19 +30,19 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
         tokenizer.pad_token = tokenizer.eos_token
         print("Tokenizer pad_token set to eos_token.")
 
-    # Configure 8-bit quantization (more stable than 4-bit)
-    # Switched from 4-bit to 8-bit due to recent Colab runtime crashes
+    # Configure 4-bit quantization (new API)
     bnb_config = BitsAndBytesConfig(
-        load_in_8bit=True,
-        llm_int8_threshold=6.0
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=True
     )
 
     # Load model with optimizations
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         quantization_config=bnb_config,
-        device_map="auto",
-        torch_dtype=torch.bfloat16
+        device_map="auto"
     )
 
     print(f"Model loaded successfully")
