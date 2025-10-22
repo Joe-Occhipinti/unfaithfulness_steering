@@ -121,7 +121,7 @@ dataset = build_activation_dataset(
     target_tags=config['target_tags'],
     num_layers=len(config['layers_to_extract']),
     hidden_dim=4096,  # DeepSeek hidden dimension
-    metadata_fields=["hint_template", "faithfulness_classification", "split"]
+    metadata_fields=["hint_template", "faithfulness_classification"]
 )
 
 # Save dataset
