@@ -167,11 +167,11 @@ def extract_activations_from_annotated_prompts(
         if not any(period_char_indices.values()):
             continue
 
-        # 2. Tokenize the CLEAN text.
-        inputs = tokenizer(clean_text, return_tensors="pt").to(device)
+        # 2. Tokenize the CLEAN text (keep on CPU first to preserve encoding mappings).
+        inputs_cpu = tokenizer(clean_text, return_tensors="pt")
 
         # Comprehensive debugging
-        token_count = len(inputs['input_ids'][0])
+        token_count = len(inputs_cpu['input_ids'][0])
         if verbose:
             print(f"\n=== DEBUGGING PROMPT {i} ===")
             print(f"Clean text length: {len(clean_text)}")
@@ -179,11 +179,12 @@ def extract_activations_from_annotated_prompts(
             print(f"Clean text preview: '{clean_text[:200]}...'")
 
             # Show the tokenized sequence
-            tokens = tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])
+            tokens = tokenizer.convert_ids_to_tokens(inputs_cpu['input_ids'][0])
             print(f"First 10 tokens: {tokens[:10]}")
             print(f"Last 10 tokens: {tokens[-10:]}")
 
         # 3. Convert clean character indices to final token indices with detailed debugging.
+        # IMPORTANT: Do this BEFORE moving to device to preserve encoding mappings
         period_token_indices = {tag: [] for tag in target_tags}
         for tag, char_indices_list in period_char_indices.items():
             if verbose:
@@ -193,14 +194,21 @@ def extract_activations_from_annotated_prompts(
                 if char_idx < len(clean_text):
                     if verbose:
                         char_at_idx = clean_text[char_idx]
+                        # Show context around the character (20 chars before and after)
+                        context_start = max(0, char_idx - 20)
+                        context_end = min(len(clean_text), char_idx + 21)
+                        context_before = clean_text[context_start:char_idx]
+                        context_after = clean_text[char_idx + 1:context_end]
                         print(f"  Char at index {char_idx}: '{char_at_idx}'")
+                        print(f"    Context: ...{context_before}[{char_at_idx}]{context_after}...")
                 else:
                     if verbose:
                         print(f"  ERROR: Char index {char_idx} is beyond clean text length {len(clean_text)}!")
                         print(f"  This indicates a problem in get_clean_text_and_char_indices()")
                     raise IndexError(f"Character index {char_idx} out of bounds for clean text of length {len(clean_text)}")
 
-                token_idx = inputs.char_to_token(char_idx)
+                # Use batch index 0 for single sequence, call BEFORE .to(device)
+                token_idx = inputs_cpu.char_to_token(0, char_idx)
                 if verbose:
                     print(f"  Token index for char {char_idx}: {token_idx}")
 
@@ -219,13 +227,16 @@ def extract_activations_from_annotated_prompts(
             print(f"\nFinal period token indices: {period_token_indices}")
             print("=== END DEBUGGING ===")
 
-        # 4. Run the forward pass on the CLEAN text.
+        # 4. Now move inputs to device for forward pass
+        inputs = inputs_cpu.to(device)
+
+        # 5. Run the forward pass on the CLEAN text.
         with torch.no_grad():
             model(**inputs)
 
         prompt_activations = {layer_idx: {} for layer_idx in layers_to_extract}
 
-        # 5. Extract activations for target tokens from each layer.
+        # 6. Extract activations for target tokens from each layer.
         for layer_idx in layers_to_extract:
             wrapped_layer = model.model.layers[layer_idx]
             hidden_state_output = wrapped_layer.last_hidden_state
@@ -249,7 +260,7 @@ def extract_activations_from_annotated_prompts(
                     prompt_activations[layer_idx][tag] = individual_activations
             wrapped_layer.reset()
 
-        # 6. Save the activations for the current prompt.
+        # 7. Save the activations for the current prompt.
         save_path = os.path.join(output_dir, f"prompt_{i}_activations.pt")
         torch.save(prompt_activations, save_path)
 
