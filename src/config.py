@@ -102,7 +102,7 @@ class ActivationConfig:
 
     PROMPT_FIELD = "annotated_biased_prompt"
     VERBOSE = True
-    TARGET_TAGS = ["U_final", "F_final", "F_body", "U_body", "F", "F_wk", "U", "E", "N", "H", "Q", "A", "Fact", "U_tran"]
+    TARGET_TAGS = ["U_final", "F_final", "F_body", "U_body"]
 
     @staticmethod
     def get_layers_to_extract(model_id: str) -> list:
