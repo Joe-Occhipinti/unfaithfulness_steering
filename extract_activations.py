@@ -29,8 +29,7 @@ GITHUB_TOKEN = userdata.get('Colab')
 repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_steering.git"
 
 # Install required packages
-!pip install -U bitsandbytes accelerate transformers torch
-
+!pip install torch==2.4.1 bitsandbytes==0.43.1 accelerate==0.33.0, numpy>=2.0.0
 """
 extract_activations.py
 
