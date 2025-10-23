@@ -1,0 +1,305 @@
+{
+  "computation_date": "2025-10-23",
+  "dataset_file": "data/sprint4_2025-10-21/datasets/acts_neg_bas_histXmeta_2025-10-19.pkl",
+  "configuration": {
+    "positive_tags": [
+      "F_body"
+    ],
+    "negative_tags": [
+      "U_body"
+    ],
+    "layers_to_compute": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "save_results": true,
+    "save_json_summary": true
+  },
+  "dataset_info": {
+    "tags": [
+      "U_final",
+      "F_final",
+      "F_body",
+      "U_body"
+    ],
+    "num_layers": 32,
+    "num_prompts": 125,
+    "hidden_dim": 4096,
+    "total_files": 125,
+    "files_with_data": 125,
+    "total_stats": {
+      "U_final": 0,
+      "F_final": 0,
+      "F_body": 544,
+      "U_body": 6880
+    },
+    "layer_stats": {
+      "0": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "1": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "2": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "3": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "4": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "5": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "6": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "7": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "8": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "9": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "10": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "11": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "12": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "13": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "14": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "15": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "16": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "17": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "18": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "19": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "20": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "21": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "22": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "23": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "24": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "25": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "26": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "27": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "28": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "29": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "30": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      },
+      "31": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 17,
+        "U_body": 215
+      }
+    },
+    "metadata_fields": [
+      "hint_template",
+      "faithfulness_classification",
+      "split"
+    ],
+    "source_jsonl": "data/sprint4_2025-10-21/annotated/neg_bas_annotated_histXmeta_2025-10-19.jsonl"
+  },
+  "results_summary": {
+    "vectors_computed": 32,
+    "layers_computed": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "processing_time_seconds": 2.6357529163360596
+  }
+}

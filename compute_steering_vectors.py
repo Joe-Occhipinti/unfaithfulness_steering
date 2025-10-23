@@ -30,9 +30,9 @@ from src.config import TODAY
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/datasets/cut_activations_global_biased_psychology_2025-10-12.pkl"
-OUTPUT_FILE = "data/steering vectors/steering_vectors_cut_global_F_vs_U_biased_psychology_professor_2025-10-12.pkl"
-SUMMARY_FILE = "data/summaries/steering/steering_vectors_summary_cut_global_F_vs_U_biased_psychology_professor_2025-10-12.json"
+INPUT_FILE = "data/sprint4_2025-10-21/datasets/acts_merged_pos_neg_bas_psyXprof_2025-10-19.pkl"
+OUTPUT_FILE = "data/sprint4_2025-10-21/vectors/vectors_merged_body_pos_neg_bas_psyXprof_2025-10-19.pkl"
+SUMMARY_FILE = "data/sprint4_2025-10-21/summaries/vectors/summary_vectors_body_merged_pos_neg_bas_psyXprof_2025-10-19.json"
 # =============================================================================
 # STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
 # =============================================================================
@@ -51,16 +51,10 @@ NEGATIVE_TAGS = ["U_body"]     # Unfaithful tags
 LAYERS_TO_COMPUTE = list(range(32))  # All layers for DeepSeek (tunable)
 # LAYERS_TO_COMPUTE = [15, 20, 25, 30, 31]  # Specific layers only
 
-# Split configuration (same as separability analysis)
+# Split configuration --> this is ignored if split info is the in the activations metadata
 TRAIN_RATIO = 1
 VAL_RATIO = 0.0
 RANDOM_SEED = 42
-
-# Output configuration
-# Generate label string for file naming
-POSITIVE_LABEL = "_".join(POSITIVE_TAGS)
-NEGATIVE_LABEL = "_".join(NEGATIVE_TAGS)
-LABEL_COMBINATION = f"{POSITIVE_LABEL}_vs_{NEGATIVE_LABEL}"
 
 SAVE_RESULTS = True
 SAVE_JSON_SUMMARY = True
@@ -105,6 +99,33 @@ dataset_splits = split_dataset_by_prompts(
 )
 
 print(f"Created splits with train/val ratios: {TRAIN_RATIO}/{VAL_RATIO}")
+
+# Verify split detection and sizes
+print(f"\nSplit verification:")
+print(f"  Train prompts: {len(dataset_splits['train']['data'])}")
+print(f"  Val prompts: {len(dataset_splits['val']['data'])}")
+
+# Count positive/negative activations in train split (using layer 0 as representative)
+train_data = dataset_splits['train']['data']
+train_pos_count = 0
+train_neg_count = 0
+
+for prompt_idx in train_data:
+    prompt_info = train_data[prompt_idx]
+    layers_data = prompt_info.get("layers", prompt_info)
+
+    if 0 in layers_data:
+        layer_0 = layers_data[0]
+        for tag in POSITIVE_TAGS:
+            if tag in layer_0:
+                train_pos_count += layer_0[tag].shape[0]
+        for tag in NEGATIVE_TAGS:
+            if tag in layer_0:
+                train_neg_count += layer_0[tag].shape[0]
+
+print(f"\nActivations in TRAIN split (layer 0 representative):")
+print(f"  Positive ({POSITIVE_TAGS}): {train_pos_count} activations")
+print(f"  Negative ({NEGATIVE_TAGS}): {train_neg_count} activations")
 
 # STEP 3: Compute Steering Vectors (using TRAIN split only)
 print("\n=== STEP 3: Computing Steering Vectors ===")
