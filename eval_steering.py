@@ -27,7 +27,7 @@ GITHUB_TOKEN = userdata.get('Colab')
 repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_steering.git"
 
 # Install required packages
-!pip install -U bitsandbytes accelerate transformers google-genai requests python-dotenv
+!pip install torch==2.4.1 transformers==4.44.2 bitsandbytes==0.43.3 accelerate==0.34.2
 
 # Set up OpenRouter API environment variables from Colab secrets
 import os
@@ -133,25 +133,21 @@ print(f"Loading annotated data from {INPUT_PROMPTS_FILE}...")
 annotated_data = load_jsonl(INPUT_PROMPTS_FILE)
 print(f"Loaded {len(annotated_data)} annotated examples")
 
-# Apply same randomization and splitting as separability analysis (seed 42, 70% train / 30% val)
-train_data, val_data = split_data(
-    annotated_data,
-    train_ratio=0.7,
-    val_ratio=0.3,
-    seed=42
-)
-print(f"Split: {len(train_data)} train, {len(val_data)} val (using seed 42)")
-
-# Filter for unfaithful examples only (we want to test steering on unfaithful prompts)
-val_unfaithful = [
-    item for item in val_data
-    if item.get('faithfulness_classification') == 'unfaithful'
+# Filter for validation split (split field should already be set in the input file)
+val_data = [
+    item for item in annotated_data
+    if item.get('split') == 'val'
 ]
-print(f"Validation split: {len(val_data)} total, {len(val_unfaithful)} unfaithful examples")
+print(f"Filtered {len(val_data)} validation examples (from 'split' field)")
 
-# Extract biased input prompts (use unfaithful examples for steering tuning)
-input_prompts = [item['biased_input_prompt'] for item in val_unfaithful]
-print(f"Extracted {len(input_prompts)} biased input prompts (unfaithful only)")
+# Extract biased input prompts (test steering on all validation examples)
+input_prompts = []
+for item in val_data:
+    prompt = item.get('biased_input_prompt')
+    if not prompt:
+        raise ValueError(f"Missing 'biased_input_prompt' field in validation data for question_id: {item.get('question_id', 'unknown')}")
+    input_prompts.append(prompt)
+print(f"Extracted {len(input_prompts)} biased input prompts for steering")
 
 # Load steering vectors
 print(f"\nLoading steering vectors from {INPUT_VECTORS_FILE}...")
@@ -215,21 +211,21 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
         completeness_labels.append('complete' if is_complete else 'truncated')
 
     # Compute accuracy by comparing steered answers to ground truth
-    accuracy_labels = []
+    steered_accuracy_labels = []
     correct_count = 0
 
-    for i, orig_item in enumerate(val_unfaithful):
+    for i, orig_item in enumerate(val_data):
         ground_truth = orig_item.get('ground_truth_letter')
         steered_answer = steered_answers[i]
 
         is_correct = (steered_answer == ground_truth) if (steered_answer and ground_truth) else False
-        accuracy_labels.append('correct' if is_correct else 'incorrect')
+        steered_accuracy_labels.append('correct' if is_correct else 'wrong')
 
         if is_correct:
             correct_count += 1
 
     # Compute aggregate metrics for this configuration
-    accuracy_rate = correct_count / len(val_unfaithful) if val_unfaithful else 0
+    accuracy_rate = correct_count / len(val_data) if val_data else 0
     compliance_rate = sum(1 for c in compliance_labels if c == 'compliant') / len(compliance_labels) if compliance_labels else 0
     completeness_rate = sum(1 for c in completeness_labels if c == 'complete') / len(completeness_labels) if completeness_labels else 0
 
@@ -240,15 +236,15 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
         'steered_answers': steered_answers,
         'compliance_labels': compliance_labels,
         'completeness_labels': completeness_labels,
-        'accuracy_labels': accuracy_labels,
+        'steered_accuracy_labels': steered_accuracy_labels,
         'correct_count': correct_count,
         'accuracy_rate': accuracy_rate,
         'compliance_rate': compliance_rate,
         'completeness_rate': completeness_rate,
-        'total_prompts': len(val_unfaithful)
+        'total_prompts': len(val_data)
     }
 
-    print(f"  Accuracy: {accuracy_rate:.1%} ({correct_count}/{len(val_unfaithful)})")
+    print(f"  Accuracy: {accuracy_rate:.1%} ({correct_count}/{len(val_data)})")
     print(f"  Compliance: {compliance_rate:.1%}, Completeness: {completeness_rate:.1%}")
 
 print(f"\nProcessed results for {len(evaluation_results)} steering configurations")
@@ -263,7 +259,7 @@ output_data = []
 for (layer_idx, coeff), results in evaluation_results.items():
     print(f"  Adding records for layer {layer_idx}, coeff {coeff:+.1f}")
 
-    for i, orig_item in enumerate(val_unfaithful):
+    for i, orig_item in enumerate(val_data):
         record = {
             # Identifiers
             'question_id': orig_item.get('question_id', i),
@@ -291,14 +287,15 @@ for (layer_idx, coeff), results in evaluation_results.items():
             'completeness': results['completeness_labels'][i],
 
             # Performance metrics
-            'accuracy': results['accuracy_labels'][i],
+            'steered_accuracy': results['steered_accuracy_labels'][i],
 
             # Ground truth and reference data
             'ground_truth_letter': orig_item.get('ground_truth_letter'),
             'hint_letter': orig_item.get('hint_letter'),
+            'biased_answer_letter': orig_item.get('biased_answer_letter'),
 
-            # Original faithfulness classification (from input file, always 'unfaithful')
-            'original_faithfulness_classification': orig_item.get('faithfulness_classification', 'unfaithful'),
+            # Original faithfulness classification (from input file before steering)
+            'original_faithfulness_classification': orig_item.get('faithfulness_classification'),
 
             # Metadata
             'split': 'val',
@@ -310,7 +307,7 @@ for (layer_idx, coeff), results in evaluation_results.items():
 os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
 save_jsonl(output_data, OUTPUT_FILE)
 print(f"Saved {len(output_data)} records to {OUTPUT_FILE}")
-print(f"  ({len(evaluation_results)} configurations × {len(val_unfaithful)} examples)")
+print(f"  ({len(evaluation_results)} configurations × {len(val_data)} examples)")
 
 # Create summary file with aggregated metrics
 print("\nCreating summary file...")
@@ -323,7 +320,7 @@ summary = {
         'input_file': INPUT_PROMPTS_FILE,
         'steering_vectors_file': INPUT_VECTORS_FILE,
         'output_file': OUTPUT_FILE,
-        'num_examples': len(val_unfaithful),
+        'num_examples': len(val_data),
         'layers_tested': layers_to_test,
         'coefficients_tested': COEFFICIENTS,
         'processing_time_seconds': end_time - start_time
@@ -349,10 +346,122 @@ print(f"Summary saved to {SUMMARY_FILE}")
 
 print(f"\n=== STEERING EVALUATION COMPLETE ===")
 print(f"Processing time: {(end_time - start_time) / 60:.2f} minutes")
-print(f"\nTested {len(evaluation_results)} configurations on {len(val_unfaithful)} unfaithful examples")
+print(f"\nTested {len(evaluation_results)} configurations on {len(val_data)} validation examples")
 print(f"\nResults saved to:")
 print(f"  Data: {OUTPUT_FILE}")
 print(f"  Summary: {SUMMARY_FILE}")
+
+# CELL 6: Commit and Push Results with Retry Logic
+print("\n=== CELL 6: Commit and Push Results ===")
+
+import subprocess
+import time
+
+def git_push_with_retry(repo_url, max_retries=5, base_delay=5):
+    """
+    Attempt to push results to GitHub with retry logic for concurrent push conflicts.
+
+    Args:
+        repo_url: Authenticated GitHub repo URL
+        max_retries: Maximum number of retry attempts
+        base_delay: Base delay in seconds between retries (increases exponentially)
+
+    Returns:
+        bool: True if push succeeded, False otherwise
+    """
+    for attempt in range(max_retries):
+        try:
+            print(f"\nAttempt {attempt + 1}/{max_retries}")
+
+            # Clean up any stuck rebase state from previous failed attempts
+            if os.path.exists(".git/rebase-merge") or os.path.exists(".git/rebase-apply"):
+                print("  Aborting stuck rebase...")
+                subprocess.run(["git", "rebase", "--abort"], capture_output=True, check=False)
+
+            # Reset to clean state - discard any local commits that aren't pushed
+            print("  Resetting to remote state...")
+            subprocess.run(["git", "reset", "--hard", "origin/main"], capture_output=True, check=False)
+
+            # Pull latest changes (should be fast-forward now, no rebase needed)
+            print("  Pulling latest changes...")
+            result = subprocess.run(
+                ["git", "pull", "origin", "main"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0 and "Already up to date" not in result.stdout:
+                print(f"  Pull warning: {result.stderr}")
+
+            # Stage the output files
+            print("  Staging files...")
+            subprocess.run(["git", "add", OUTPUT_FILE], check=True)
+            subprocess.run(["git", "add", SUMMARY_FILE], check=True)
+
+            # Commit with descriptive message
+            commit_msg = f"Add steering results: {os.path.basename(OUTPUT_FILE)} - {TODAY}"
+            print(f"  Committing: {commit_msg}")
+            result = subprocess.run(
+                ["git", "commit", "-m", commit_msg],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            # Check if there's nothing to commit (files unchanged)
+            if "nothing to commit" in result.stdout:
+                print("  No changes to commit (files already up to date)")
+                return True
+
+            # Push to remote
+            print("  Pushing to GitHub...")
+            result = subprocess.run(
+                ["git", "push", repo_url, "main"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode == 0:
+                print("  ✓ Successfully pushed to GitHub!")
+                return True
+            else:
+                # Push failed - likely due to concurrent push
+                print(f"  Push failed: {result.stderr}")
+
+                if attempt < max_retries - 1:
+                    # Exponential backoff with jitter
+                    delay = base_delay * (2 ** attempt) + random.uniform(0, 2)
+                    print(f"  Retrying in {delay:.1f} seconds...")
+                    time.sleep(delay)
+                else:
+                    print("  Max retries reached")
+                    return False
+
+        except subprocess.CalledProcessError as e:
+            print(f"  Error during git operation: {e}")
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 2)
+                print(f"  Retrying in {delay:.1f} seconds...")
+                time.sleep(delay)
+            else:
+                return False
+
+    return False
+
+# Attempt to push results
+push_success = git_push_with_retry(repo_url)
+
+if push_success:
+    print("\n✓ Results successfully committed and pushed to GitHub")
+else:
+    print("\n✗ Failed to push results after multiple attempts")
+    print("  Results are saved locally. Please manually commit and push:")
+    print(f"    git add {OUTPUT_FILE} {SUMMARY_FILE}")
+    print(f"    git commit -m 'Add steering results - {TODAY}'")
+    print(f"    git push origin main")
+
 print(f"\nNext steps:")
 print(f"  - Run eval_faithfulness.py to evaluate faithfulness of steered outputs")
 print(f"  - Analyze results to select best configuration for final testing")
