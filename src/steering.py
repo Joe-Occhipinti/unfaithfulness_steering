@@ -516,6 +516,8 @@ def generate_steered_batch(
                 **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=False,  # Deterministic
+                temperature=None,  # Suppress warning
+                top_p=None,  # Suppress warning
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id
             )

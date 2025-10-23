@@ -10,6 +10,10 @@ Original file is located at
 # Commented out IPython magic to ensure Python compatibility.
 # Setting up to work with the project GitHub Repository (importing scripts, pushing results)
 
+# Mount Google Drive first (this requires one-time consent, but persists across runs)
+from google.colab import drive
+drive.mount('/content/drive')
+
 # Clone the repo to import in Colab its packages from GitHub
 !git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering.git
 import os
@@ -81,11 +85,13 @@ from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, Mod
 # I/O CONFIGURATION (manually specify all paths)
 # =============================================================================
 
-# Input and output files - manually specify the exact paths and dates
+# Input files - read from cloned repo (local, working dir is /content/unfaithfulness_steering)
 INPUT_PROMPTS_FILE = "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
 INPUT_VECTORS_FILE = "data/steering vectors/steering_vectors_F_vs_U_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
-OUTPUT_FILE = "data/behavioural/steered_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
-SUMMARY_FILE = "data/summaries/tuning_steering_results_high_school_macroeconomics_microeconomics_2025-10-03.json"
+
+# Output files - save directly to Google Drive root (no download consent needed)
+OUTPUT_FILE = "/content/drive/MyDrive/steered_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+SUMMARY_FILE = "/content/drive/MyDrive/tuning_steering_results_high_school_macroeconomics_microeconomics_2025-10-03.json"
 
 # =============================================================================
 # MODEL CONFIGURATION
@@ -180,7 +186,93 @@ steered_results = sweep_coefficients(
 
 print(f"Generated steered responses for {len(steered_results)} configurations")
 
-# CELL 4: Validate and Analyze Steered Results
+# CELL 5: Save Output JSONL and Summary
+print("\n=== CELL 5: Save Output JSONL and Summary ===")
+
+# Create output JSONL with ALL configurations
+print("Creating output JSONL with all steering configurations...")
+output_data = []
+
+for (layer_idx, coeff), results in evaluation_results.items():
+    print(f"  Adding records for layer {layer_idx}, coeff {coeff:+.1f}")
+
+    for i, orig_item in enumerate(val_data):
+        record = {
+            # Identifiers
+            'question_id': orig_item.get('question_id', i),
+            'prompt_index': i,
+
+            # Question data
+            'question': orig_item.get('question'),
+            'choices': orig_item.get('choices'),
+
+            # Input prompt (unannotated)
+            'biased_input_prompt': orig_item.get('biased_input_prompt'),
+            'hint_template': orig_item.get('hint_template'),
+
+            # Steering configuration
+            'steering_layer': layer_idx,
+            'steering_coefficient': coeff,
+
+            # Steered results
+            'steered_response': results['steered_responses'][i],
+            'steered_prompt': results['steered_prompts'][i],
+            'steered_answer_letter': results['steered_answers'][i],
+
+            # Validation metrics
+            'compliance': results['compliance_labels'][i],
+            'completeness': results['completeness_labels'][i],
+
+            # Performance metrics
+            'steered_accuracy': results['steered_accuracy_labels'][i],
+
+            # Ground truth and reference data
+            'ground_truth_letter': orig_item.get('ground_truth_letter'),
+            'hint_letter': orig_item.get('hint_letter'),
+            'biased_answer_letter': orig_item.get('biased_answer_letter'),
+
+            # Original faithfulness classification (from input file before steering)
+            'original_faithfulness_classification': orig_item.get('faithfulness_classification'),
+
+            # Metadata
+            'split': 'val',
+            'date': TODAY,
+            'model': MODEL_ID
+        }
+        output_data.append(record)
+
+save_jsonl(output_data, OUTPUT_FILE)
+print(f"Saved {len(output_data)} records to {OUTPUT_FILE}")
+print(f"  ({len(evaluation_results)} configurations x {len(val_data)} examples)")
+
+# Create summary file with aggregated metrics
+print("\nCreating summary file...")
+end_time = time.time()
+
+summary = {
+    'metadata': {
+        'date': TODAY,
+        'model': MODEL_ID,
+        'input_file': INPUT_PROMPTS_FILE,
+        'steering_vectors_file': INPUT_VECTORS_FILE,
+        'output_file': OUTPUT_FILE,
+        'num_examples': len(val_data),
+        'layers_tested': layers_to_test,
+        'coefficients_tested': COEFFICIENTS,
+        'processing_time_seconds': end_time - start_time
+    },
+    'all_configurations': {
+        f"layer_{layer}_coeff_{coeff:+.1f}": {
+            'layer': layer,
+            'coefficient': coeff,
+            'accuracy_rate': results['accuracy_rate'],
+            'correct_count': results['correct_count'],
+            'total_prompts': results['total_prompts'],
+            'compliance_rate': results['compliance_rate'],
+            'completeness_rate': results['completeness_rate']
+        }
+        for (layer, coeff), results in evaluation_results.items()
+    }# CELL 4: Validate and Analyze Steered Results
 print("\n=== CELL 4: Validate and Analyze Steered Results ===")
 
 evaluation_results = {}
@@ -249,97 +341,9 @@ for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc=
 
 print(f"\nProcessed results for {len(evaluation_results)} steering configurations")
 
-# CELL 5: Save Output JSONL and Summary
-print("\n=== CELL 5: Save Output JSONL and Summary ===")
 
-# Create output JSONL with ALL configurations
-print("Creating output JSONL with all steering configurations...")
-output_data = []
-
-for (layer_idx, coeff), results in evaluation_results.items():
-    print(f"  Adding records for layer {layer_idx}, coeff {coeff:+.1f}")
-
-    for i, orig_item in enumerate(val_data):
-        record = {
-            # Identifiers
-            'question_id': orig_item.get('question_id', i),
-            'prompt_index': i,
-
-            # Question data
-            'question': orig_item.get('question'),
-            'choices': orig_item.get('choices'),
-
-            # Input prompt (unannotated)
-            'biased_input_prompt': orig_item.get('biased_input_prompt'),
-            'hint_template': orig_item.get('hint_template'),
-
-            # Steering configuration
-            'steering_layer': layer_idx,
-            'steering_coefficient': coeff,
-
-            # Steered results
-            'steered_response': results['steered_responses'][i],
-            'steered_prompt': results['steered_prompts'][i],
-            'steered_answer_letter': results['steered_answers'][i],
-
-            # Validation metrics
-            'compliance': results['compliance_labels'][i],
-            'completeness': results['completeness_labels'][i],
-
-            # Performance metrics
-            'steered_accuracy': results['steered_accuracy_labels'][i],
-
-            # Ground truth and reference data
-            'ground_truth_letter': orig_item.get('ground_truth_letter'),
-            'hint_letter': orig_item.get('hint_letter'),
-            'biased_answer_letter': orig_item.get('biased_answer_letter'),
-
-            # Original faithfulness classification (from input file before steering)
-            'original_faithfulness_classification': orig_item.get('faithfulness_classification'),
-
-            # Metadata
-            'split': 'val',
-            'date': TODAY,
-            'model': MODEL_ID
-        }
-        output_data.append(record)
-
-os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-save_jsonl(output_data, OUTPUT_FILE)
-print(f"Saved {len(output_data)} records to {OUTPUT_FILE}")
-print(f"  ({len(evaluation_results)} configurations × {len(val_data)} examples)")
-
-# Create summary file with aggregated metrics
-print("\nCreating summary file...")
-end_time = time.time()
-
-summary = {
-    'metadata': {
-        'date': TODAY,
-        'model': MODEL_ID,
-        'input_file': INPUT_PROMPTS_FILE,
-        'steering_vectors_file': INPUT_VECTORS_FILE,
-        'output_file': OUTPUT_FILE,
-        'num_examples': len(val_data),
-        'layers_tested': layers_to_test,
-        'coefficients_tested': COEFFICIENTS,
-        'processing_time_seconds': end_time - start_time
-    },
-    'all_configurations': {
-        f"layer_{layer}_coeff_{coeff:+.1f}": {
-            'layer': layer,
-            'coefficient': coeff,
-            'accuracy_rate': results['accuracy_rate'],
-            'correct_count': results['correct_count'],
-            'total_prompts': results['total_prompts'],
-            'compliance_rate': results['compliance_rate'],
-            'completeness_rate': results['completeness_rate']
-        }
-        for (layer, coeff), results in evaluation_results.items()
-    }
 }
 
-os.makedirs(os.path.dirname(SUMMARY_FILE), exist_ok=True)
 with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
     json.dump(summary, f, indent=2, ensure_ascii=False)
 print(f"Summary saved to {SUMMARY_FILE}")
@@ -351,117 +355,27 @@ print(f"\nResults saved to:")
 print(f"  Data: {OUTPUT_FILE}")
 print(f"  Summary: {SUMMARY_FILE}")
 
-# CELL 6: Commit and Push Results with Retry Logic
-print("\n=== CELL 6: Commit and Push Results ===")
+# CELL 6: Verify Results Saved to Google Drive
+print("\n=== CELL 6: Verify Results Saved to Google Drive ===")
 
-import subprocess
-import time
-
-def git_push_with_retry(repo_url, max_retries=5, base_delay=5):
-    """
-    Attempt to push results to GitHub with retry logic for concurrent push conflicts.
-
-    Args:
-        repo_url: Authenticated GitHub repo URL
-        max_retries: Maximum number of retry attempts
-        base_delay: Base delay in seconds between retries (increases exponentially)
-
-    Returns:
-        bool: True if push succeeded, False otherwise
-    """
-    for attempt in range(max_retries):
-        try:
-            print(f"\nAttempt {attempt + 1}/{max_retries}")
-
-            # Clean up any stuck rebase state from previous failed attempts
-            if os.path.exists(".git/rebase-merge") or os.path.exists(".git/rebase-apply"):
-                print("  Aborting stuck rebase...")
-                subprocess.run(["git", "rebase", "--abort"], capture_output=True, check=False)
-
-            # Reset to clean state - discard any local commits that aren't pushed
-            print("  Resetting to remote state...")
-            subprocess.run(["git", "reset", "--hard", "origin/main"], capture_output=True, check=False)
-
-            # Pull latest changes (should be fast-forward now, no rebase needed)
-            print("  Pulling latest changes...")
-            result = subprocess.run(
-                ["git", "pull", "origin", "main"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-
-            if result.returncode != 0 and "Already up to date" not in result.stdout:
-                print(f"  Pull warning: {result.stderr}")
-
-            # Stage the output files
-            print("  Staging files...")
-            subprocess.run(["git", "add", OUTPUT_FILE], check=True)
-            subprocess.run(["git", "add", SUMMARY_FILE], check=True)
-
-            # Commit with descriptive message
-            commit_msg = f"Add steering results: {os.path.basename(OUTPUT_FILE)} - {TODAY}"
-            print(f"  Committing: {commit_msg}")
-            result = subprocess.run(
-                ["git", "commit", "-m", commit_msg],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-
-            # Check if there's nothing to commit (files unchanged)
-            if "nothing to commit" in result.stdout:
-                print("  No changes to commit (files already up to date)")
-                return True
-
-            # Push to remote
-            print("  Pushing to GitHub...")
-            result = subprocess.run(
-                ["git", "push", repo_url, "main"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-
-            if result.returncode == 0:
-                print("  ✓ Successfully pushed to GitHub!")
-                return True
-            else:
-                # Push failed - likely due to concurrent push
-                print(f"  Push failed: {result.stderr}")
-
-                if attempt < max_retries - 1:
-                    # Exponential backoff with jitter
-                    delay = base_delay * (2 ** attempt) + random.uniform(0, 2)
-                    print(f"  Retrying in {delay:.1f} seconds...")
-                    time.sleep(delay)
-                else:
-                    print("  Max retries reached")
-                    return False
-
-        except subprocess.CalledProcessError as e:
-            print(f"  Error during git operation: {e}")
-            if attempt < max_retries - 1:
-                delay = base_delay * (2 ** attempt) + random.uniform(0, 2)
-                print(f"  Retrying in {delay:.1f} seconds...")
-                time.sleep(delay)
-            else:
-                return False
-
-    return False
-
-# Attempt to push results
-push_success = git_push_with_retry(repo_url)
-
-if push_success:
-    print("\n✓ Results successfully committed and pushed to GitHub")
+# Check if files exist in Drive
+if os.path.exists(OUTPUT_FILE):
+    print(f"Output file saved to Drive: {OUTPUT_FILE}")
+    print(f"  Size: {os.path.getsize(OUTPUT_FILE) / 1024:.2f} KB")
 else:
-    print("\n✗ Failed to push results after multiple attempts")
-    print("  Results are saved locally. Please manually commit and push:")
-    print(f"    git add {OUTPUT_FILE} {SUMMARY_FILE}")
-    print(f"    git commit -m 'Add steering results - {TODAY}'")
-    print(f"    git push origin main")
+    print(f"Warning: Output file not found at {OUTPUT_FILE}")
 
+if os.path.exists(SUMMARY_FILE):
+    print(f"Summary file saved to Drive: {SUMMARY_FILE}")
+    print(f"  Size: {os.path.getsize(SUMMARY_FILE) / 1024:.2f} KB")
+else:
+    print(f"Warning: Summary file not found at {SUMMARY_FILE}")
+
+print(f"\n=== EXPERIMENT COMPLETE ===")
+print(f"Results are saved in your Google Drive (MyDrive root):")
+print(f"  - {os.path.basename(OUTPUT_FILE)}")
+print(f"  - {os.path.basename(SUMMARY_FILE)}")
 print(f"\nNext steps:")
-print(f"  - Run eval_faithfulness.py to evaluate faithfulness of steered outputs")
-print(f"  - Analyze results to select best configuration for final testing")
+print(f"  1. Access files from your Google Drive on any device")
+print(f"  2. Move files to your local repo and commit to GitHub when convenient")
+print(f"  3. Run eval_faithfulness.py to evaluate faithfulness of steered outputs")
