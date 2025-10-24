@@ -23,103 +23,163 @@ import os
 def plot_steering_heatmaps(all_configs: List[Dict[str, Any]],
                           subject: str,
                           hint_template: str,
+                          correctness_group: str,
+                          heatmap_type: str,
                           save_path: str):
     """
     Create 2×2 heatmap grid showing steering effectiveness.
 
-    Grid layout:
-    - Top-left: Positive on Unfaithful (unfaithful→faithful %)
-    - Top-right: Positive on Faithful (faithful→unfaithful % - side effects)
-    - Bottom-left: Negative on Faithful (faithful→unfaithful %)
-    - Bottom-right: Negative on Unfaithful (unfaithful→faithful % - side effects)
+    Creates 4 heatmaps total for each correctness group (Correct/Wrong):
+    - 1 TRANSITIONS heatmap (faithfulness changes)
+    - 1 NO-CHANGE heatmap (resistance/preservation)
 
     Args:
         all_configs: List of all configuration results
         subject: Subject name
         hint_template: Hint template name
+        correctness_group: 'correct' or 'wrong'
+        heatmap_type: 'transitions' or 'no_change'
         save_path: Path to save plot
     """
     # Extract unique layers and coefficients
     layers = sorted(set(c['layer'] for c in all_configs))
     coeffs = sorted(set(c['coefficient_magnitude'] for c in all_configs))
 
-    # Initialize heatmap data (layers × coefficients)
-    pos_unfaith_data = np.zeros((len(layers), len(coeffs)))
-    pos_faith_data = np.zeros((len(layers), len(coeffs)))
-    neg_faith_data = np.zeros((len(layers), len(coeffs)))
-    neg_unfaith_data = np.zeros((len(layers), len(coeffs)))
+    # Determine initial states based on correctness group
+    if correctness_group == 'correct':
+        faithful_state = 'CF'  # Correct + Faithful
+        unfaithful_state = 'CU'  # Correct + Unfaithful
+        group_title = 'Initially CORRECT Answer'
+    else:  # 'wrong'
+        faithful_state = 'WF'  # Wrong + Faithful
+        unfaithful_state = 'WU'  # Wrong + Unfaithful
+        group_title = 'Initially WRONG Answer'
 
-    # Fill heatmap data
+    # Initialize heatmap data (layers × coefficients)
+    # Each quarter shows ONE specific transition
+    A_data = np.zeros((len(layers), len(coeffs)))  # Top-left
+    B_data = np.zeros((len(layers), len(coeffs)))  # Top-right
+    C_data = np.zeros((len(layers), len(coeffs)))  # Bottom-left
+    D_data = np.zeros((len(layers), len(coeffs)))  # Bottom-right
+
+    # Fill heatmap data based on type
     for config in all_configs:
         layer_idx = layers.index(config['layer'])
         coeff_idx = coeffs.index(config['coefficient_magnitude'])
 
-        # Positive on Unfaithful
-        pos_unfaith_data[layer_idx, coeff_idx] = config['positive_on_unfaithful']['transitions'].get(
-            'unfaithful_to_faithful', {}
-        ).get('rate', 0) * 100
+        if heatmap_type == 'transitions':
+            # TRANSITIONS HEATMAP: Faithfulness CHANGES (U↔F or F↔U)
+            # A) INTENDED: Repair (U→F with +steering)
+            pos_u_group = f'positive_on_{unfaithful_state}'
+            A_data[layer_idx, coeff_idx] = config[pos_u_group]['transitions'].get('to_same_answer_faithful', {}).get('rate', 0) * 100
 
-        # Positive on Faithful (side effects)
-        pos_faith_data[layer_idx, coeff_idx] = config['positive_on_faithful']['transitions'].get(
-            'faithful_to_unfaithful', {}
-        ).get('rate', 0) * 100
+            # B) BAD: Degradation (F→U with +steering)
+            pos_f_group = f'positive_on_{faithful_state}'
+            B_data[layer_idx, coeff_idx] = config[pos_f_group]['transitions'].get('to_same_answer_unfaithful', {}).get('rate', 0) * 100
 
-        # Negative on Faithful
-        neg_faith_data[layer_idx, coeff_idx] = config['negative_on_faithful']['transitions'].get(
-            'faithful_to_unfaithful', {}
-        ).get('rate', 0) * 100
+            # C) INTENDED: Degrade (F→U with -steering)
+            neg_f_group = f'negative_on_{faithful_state}'
+            C_data[layer_idx, coeff_idx] = config[neg_f_group]['transitions'].get('to_same_answer_unfaithful', {}).get('rate', 0) * 100
 
-        # Negative on Unfaithful (side effects)
-        neg_unfaith_data[layer_idx, coeff_idx] = config['negative_on_unfaithful']['transitions'].get(
-            'unfaithful_to_faithful', {}
-        ).get('rate', 0) * 100
+            # D) SIDE EFFECT: Improvement (U→F with -steering)
+            neg_u_group = f'negative_on_{unfaithful_state}'
+            D_data[layer_idx, coeff_idx] = config[neg_u_group]['transitions'].get('to_same_answer_faithful', {}).get('rate', 0) * 100
+
+        else:  # 'no_change'
+            # NO-CHANGE HEATMAP: Faithfulness STAYS SAME (F→F or U→U)
+            # A) PRESERVATION (F→F with +steering)
+            pos_f_group = f'positive_on_{faithful_state}'
+            A_data[layer_idx, coeff_idx] = config[pos_f_group]['transitions'].get('to_same_answer_faithful', {}).get('rate', 0) * 100
+
+            # B) RESISTANCE (F→F with -steering)
+            neg_f_group = f'negative_on_{faithful_state}'
+            B_data[layer_idx, coeff_idx] = config[neg_f_group]['transitions'].get('to_same_answer_faithful', {}).get('rate', 0) * 100
+
+            # C) RESISTANCE (U→U with +steering)
+            pos_u_group = f'positive_on_{unfaithful_state}'
+            C_data[layer_idx, coeff_idx] = config[pos_u_group]['transitions'].get('to_same_answer_unfaithful', {}).get('rate', 0) * 100
+
+            # D) MAINTENANCE (U→U with -steering)
+            neg_u_group = f'negative_on_{unfaithful_state}'
+            D_data[layer_idx, coeff_idx] = config[neg_u_group]['transitions'].get('to_same_answer_unfaithful', {}).get('rate', 0) * 100
 
     # Create figure with 2×2 subplots
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle(f'Steering Effectiveness Heatmaps\n{subject.replace("_", " ").title()} - {hint_template}',
-                 fontsize=16, fontweight='bold')
+    fig, axes = plt.subplots(2, 2, figsize=(18, 14))
 
-    # Plot A: Positive on Unfaithful
-    sns.heatmap(pos_unfaith_data, annot=True, fmt='.1f', cmap='Greens',
-                xticklabels=coeffs, yticklabels=layers, ax=axes[0, 0],
-                vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
-    axes[0, 0].set_title('A) Positive Steering on Unfaithful\n(unfaithful → faithful %)',
-                         fontweight='bold')
-    axes[0, 0].set_xlabel('Coefficient Magnitude')
-    axes[0, 0].set_ylabel('Layer')
+    if heatmap_type == 'transitions':
+        main_title = f'FAITHFULNESS TRANSITIONS: {group_title}\n{subject.replace("_", " ").title()} - {hint_template}'
 
-    # Plot B: Positive on Faithful (side effects - want LOW)
-    sns.heatmap(pos_faith_data, annot=True, fmt='.1f', cmap='Reds',
-                xticklabels=coeffs, yticklabels=layers, ax=axes[0, 1],
-                vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
-    axes[0, 1].set_title('B) Positive Steering Side Effects\n(faithful → unfaithful % - want LOW)',
-                         fontweight='bold')
-    axes[0, 1].set_xlabel('Coefficient Magnitude')
-    axes[0, 1].set_ylabel('Layer')
+        # A) INTENDED: Repair
+        sns.heatmap(A_data, annot=True, fmt='.1f', cmap='Greens',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[0, 0],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[0, 0].set_title(f'A) INTENDED: Repair\n{unfaithful_state}→{faithful_state} with +steering',
+                             fontweight='bold', fontsize=12)
 
-    # Plot C: Negative on Faithful
-    sns.heatmap(neg_faith_data, annot=True, fmt='.1f', cmap='Blues',
-                xticklabels=coeffs, yticklabels=layers, ax=axes[1, 0],
-                vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
-    axes[1, 0].set_title('C) Negative Steering on Faithful\n(faithful → unfaithful %)',
-                         fontweight='bold')
-    axes[1, 0].set_xlabel('Coefficient Magnitude')
-    axes[1, 0].set_ylabel('Layer')
+        # B) BAD: Degradation
+        sns.heatmap(B_data, annot=True, fmt='.1f', cmap='Reds',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[0, 1],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[0, 1].set_title(f'B) BAD: Unintended Degradation\n{faithful_state}→{unfaithful_state} with +steering',
+                             fontweight='bold', fontsize=12)
 
-    # Plot D: Negative on Unfaithful (side effects - want LOW)
-    sns.heatmap(neg_unfaith_data, annot=True, fmt='.1f', cmap='Reds',
-                xticklabels=coeffs, yticklabels=layers, ax=axes[1, 1],
-                vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
-    axes[1, 1].set_title('D) Negative Steering Side Effects\n(unfaithful → faithful % - want LOW)',
-                         fontweight='bold')
-    axes[1, 1].set_xlabel('Coefficient Magnitude')
-    axes[1, 1].set_ylabel('Layer')
+        # C) INTENDED: Degrade
+        sns.heatmap(C_data, annot=True, fmt='.1f', cmap='Purples',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[1, 0],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[1, 0].set_title(f'C) INTENDED: Degrade\n{faithful_state}→{unfaithful_state} with -steering',
+                             fontweight='bold', fontsize=12)
+
+        # D) SIDE EFFECT: Improvement
+        sns.heatmap(D_data, annot=True, fmt='.1f', cmap='YlOrBr',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[1, 1],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[1, 1].set_title(f'D) SIDE EFFECT: Unexpected Improvement\n{unfaithful_state}→{faithful_state} with -steering',
+                             fontweight='bold', fontsize=12)
+
+    else:  # 'no_change'
+        main_title = f'NO CHANGE (Resistance/Preservation): {group_title}\n{subject.replace("_", " ").title()} - {hint_template}'
+
+        # A) PRESERVATION
+        sns.heatmap(A_data, annot=True, fmt='.1f', cmap='Greens',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[0, 0],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[0, 0].set_title(f'A) PRESERVATION\n{faithful_state}→{faithful_state} with +steering',
+                             fontweight='bold', fontsize=12)
+
+        # B) RESISTANCE
+        sns.heatmap(B_data, annot=True, fmt='.1f', cmap='Blues',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[0, 1],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[0, 1].set_title(f'B) RESISTANCE\n{faithful_state}→{faithful_state} with -steering',
+                             fontweight='bold', fontsize=12)
+
+        # C) RESISTANCE
+        sns.heatmap(C_data, annot=True, fmt='.1f', cmap='Oranges',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[1, 0],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[1, 0].set_title(f'C) RESISTANCE\n{unfaithful_state}→{unfaithful_state} with +steering',
+                             fontweight='bold', fontsize=12)
+
+        # D) MAINTENANCE
+        sns.heatmap(D_data, annot=True, fmt='.1f', cmap='Purples',
+                    xticklabels=coeffs, yticklabels=layers, ax=axes[1, 1],
+                    vmin=0, vmax=100, cbar_kws={'label': 'Rate (%)'})
+        axes[1, 1].set_title(f'D) MAINTENANCE\n{unfaithful_state}→{unfaithful_state} with -steering',
+                             fontweight='bold', fontsize=12)
+
+    fig.suptitle(main_title, fontsize=16, fontweight='bold')
+
+    # Add axis labels
+    for ax in axes.flat:
+        ax.set_xlabel('Coefficient Magnitude', fontsize=10)
+        ax.set_ylabel('Layer', fontsize=10)
 
     plt.tight_layout()
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"   Saved heatmaps to: {save_path}")
+    print(f"   Saved {correctness_group} {heatmap_type} heatmaps to: {save_path}")
 
 
 # =============================================================================
@@ -239,23 +299,46 @@ def plot_best_config_breakdown(best_positive: Dict[str, Any],
 
 
 # =============================================================================
-# PLOT 3: TRANSFORMATION RATES ACROSS LAYERS (PER-COEFFICIENT)
+# PLOT 3: TRANSFORMATION RATES ACROSS LAYERS (PER-COEFFICIENT, PER-INITIAL-STATE)
 # =============================================================================
 
-def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_dir: str,
-                                      subject: str = None, hint_template: str = None):
+def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]],
+                                      correctness_group: str,
+                                      save_dir: str,
+                                      subject: str = None,
+                                      hint_template: str = None):
     """
-    Create 5 plots (one per coefficient magnitude).
-    Each plot has 4 subplots showing transformation rates across layers.
+    Create 2×2 line plots showing transformation rates across layers.
+    One figure per coefficient magnitude, with 4 subplots showing all combinations.
+
+    Layout per coefficient:
+    ┌─────────────────────────────────┬─────────────────────────────────┐
+    │ Top-left: +coeff on CU/WU       │ Top-right: +coeff on CF/WF      │
+    │ (positive on unfaithful)        │ (positive on faithful)          │
+    ├─────────────────────────────────┼─────────────────────────────────┤
+    │ Bottom-left: -coeff on CU/WU    │ Bottom-right: -coeff on CF/WF   │
+    │ (negative on unfaithful)        │ (negative on faithful)          │
+    └─────────────────────────────────┴─────────────────────────────────┘
 
     Args:
         all_configs: List of all configuration results
+        correctness_group: 'correct' or 'wrong'
         save_dir: Directory to save plots
         subject: Subject name (extracted from configs if not provided)
         hint_template: Hint template name (extracted from configs if not provided)
     """
     coeffs = sorted(set(c['coefficient_magnitude'] for c in all_configs))
     layers = sorted(set(c['layer'] for c in all_configs))
+
+    # Determine states based on correctness group
+    if correctness_group == 'correct':
+        faithful_state = 'CF'
+        unfaithful_state = 'CU'
+        group_title = 'CORRECT Answer Group'
+    else:  # 'wrong'
+        faithful_state = 'WF'
+        unfaithful_state = 'WU'
+        group_title = 'WRONG Answer Group'
 
     # Extract subject and hint_template from configs if not provided
     if not subject or not hint_template:
@@ -264,44 +347,48 @@ def plot_transformation_rates_by_layer(all_configs: List[Dict[str, Any]], save_d
             hint_template = hint_template or all_configs[0].get('hint_template', 'unknown_template')
 
     for coeff in coeffs:
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle(f'Transformation Rates Across Layers (Coefficient = ±{coeff})',
+        # Create 2×2 grid
+        fig, axes = plt.subplots(2, 2, figsize=(20, 16))
+
+        fig.suptitle(f'Transition Rates Across Layers - {group_title}\n' +
+                     f'{subject.replace("_", " ").title()} - {hint_template}\n' +
+                     f'Coefficient Magnitude = {coeff}',
                      fontsize=16, fontweight='bold')
 
         # Filter configs for this coefficient
         coeff_configs = [c for c in all_configs if c['coefficient_magnitude'] == coeff]
 
-        # Subplot A: Unfaithful + Positive
-        _plot_transitions_subplot(
-            coeff_configs, layers, 'positive_on_unfaithful', 'unfaithful',
-            axes[0, 0], f'Unfaithful Origin + Positive Steering (coeff = +{coeff})'
+        # Top-left: Positive on Unfaithful (CU or WU)
+        _plot_transitions_subplot_stratified(
+            coeff_configs, layers, f'positive_on_{unfaithful_state}', unfaithful_state,
+            axes[0, 0], f'Positive Steering on {unfaithful_state}\n(coeff = +{coeff})'
         )
 
-        # Subplot B: Unfaithful + Negative
-        _plot_transitions_subplot(
-            coeff_configs, layers, 'negative_on_unfaithful', 'unfaithful',
-            axes[0, 1], f'Unfaithful Origin + Negative Steering (coeff = -{coeff})'
+        # Top-right: Positive on Faithful (CF or WF)
+        _plot_transitions_subplot_stratified(
+            coeff_configs, layers, f'positive_on_{faithful_state}', faithful_state,
+            axes[0, 1], f'Positive Steering on {faithful_state}\n(coeff = +{coeff})'
         )
 
-        # Subplot C: Faithful + Positive
-        _plot_transitions_subplot(
-            coeff_configs, layers, 'positive_on_faithful', 'faithful',
-            axes[1, 0], f'Faithful Origin + Positive Steering (coeff = +{coeff})'
+        # Bottom-left: Negative on Unfaithful (CU or WU)
+        _plot_transitions_subplot_stratified(
+            coeff_configs, layers, f'negative_on_{unfaithful_state}', unfaithful_state,
+            axes[1, 0], f'Negative Steering on {unfaithful_state}\n(coeff = -{coeff})'
         )
 
-        # Subplot D: Faithful + Negative
-        _plot_transitions_subplot(
-            coeff_configs, layers, 'negative_on_faithful', 'faithful',
-            axes[1, 1], f'Faithful Origin + Negative Steering (coeff = -{coeff})'
+        # Bottom-right: Negative on Faithful (CF or WF)
+        _plot_transitions_subplot_stratified(
+            coeff_configs, layers, f'negative_on_{faithful_state}', faithful_state,
+            axes[1, 1], f'Negative Steering on {faithful_state}\n(coeff = -{coeff})'
         )
 
         plt.tight_layout()
         # Save to specified directory
-        save_path = os.path.join(save_dir, f'steered_global_layers_coeff_{coeff}.png')
+        save_path = os.path.join(save_dir, f'steered_global_layers_{correctness_group}_coeff_{coeff}.png')
         os.makedirs(save_dir, exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"   Saved layer comparison for coeff ±{coeff} to: {save_path}")
+        print(f"   Saved layer comparison for {correctness_group}, coeff ±{coeff} to: {save_path}")
 
 
 def _plot_transitions_subplot(configs: List[Dict[str, Any]],
@@ -365,4 +452,89 @@ def _plot_transitions_subplot(configs: List[Dict[str, Any]],
     ax.set_ylim(0, 100)
     ax.grid(alpha=0.3)
     ax.legend(loc='best')
+    ax.set_xticks(layers)
+
+
+def _plot_transitions_subplot_stratified(configs: List[Dict[str, Any]],
+                                         layers: List[int],
+                                         group_name: str,
+                                         initial_state: str,
+                                         ax,
+                                         title: str):
+    """
+    Helper function to plot transitions for one subplot with CF/CU/WF/WU stratification.
+
+    Args:
+        configs: List of configs for this coefficient
+        layers: List of layer numbers
+        group_name: Name of group to plot (e.g., 'positive_on_CF')
+        initial_state: 'CF', 'CU', 'WF', or 'WU'
+        ax: Matplotlib axis
+        title: Subplot title
+    """
+    # Determine transition types based on initial state
+    is_initially_correct = initial_state in ['CF', 'CU']
+
+    # CONSISTENT COLOR SCHEME (same across all panels):
+    # - Faithful: green (#2ecc71)
+    # - Unfaithful: red (#e74c3c)
+    # - Correct (answer correction): orange (#f39c12)
+    # - Hint Error: blue (#3498db)
+    # - Incomplete: grey (#95a5a6)
+    # - Error: black (#000000)
+
+    if is_initially_correct:
+        # Initially CORRECT - no wrong_to_correct
+        transition_names = [
+            'to_same_answer_faithful',
+            'to_same_answer_unfaithful',
+            'to_hint_error',
+            'to_incomplete',
+            'to_error'
+        ]
+        labels = ['→ F (same ans)', '→ U (same ans)', '→ Hint Error', '→ Incomplete', '→ Error']
+        colors = ['#2ecc71', '#e74c3c', '#3498db', '#95a5a6', '#000000']  # green, red, blue, grey, black
+        markers = ['o', 's', '^', 'D', 'v']  # circle, square, triangle-up, diamond, triangle-down
+    else:
+        # Initially WRONG - includes wrong_to_correct
+        transition_names = [
+            'to_same_answer_faithful',
+            'to_same_answer_unfaithful',
+            'to_correct',
+            'to_hint_error',
+            'to_incomplete',
+            'to_error'
+        ]
+        labels = ['→ F (same ans)', '→ U (same ans)', '→ Correct', '→ Hint Error', '→ Incomplete', '→ Error']
+        colors = ['#2ecc71', '#e74c3c', '#f39c12', '#3498db', '#95a5a6', '#000000']  # green, red, orange, blue, grey, black
+        markers = ['o', 's', '^', 'D', 'v', 'p']  # circle, square, triangle-up, diamond, triangle-down, pentagon
+
+    num_transitions = len(transition_names)
+
+    # Build data for each transition
+    for idx, (transition_name, label, color, marker) in enumerate(zip(transition_names, labels, colors, markers)):
+        rates = []
+        for layer in layers:
+            # Find config for this layer
+            config = next((c for c in configs if c['layer'] == layer), None)
+            if config and group_name in config:
+                rate = config[group_name]['transitions'].get(transition_name, {}).get('rate', 0) * 100
+                rates.append(rate)
+            else:
+                rates.append(0)
+
+        # Calculate horizontal offset to avoid overlapping markers
+        # Center the offsets around 0, spreading them ±0.15 layer units
+        offset = (idx - (num_transitions - 1) / 2) * 0.06
+        x_coords = [layer + offset for layer in layers]
+
+        ax.plot(x_coords, rates, marker=marker, label=label, color=color,
+                linewidth=2, markersize=7, markeredgecolor='black', markeredgewidth=0.5)
+
+    ax.set_xlabel('Layer')
+    ax.set_ylabel('Rate (%)')
+    ax.set_title(title, fontweight='bold')
+    ax.set_ylim(0, 105)  # Slightly above 100 for visibility
+    ax.grid(alpha=0.3)
+    ax.legend(loc='best', fontsize=9)
     ax.set_xticks(layers)

@@ -6,7 +6,7 @@ Steered global faithfulness evaluation script.
 This script:
 1. Loads steered evaluation dataset
 2. Groups records by (subject, hint_template, layer, coefficient)
-3. For each configuration:
+3. For each configuration:w
    a. Rule-based classification (complete, correct, hint-error, needs-judge)
    b. LLM judge for ambiguous cases
    c. Compute transition rates
@@ -31,24 +31,20 @@ from src.config import TODAY
 # Import new modules
 from src.steered_global_faithfulness import (
     group_records_by_config,
-    compute_config_metrics,
-    find_best_configs
+    compute_config_metrics
 )
-from src.steered_plots import (
-    plot_steering_heatmaps,
-    plot_best_config_breakdown,
-    plot_transformation_rates_by_layer
-)
+# Plotting functions removed - need updating for new stratification
+# from src.steered_plots import (...)
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/sprint4_2025-10-21/steered/steered_val_neg_bas_psyXprof_2025-10-19.jsonl"
+INPUT_FILE = "data/sprint4_2025-10-21/steered/steered_val_neg_bas_histXmeta_2025-10-19.jsonl"
 
 # Subject
-SUBJECT = "psychology_professor"
+SUBJECT = "history_metadata"
 
 # Model configuration
 JUDGE_MODEL = "google/gemini-2.5-flash"  # OpenRouter model name
@@ -62,19 +58,20 @@ TOP_K = 5  # Number of top configs to report
 # The script will save exactly to these paths (creating directories as needed).
 
 # Output 1: Annotated dataset (JSONL with classifications)
-OUTPUT_ANNOTATED = "data/sprint4_2025-10-21/annotated/steered/annotated_steered_global_val_neg_bas_psyXprof_2025-10-19.jsonl"
+OUTPUT_ANNOTATED = "data/sprint4_2025-10-21/annotated/steered/annotated_steered_global_neg_bas_val_histXmeta_2025-10-19.jsonl"
 
 # Output 2: Summary JSON (all metrics, best configs)
-OUTPUT_SUMMARY = "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_global_val_neg_bas_psyXprof_2025-10-19.json"
+OUTPUT_SUMMARY = "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_neg_bas_val_histXmeta_2025-10-19.json"
 
 # Output 3: Heatmaps plot (2x2 grid)
-OUTPUT_PLOT_HEATMAPS = "plots/sprint4_2025-10-21/steering_neg_bas_psyXprof/heatmaps_steered_global_val_neg_bas_psyXprof_2025-10-19.png"
+OUTPUT_PLOT_HEATMAPS = "data/sprint4_2025-10-21/plots/steering_neg_bas_histXmeta/heatmaps_steered_neg_bas_val_histXmeta_2025-10-19.png"
 
 # Output 4: Best config breakdown plot
-OUTPUT_PLOT_BREAKDOWN = "plots/sprint4_2025-10-21/steering_neg_bas_psyXprof/best_breakdown_steered_global_val_neg_bas_psyXprof_2025-10-19.png"
+OUTPUT_PLOT_BREAKDOWN = "data/sprint4_2025-10-21/plots/steering_neg_bas_histXmeta/best_breakdown_steered_neg_bas_val_histXmeta_2025-10-19.png"
 
 # Outputs 5+: Layer-wise plots directory (individual files generated automatically as steered_global_layers_coeff_{coeff}.png)
-OUTPUT_PLOT_LAYERS_DIR = "plots/sprint4_2025-10-21/steering_neg_bas_psyXprof"
+OUTPUT_PLOT_LAYERS_DIR = "data/sprint4_2025-10-21/plots/steering_neg" \
+"_bas_histXmeta"
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -99,8 +96,8 @@ def create_annotated_records(all_configs, original_records):
         coeff_mag = config['coefficient_magnitude']
 
         for group_name, group_data in config.items():
-            if group_name in ['positive_on_unfaithful', 'positive_on_faithful',
-                            'negative_on_faithful', 'negative_on_unfaithful']:
+            if group_name in ['positive_on_CF', 'positive_on_CU', 'positive_on_WF', 'positive_on_WU',
+                            'negative_on_CF', 'negative_on_CU', 'negative_on_WF', 'negative_on_WU']:
                 classifications = group_data.get('classifications', {})
                 for qid, classification in classifications.items():
                     # Determine coefficient sign from group name
@@ -140,13 +137,12 @@ def create_annotated_records(all_configs, original_records):
     return annotated
 
 
-def create_summary(all_configs, best_configs, subject, hint_template, input_file):
+def create_summary(all_configs, subject, hint_template, input_file):
     """
-    Create summary JSON with all metrics and best configurations.
+    Create summary JSON with all configuration metrics.
 
     Args:
         all_configs: List of all configuration results
-        best_configs: Best configs for positive and negative steering
         subject: Subject name
         hint_template: Hint template name
         input_file: Input file path
@@ -154,19 +150,21 @@ def create_summary(all_configs, best_configs, subject, hint_template, input_file
     Returns:
         Summary dictionary
     """
-    # Count total examples
-    total_examples = sum(
-        config['positive_on_unfaithful']['n'] +
-        config['positive_on_faithful']['n'] +
-        config['negative_on_faithful']['n'] +
-        config['negative_on_unfaithful']['n']
-        for config in all_configs
-    ) // (len(all_configs) * 2)  # Divide by num configs and 2 (pos/neg)
+    # Count total examples (sum across all 8 groups)
+    total_examples = 0
+    if all_configs:
+        sample_config = all_configs[0]
+        for group_name in ['positive_on_CF', 'positive_on_CU', 'positive_on_WF', 'positive_on_WU',
+                          'negative_on_CF', 'negative_on_CU', 'negative_on_WF', 'negative_on_WU']:
+            if group_name in sample_config:
+                total_examples += sample_config[group_name]['n']
+        # Divide by 2 (positive + negative steering on same records)
+        total_examples = total_examples // 2
 
     # Create summary
     summary = {
         'evaluation_date': TODAY,
-        'method': 'global_llm_judge_steered',
+        'method': 'global_llm_judge_steered_with_stratification',
         'judge_model': JUDGE_MODEL,
         'source_file': input_file,
         'subject': subject,
@@ -176,53 +174,8 @@ def create_summary(all_configs, best_configs, subject, hint_template, input_file
         'dataset_info': {
             'total_configurations': len(all_configs),
             'layers': sorted(set(c['layer'] for c in all_configs)),
-            'coefficient_magnitudes': sorted(set(c['coefficient_magnitude'] for c in all_configs))
-        },
-
-        'best_configurations': {
-            'positive_steering': {
-                'best': {
-                    'layer': best_configs['positive_steering']['best']['layer'],
-                    'coefficient': best_configs['positive_steering']['best']['coefficient'],
-                    'score': best_configs['positive_steering']['best']['score'],
-                    'success_rate': best_configs['positive_steering']['best']['success_rate'],
-                    'side_effects_rate': best_configs['positive_steering']['best']['side_effects_rate'],
-                    'transitions': best_configs['positive_steering']['best']['config']['positive_on_unfaithful']['transitions']
-                },
-                'top_k': [
-                    {
-                        'rank': i + 1,
-                        'layer': cfg['layer'],
-                        'coefficient': cfg['coefficient'],
-                        'score': cfg['score'],
-                        'success_rate': cfg['success_rate'],
-                        'side_effects_rate': cfg['side_effects_rate']
-                    }
-                    for i, cfg in enumerate(best_configs['positive_steering']['top_k'])
-                ]
-            },
-
-            'negative_steering': {
-                'best': {
-                    'layer': best_configs['negative_steering']['best']['layer'],
-                    'coefficient': best_configs['negative_steering']['best']['coefficient'],
-                    'score': best_configs['negative_steering']['best']['score'],
-                    'success_rate': best_configs['negative_steering']['best']['success_rate'],
-                    'side_effects_rate': best_configs['negative_steering']['best']['side_effects_rate'],
-                    'transitions': best_configs['negative_steering']['best']['config']['negative_on_faithful']['transitions']
-                },
-                'top_k': [
-                    {
-                        'rank': i + 1,
-                        'layer': cfg['layer'],
-                        'coefficient': cfg['coefficient'],
-                        'score': cfg['score'],
-                        'success_rate': cfg['success_rate'],
-                        'side_effects_rate': cfg['side_effects_rate']
-                    }
-                    for i, cfg in enumerate(best_configs['negative_steering']['top_k'])
-                ]
-            }
+            'coefficient_magnitudes': sorted(set(c['coefficient_magnitude'] for c in all_configs)),
+            'note': 'Stratified by initial state (CF/CU/WF/WU) - 8 groups per configuration'
         },
 
         'all_configurations': all_configs
@@ -231,35 +184,21 @@ def create_summary(all_configs, best_configs, subject, hint_template, input_file
     return summary
 
 
-def print_summary_table(best_configs):
+def print_configs_summary(all_configs):
     """
-    Print formatted summary table of best configurations.
+    Print summary of all configurations with their transition metrics.
 
     Args:
-        best_configs: Best configs for positive and negative steering
+        all_configs: List of all configuration results
     """
     print("\n" + "=" * 80)
-    print("BEST CONFIGURATIONS SUMMARY")
+    print("CONFIGURATIONS SUMMARY")
     print("=" * 80)
-
-    print(f"\nTop {TOP_K} Positive Steering Configurations:")
-    print("─" * 80)
-    print(f"{'Rank':<6} {'Layer':<7} {'Coeff':<8} {'Score':<8} {'Success':<10} {'Side Effects':<12}")
-    print("─" * 80)
-
-    for i, cfg in enumerate(best_configs['positive_steering']['top_k'], 1):
-        print(f"{i:<6} {cfg['layer']:<7} +{cfg['coefficient']:<7.2f} "
-              f"{cfg['score']:<8.3f} {cfg['success_rate']:<10.1%} {cfg['side_effects_rate']:<12.1%}")
-
-    print(f"\nTop {TOP_K} Negative Steering Configurations:")
-    print("─" * 80)
-    print(f"{'Rank':<6} {'Layer':<7} {'Coeff':<8} {'Score':<8} {'Success':<10} {'Side Effects':<12}")
-    print("─" * 80)
-
-    for i, cfg in enumerate(best_configs['negative_steering']['top_k'], 1):
-        print(f"{i:<6} {cfg['layer']:<7} {cfg['coefficient']:<7.2f} "
-              f"{cfg['score']:<8.3f} {cfg['success_rate']:<10.1%} {cfg['side_effects_rate']:<12.1%}")
-
+    print(f"Total configurations processed: {len(all_configs)}")
+    print(f"Initial states tracked: CF, CU, WF, WU")
+    print(f"Steering directions: positive (+), negative (-)")
+    print(f"\nAll transition metrics saved to summary JSON file")
+    print(f"Manual analysis required to select appropriate configurations")
     print("=" * 80)
 
 
@@ -352,13 +291,8 @@ def main():
 
         print(f"\n✓ Processed all {len(all_configs)} configurations for '{hint_template}'")
 
-        # 5. Find best configurations for this hint template
-        print(f"\n  Finding best configurations for '{hint_template}'...")
-        best_configs = find_best_configs(all_configs, top_k=TOP_K)
-        print(f"  ✓ Identified top {TOP_K} configs for each steering direction")
-
-        # Print summary table
-        print_summary_table(best_configs)
+        # 5. Print configuration summary
+        print_configs_summary(all_configs)
 
         # 6. Save outputs for this hint template
         print(f"\n  Saving outputs for '{hint_template}'...")
@@ -371,7 +305,7 @@ def main():
         print(f"  ✓ Saved annotated dataset ({len(annotated_records)} records): {OUTPUT_ANNOTATED}")
 
         # 6b. Save summary
-        summary = create_summary(all_configs, best_configs, SUBJECT, hint_template, INPUT_FILE)
+        summary = create_summary(all_configs, SUBJECT, hint_template, INPUT_FILE)
         os.makedirs(os.path.dirname(OUTPUT_SUMMARY), exist_ok=True)
         with open(OUTPUT_SUMMARY, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
@@ -380,54 +314,87 @@ def main():
         # 7. Create plots
         print(f"\n  Creating visualizations for '{hint_template}'...")
         try:
-            # Create heatmaps
-            os.makedirs(os.path.dirname(OUTPUT_PLOT_HEATMAPS), exist_ok=True)
-            plot_steering_heatmaps(all_configs, SUBJECT, hint_template, OUTPUT_PLOT_HEATMAPS)
+            # Import plotting functions
+            from src.steered_plots import (
+                plot_steering_heatmaps,
+                plot_transformation_rates_by_layer
+            )
 
-            # Create breakdown
-            plot_best_config_breakdown(best_configs['positive_steering']['best'],
-                                       best_configs['negative_steering']['best'],
-                                       OUTPUT_PLOT_BREAKDOWN)
+            # Generate 4 heatmap grids total:
+            # 2 for CORRECT group (transitions + no_change)
+            # 2 for WRONG group (transitions + no_change)
 
-            # Create layer-wise plots (automatically generate filenames in configured directory)
-            os.makedirs(OUTPUT_PLOT_LAYERS_DIR, exist_ok=True)
+            print(f"\n    Generating heatmaps for CORRECT group...")
 
-            # Get unique coefficient magnitudes from data
-            coeffs = sorted(set(c['coefficient_magnitude'] for c in all_configs))
-            layer_plot_paths = []
+            # CORRECT - TRANSITIONS
+            heatmap_path_correct_trans = OUTPUT_PLOT_HEATMAPS.replace('.png', '_correct_transitions.png')
+            plot_steering_heatmaps(
+                all_configs=all_configs,
+                subject=SUBJECT,
+                hint_template=hint_template,
+                correctness_group='correct',
+                heatmap_type='transitions',
+                save_path=heatmap_path_correct_trans
+            )
 
-            for coeff in coeffs:
-                # Generate filename automatically: steered_global_layers_coeff_{coeff}.png
-                save_path = os.path.join(OUTPUT_PLOT_LAYERS_DIR, f"steered_global_layers_coeff_{coeff}.png")
-                layer_plot_paths.append(save_path)
+            # CORRECT - NO CHANGE
+            heatmap_path_correct_nochange = OUTPUT_PLOT_HEATMAPS.replace('.png', '_correct_no_change.png')
+            plot_steering_heatmaps(
+                all_configs=all_configs,
+                subject=SUBJECT,
+                hint_template=hint_template,
+                correctness_group='correct',
+                heatmap_type='no_change',
+                save_path=heatmap_path_correct_nochange
+            )
 
-                # Filter configs for this coefficient
-                coeff_configs = [c for c in all_configs if c['coefficient_magnitude'] == coeff]
+            print(f"\n    Generating heatmaps for WRONG group...")
 
-                # Create the layer-wise plot
-                import matplotlib.pyplot as plt
-                from src.steered_plots import _plot_transitions_subplot
-                layers = sorted(set(c['layer'] for c in all_configs))
+            # WRONG - TRANSITIONS
+            heatmap_path_wrong_trans = OUTPUT_PLOT_HEATMAPS.replace('.png', '_wrong_transitions.png')
+            plot_steering_heatmaps(
+                all_configs=all_configs,
+                subject=SUBJECT,
+                hint_template=hint_template,
+                correctness_group='wrong',
+                heatmap_type='transitions',
+                save_path=heatmap_path_wrong_trans
+            )
 
-                fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-                fig.suptitle(f'Transformation Rates Across Layers (Coefficient = ±{coeff})',
-                            fontsize=16, fontweight='bold')
+            # WRONG - NO CHANGE
+            heatmap_path_wrong_nochange = OUTPUT_PLOT_HEATMAPS.replace('.png', '_wrong_no_change.png')
+            plot_steering_heatmaps(
+                all_configs=all_configs,
+                subject=SUBJECT,
+                hint_template=hint_template,
+                correctness_group='wrong',
+                heatmap_type='no_change',
+                save_path=heatmap_path_wrong_nochange
+            )
 
-                _plot_transitions_subplot(coeff_configs, layers, 'positive_on_unfaithful', 'unfaithful',
-                                        axes[0, 0], f'Unfaithful Origin + Positive Steering (coeff = +{coeff})')
-                _plot_transitions_subplot(coeff_configs, layers, 'negative_on_unfaithful', 'unfaithful',
-                                        axes[0, 1], f'Unfaithful Origin + Negative Steering (coeff = -{coeff})')
-                _plot_transitions_subplot(coeff_configs, layers, 'positive_on_faithful', 'faithful',
-                                        axes[1, 0], f'Faithful Origin + Positive Steering (coeff = +{coeff})')
-                _plot_transitions_subplot(coeff_configs, layers, 'negative_on_faithful', 'faithful',
-                                        axes[1, 1], f'Faithful Origin + Negative Steering (coeff = -{coeff})')
+            # Layer-wise line plots - one 2×2 per coefficient per correctness group
+            print(f"\n    Generating layer-wise plots...")
 
-                plt.tight_layout()
-                plt.savefig(save_path, dpi=300, bbox_inches='tight')
-                plt.close()
-                print(f"   Saved layer comparison for coeff ±{coeff} to: {save_path}")
+            # CORRECT group line plots
+            plot_transformation_rates_by_layer(
+                all_configs=all_configs,
+                correctness_group='correct',
+                save_dir=OUTPUT_PLOT_LAYERS_DIR,
+                subject=SUBJECT,
+                hint_template=hint_template
+            )
 
-            print(f"  ✓ All plots created successfully")
+            # WRONG group line plots
+            plot_transformation_rates_by_layer(
+                all_configs=all_configs,
+                correctness_group='wrong',
+                save_dir=OUTPUT_PLOT_LAYERS_DIR,
+                subject=SUBJECT,
+                hint_template=hint_template
+            )
+
+            print(f"  ✓ Created all plots for '{hint_template}'")
+
         except Exception as e:
             import traceback
             print(f"  Warning: Could not create plots: {e}")
@@ -437,14 +404,8 @@ def main():
         # Store outputs
         all_outputs[hint_template] = {
             'configs': all_configs,
-            'best_configs': best_configs,
             'annotated_file': OUTPUT_ANNOTATED,
-            'summary_file': OUTPUT_SUMMARY,
-            'plots': {
-                'heatmaps': OUTPUT_PLOT_HEATMAPS,
-                'breakdown': OUTPUT_PLOT_BREAKDOWN,
-                'layers': layer_plot_paths
-            }
+            'summary_file': OUTPUT_SUMMARY
         }
 
     # Final summary
@@ -455,22 +416,15 @@ def main():
     print(f"✓ Processed {len(hint_templates_in_grouped)} hint template(s): {hint_templates_in_grouped}")
 
     for hint_template, outputs in all_outputs.items():
-        best = outputs['best_configs']
         print(f"\n  [{hint_template}]")
         print(f"    - Analyzed {len(outputs['configs'])} configurations")
-        print(f"    - Best Positive: Layer {best['positive_steering']['best']['layer']}, "
-              f"Coeff +{best['positive_steering']['best']['coefficient']:.2f} "
-              f"(Score: {best['positive_steering']['best']['score']:.3f})")
-        print(f"    - Best Negative: Layer {best['negative_steering']['best']['layer']}, "
-              f"Coeff {best['negative_steering']['best']['coefficient']:.2f} "
-              f"(Score: {best['negative_steering']['best']['score']:.3f})")
+        print(f"    - Stratified by initial state: CF, CU, WF, WU")
         print(f"    - Outputs:")
-        print(f"      - {outputs['annotated_file']}")
-        print(f"      - {outputs['summary_file']}")
-        print(f"      - {outputs['plots']['heatmaps']}")
-        print(f"      - {outputs['plots']['breakdown']}")
-        for layer_plot in outputs['plots']['layers']:
-            print(f"      - {layer_plot}")
+        print(f"      - Annotated data: {outputs['annotated_file']}")
+        print(f"      - Summary JSON: {outputs['summary_file']}")
+        print(f"      - Plots (4 initial states × multiple coefficients):")
+        print(f"        - Heatmaps: {os.path.dirname(OUTPUT_PLOT_HEATMAPS)}/")
+        print(f"        - Line plots: {OUTPUT_PLOT_LAYERS_DIR}/")
 
     print(f"\n{'=' * 80}\n")
 
