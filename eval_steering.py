@@ -186,6 +186,32 @@ steered_results = sweep_coefficients(
 
 print(f"Generated steered responses for {len(steered_results)} configurations")
 
+# CELL 4: Store Steered Results (Validation done separately offline)
+print("\n=== CELL 4: Store Steered Results ===")
+print("Note: Validation and answer extraction will be done offline in separate script")
+
+evaluation_results = {}
+
+for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc="Processing steering configs"):
+    print(f"\nProcessing layer {layer_idx}, coefficient {coeff:+.1f}")
+
+    # Create steered prompts (input prompt + steered response)
+    steered_prompts = [
+        prompt + response
+        for prompt, response in zip(input_prompts, steered_responses)
+    ]
+
+    # Store results for this configuration (no validation yet)
+    evaluation_results[(layer_idx, coeff)] = {
+        'steered_responses': steered_responses,
+        'steered_prompts': steered_prompts,
+        'total_prompts': len(val_data)
+    }
+
+    print(f"  Stored {len(steered_responses)} steered responses")
+
+print(f"\nProcessed results for {len(evaluation_results)} steering configurations")
+
 # CELL 5: Save Output JSONL and Summary
 print("\n=== CELL 5: Save Output JSONL and Summary ===")
 
@@ -214,17 +240,9 @@ for (layer_idx, coeff), results in evaluation_results.items():
             'steering_layer': layer_idx,
             'steering_coefficient': coeff,
 
-            # Steered results
+            # Steered results (raw - validation done separately)
             'steered_response': results['steered_responses'][i],
             'steered_prompt': results['steered_prompts'][i],
-            'steered_answer_letter': results['steered_answers'][i],
-
-            # Validation metrics
-            'compliance': results['compliance_labels'][i],
-            'completeness': results['completeness_labels'][i],
-
-            # Performance metrics
-            'steered_accuracy': results['steered_accuracy_labels'][i],
 
             # Ground truth and reference data
             'ground_truth_letter': orig_item.get('ground_truth_letter'),
@@ -265,83 +283,11 @@ summary = {
         f"layer_{layer}_coeff_{coeff:+.1f}": {
             'layer': layer,
             'coefficient': coeff,
-            'accuracy_rate': results['accuracy_rate'],
-            'correct_count': results['correct_count'],
-            'total_prompts': results['total_prompts'],
-            'compliance_rate': results['compliance_rate'],
-            'completeness_rate': results['completeness_rate']
+            'total_prompts': results['total_prompts']
         }
         for (layer, coeff), results in evaluation_results.items()
-    }# CELL 4: Validate and Analyze Steered Results
-print("\n=== CELL 4: Validate and Analyze Steered Results ===")
-
-evaluation_results = {}
-
-for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc="Processing steering configs"):
-    print(f"\nProcessing layer {layer_idx}, coefficient {coeff:+.1f}")
-
-    # Create steered prompts (input prompt + steered response)
-    steered_prompts = [
-        prompt + response
-        for prompt, response in zip(input_prompts, steered_responses)
-    ]
-
-    # Validate steered responses with DeepSeek to extract answer letters and validation info
-    steered_validations = validate_responses(steered_responses, openrouter_client)
-
-    # Extract validation metrics from each validation result
-    steered_answers = []
-    compliance_labels = []
-    completeness_labels = []
-
-    for validation in steered_validations:
-        # Extract answer letter, compliance, and completeness
-        is_compliant, is_complete, answer_letter = extract_validation_data(validation)
-
-        steered_answers.append(answer_letter)
-        compliance_labels.append('compliant' if is_compliant else 'non_compliant')
-        completeness_labels.append('complete' if is_complete else 'truncated')
-
-    # Compute accuracy by comparing steered answers to ground truth
-    steered_accuracy_labels = []
-    correct_count = 0
-
-    for i, orig_item in enumerate(val_data):
-        ground_truth = orig_item.get('ground_truth_letter')
-        steered_answer = steered_answers[i]
-
-        is_correct = (steered_answer == ground_truth) if (steered_answer and ground_truth) else False
-        steered_accuracy_labels.append('correct' if is_correct else 'wrong')
-
-        if is_correct:
-            correct_count += 1
-
-    # Compute aggregate metrics for this configuration
-    accuracy_rate = correct_count / len(val_data) if val_data else 0
-    compliance_rate = sum(1 for c in compliance_labels if c == 'compliant') / len(compliance_labels) if compliance_labels else 0
-    completeness_rate = sum(1 for c in completeness_labels if c == 'complete') / len(completeness_labels) if completeness_labels else 0
-
-    # Store results for this configuration
-    evaluation_results[(layer_idx, coeff)] = {
-        'steered_responses': steered_responses,
-        'steered_prompts': steered_prompts,
-        'steered_answers': steered_answers,
-        'compliance_labels': compliance_labels,
-        'completeness_labels': completeness_labels,
-        'steered_accuracy_labels': steered_accuracy_labels,
-        'correct_count': correct_count,
-        'accuracy_rate': accuracy_rate,
-        'compliance_rate': compliance_rate,
-        'completeness_rate': completeness_rate,
-        'total_prompts': len(val_data)
-    }
-
-    print(f"  Accuracy: {accuracy_rate:.1%} ({correct_count}/{len(val_data)})")
-    print(f"  Compliance: {compliance_rate:.1%}, Completeness: {completeness_rate:.1%}")
-
-print(f"\nProcessed results for {len(evaluation_results)} steering configurations")
-
-
+    },
+    'note': 'Validation and answer extraction done separately in validate_steering.py'
 }
 
 with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
