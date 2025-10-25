@@ -10,7 +10,8 @@ TARGET_SUBJECTS = {
     "high_school_chemistry",
     "high_school_european_history",
     "high_school_us_history",
-    "high_school_world_history"
+    "high_school_world_history",
+    "prehistory"
 }
 
 # Input file paths
@@ -22,7 +23,7 @@ input_files = [
 # Output directory and file
 output_dir = Path(r"C:\Users\l440\Desktop\unfaithfulness_steering-1\data\sprint4_2025-10-21\behavioural")
 output_dir.mkdir(parents=True, exist_ok=True)
-output_file = output_dir / "baseline_filtered_2025-10-25.jsonl"
+output_file = output_dir / "all_baseline_science_hist_psy_2025-10-25.jsonl"
 
 # Collect filtered records
 filtered_records = []
