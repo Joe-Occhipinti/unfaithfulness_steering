@@ -1,0 +1,214 @@
+{
+  "metadata": {
+    "source_file": "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_psyXprof_2025-10-19.json",
+    "subject": "psychology_professor",
+    "timestamp": "2025-10-26_00-02-11",
+    "total_configs": 30,
+    "confidence_penalty_applied": true
+  },
+  "sample_distribution": {
+    "configs_with_c_groups": 30,
+    "configs_with_w_groups": 30
+  },
+  "c_groups": {
+    "top_config": {
+      "layer": 8,
+      "coefficient": 1,
+      "score": 0.5459778995375518,
+      "metrics": {
+        "pos_effectiveness": 0.25,
+        "neg_effectiveness": 0.5,
+        "pos_unwanted_faithful": 0.25,
+        "neg_unwanted_faithful": 0.0,
+        "hint_error": 0.3125,
+        "incomplete": 0.03125
+      }
+    },
+    "top_5": [
+      {
+        "rank": 1,
+        "layer": 8,
+        "coefficient": 1,
+        "score": 0.5459778995375518
+      },
+      {
+        "rank": 2,
+        "layer": 13,
+        "coefficient": 0.6,
+        "score": 0.5075438894344662
+      },
+      {
+        "rank": 3,
+        "layer": 31,
+        "coefficient": 0.6,
+        "score": 0.504167760855549
+      },
+      {
+        "rank": 4,
+        "layer": 13,
+        "coefficient": 1,
+        "score": 0.5011406239396383
+      },
+      {
+        "rank": 5,
+        "layer": 8,
+        "coefficient": 0.75,
+        "score": 0.49675531961745145
+      }
+    ]
+  },
+  "w_groups": {
+    "top_config": {
+      "layer": 8,
+      "coefficient": 0.5,
+      "score": 0.5293476809340286,
+      "metrics": {
+        "pos_effectiveness": 0.2857142857142857,
+        "neg_effectiveness": 0.25,
+        "pos_unwanted_faithful": 0.0,
+        "neg_unwanted_faithful": 0.0,
+        "hint_error": 0.03571428571428571,
+        "incomplete": 0.03571428571428571
+      }
+    },
+    "top_5": [
+      {
+        "rank": 1,
+        "layer": 8,
+        "coefficient": 0.5,
+        "score": 0.5293476809340286
+      },
+      {
+        "rank": 2,
+        "layer": 18,
+        "coefficient": 1,
+        "score": 0.5232611044924108
+      },
+      {
+        "rank": 3,
+        "layer": 18,
+        "coefficient": 0.75,
+        "score": 0.46676541159119245
+      },
+      {
+        "rank": 4,
+        "layer": 31,
+        "coefficient": 0.6,
+        "score": 0.4520252190618461
+      },
+      {
+        "rank": 5,
+        "layer": 23,
+        "coefficient": 0.75,
+        "score": 0.4107142857142857
+      }
+    ]
+  },
+  "combined": {
+    "sample_weights": {
+      "average_c_samples": 12.0,
+      "average_w_samples": 11.0,
+      "c_weight": 0.5217391304347826,
+      "w_weight": 0.4782608695652174
+    },
+    "top_config": {
+      "layer": 18,
+      "coefficient": 1,
+      "combined_score": 0.48566081645123677,
+      "c_score": 0.45119388574682706,
+      "w_score": 0.5232611044924108
+    },
+    "top_10": [
+      {
+        "rank": 1,
+        "layer": 18,
+        "coefficient": 1,
+        "combined_score": 0.48566081645123677,
+        "c_score": 0.45119388574682706,
+        "w_score": 0.5232611044924108,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 2,
+        "layer": 8,
+        "coefficient": 0.5,
+        "combined_score": 0.48123850465253215,
+        "c_score": 0.43713842639449374,
+        "w_score": 0.5293476809340286,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 3,
+        "layer": 31,
+        "coefficient": 0.6,
+        "combined_score": 0.479230023475952,
+        "c_score": 0.504167760855549,
+        "w_score": 0.4520252190618461,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 4,
+        "layer": 13,
+        "coefficient": 0.6,
+        "combined_score": 0.45728274091724724,
+        "c_score": 0.5075438894344662,
+        "w_score": 0.40245239708028113,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 5,
+        "layer": 8,
+        "coefficient": 1,
+        "combined_score": 0.45271179758902075,
+        "c_score": 0.5459778995375518,
+        "w_score": 0.3509669590997141,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 6,
+        "layer": 18,
+        "coefficient": 0.75,
+        "combined_score": 0.45263094015707395,
+        "c_score": 0.4396743413424653,
+        "w_score": 0.46676541159119245,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 7,
+        "layer": 31,
+        "coefficient": 0.5,
+        "combined_score": 0.4513727567535886,
+        "c_score": 0.4928891064734131,
+        "w_score": 0.4060821934228711,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 8,
+        "layer": 8,
+        "coefficient": 0.75,
+        "combined_score": 0.45070638984787037,
+        "c_score": 0.49675531961745145,
+        "w_score": 0.40047119373560003,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 9,
+        "layer": 23,
+        "coefficient": 0.6,
+        "combined_score": 0.4477827566497664,
+        "c_score": 0.49224759971025245,
+        "w_score": 0.39927565512923624,
+        "c_weight": 0.5217391304347826
+      },
+      {
+        "rank": 10,
+        "layer": 31,
+        "coefficient": 1,
+        "combined_score": 0.426430067195471,
+        "c_score": 0.49659363457540573,
+        "w_score": 0.3498879936900877,
+        "c_weight": 0.5217391304347826
+      }
+    ]
+  }
+}

@@ -17,9 +17,9 @@ from datetime import datetime
 # TUNABLE PARAMETERS
 # =============================================================================
 
-INPUT_FILE = "data/sprint4_2025-10-21/annotated/pos_bas_annotated_psyXprof_2025-10-19.jsonl"
-OUTPUT_FILE = "data/sprint4_2025-10-21/annotated/pos_bas_annotated_psyXprof_2025-10-19.jsonl"
-SUMMARY_FILE = "data/sprint4_2025-10-21/summaries/splits/split_summary_pos_bas_annotated_psyXprof_2025-10-19.json"
+INPUT_FILE = "data/sprint4_2025-10-21/annotated/annotated_2_science_hist_psy_2025-10-25.jsonl"
+OUTPUT_FILE = "data/sprint4_2025-10-21/annotated/annotated_2_science_hist_psy_2025-10-25.jsonl"
+SUMMARY_FILE = "data/sprint4_2025-10-21/summaries/splits/split_summary_annotated_2_science_hist_psy_2025-10-25.json"
 TRAIN_RATIO = 0.8
 VAL_RATIO = 0.2
 RANDOM_SEED = 42

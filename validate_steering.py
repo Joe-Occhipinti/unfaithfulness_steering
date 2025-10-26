@@ -38,9 +38,9 @@ from src.config import TODAY
 # I/O CONFIGURATIONS
 # =============================================================================
 
-# Input: Raw steered responses from eval_steering.py
-INPUT_JSONL = "data/sprint4_2025-10-21/steered/steered_val_pos_bas_psyXprof_2025-10-19.jsonl"
-INPUT_SUMMARY = "data/sprint4_2025-10-21/summaries/steered/summary_steered_pos_bas_psyXprof_2025-10-19.json"
+# Input: Raw hinted responses from eval_hinted.py
+INPUT_JSONL = "data/sprint4_2025-10-21/behavioural/run_2_hinted_science_hist_psy_2025-10-25.jsonl"
+INPUT_SUMMARY = "data/sprint4_2025-10-21/summaries/summary_run_2_hinted_science_hist_psy_2025-10-25.jsonl.json"
 
 # Output: Overwrites input files with validated/enriched data
 OUTPUT_JSONL = INPUT_JSONL  # Overwrites the original JSONL

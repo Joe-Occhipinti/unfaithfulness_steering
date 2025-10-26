@@ -68,7 +68,7 @@ class ModelConfig:
         "deepseek/deepseek-reasoner": 10,
         "openai/gpt-4o": 500,
         "openai/gpt-4o-mini": 500,
-        "gpt-4.1-nano-2025-04-14": 100,
+        "gpt-4.1-nano-2025-04-14": 60,
     }
 
     @staticmethod

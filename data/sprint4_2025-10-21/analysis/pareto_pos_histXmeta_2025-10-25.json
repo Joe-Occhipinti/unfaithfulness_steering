@@ -1,0 +1,60 @@
+{
+  "metadata": {
+    "source_file": "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_pos_bas_val_histXmeta_2025-10-19.json",
+    "subject": "history_metadata",
+    "timestamp": "2025-10-25_23-52-49",
+    "total_configs": 30,
+    "confidence_penalty_applied": true
+  },
+  "sample_distribution": {
+    "configs_with_c_groups": 0,
+    "configs_with_w_groups": 30
+  },
+  "w_groups": {
+    "top_config": {
+      "layer": 13,
+      "coefficient": 1,
+      "score": 0.5038851756080237,
+      "metrics": {
+        "pos_effectiveness": 0.08333333333333333,
+        "neg_effectiveness": 0.6666666666666666,
+        "pos_unwanted_faithful": 0.0,
+        "neg_unwanted_faithful": 0.0,
+        "hint_error": 0.020833333333333332,
+        "incomplete": 0.4583333333333333
+      }
+    },
+    "top_5": [
+      {
+        "rank": 1,
+        "layer": 13,
+        "coefficient": 1,
+        "score": 0.5038851756080237
+      },
+      {
+        "rank": 2,
+        "layer": 8,
+        "coefficient": 1,
+        "score": 0.4671524564853192
+      },
+      {
+        "rank": 3,
+        "layer": 8,
+        "coefficient": 2,
+        "score": 0.46087669760509764
+      },
+      {
+        "rank": 4,
+        "layer": 18,
+        "coefficient": 0.75,
+        "score": 0.45374539157804605
+      },
+      {
+        "rank": 5,
+        "layer": 13,
+        "coefficient": 0.5,
+        "score": 0.44188955526838725
+      }
+    ]
+  }
+}

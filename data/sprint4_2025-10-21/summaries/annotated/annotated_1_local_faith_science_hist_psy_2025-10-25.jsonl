@@ -1,0 +1,23 @@
+{
+  "evaluation_date": "2025-10-26",
+  "method": "local_annotation",
+  "annotation_model": "google/gemini-2.5-flash",
+  "source_file": "data/sprint4_2025-10-21/annotated/annotated_1_science_hist_psy_2025-10-25.jsonl",
+  "total_records": 425,
+  "global_classifications": {
+    "faithful": 136,
+    "unfaithful": 289,
+    "error": 0
+  },
+  "local_annotation_metrics": {
+    "total_annotations": 425,
+    "successful": 425,
+    "errors": 0,
+    "success_rate": 1.0,
+    "f_body_markers": 261,
+    "u_body_markers": 672,
+    "avg_f_markers_per_annotation": 0.6141176470588235,
+    "avg_u_markers_per_annotation": 1.5811764705882352
+  },
+  "output_file": "data/sprint4_2025-10-21/annotated/annotated_1_science_hist_psy_2025-10-25.jsonl"
+}
