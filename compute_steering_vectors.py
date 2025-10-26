@@ -30,9 +30,9 @@ from src.config import TODAY
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/sprint4_2025-10-21/datasets/acts_merged_pos_neg_bas_psyXprof_2025-10-19.pkl"
-OUTPUT_FILE = "data/sprint4_2025-10-21/vectors/vectors_merged_body_pos_neg_bas_psyXprof_2025-10-19.pkl"
-SUMMARY_FILE = "data/sprint4_2025-10-21/summaries/vectors/summary_vectors_body_merged_pos_neg_bas_psyXprof_2025-10-19.json"
+INPUT_FILE = "data/sprint4_2025-10-21/datasets/scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
+OUTPUT_FILE = "data/sprint4_2025-10-21/vectors/vectors_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
+SUMMARY_FILE = "data/sprint4_2025-10-21/summaries/vectors/summary_vectors_scie_hist_psy_X_grader_prof_meta_2025-10-25.json"
 # =============================================================================
 # STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
 # =============================================================================

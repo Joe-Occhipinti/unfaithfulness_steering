@@ -63,9 +63,9 @@ from src.config import TODAY, ACTIVATIONS_DIR, ANNOTATED_DIR, DATASETS_DIR, Acti
 INPUT_FILE = "data/sprint4_2025-10-21/annotated/annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
 
 # Output files - save directly to Google Drive root (no download consent needed)
-OUTPUT_DIR = "/content/drive/MyDrive/activations/acts_scie_hist_psy_X_grader_prof_meta_2025-10-25"
-DATASET_OUTPUT_FILE = "/content/drive/MyDrive/datasets/scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
-SUMMARY_FILE = "/content/drive/MyDrive/summaries/extraction/extraction_summary_scie_hist_psy_X_grader_prof_meta_2025-10-25.json"
+OUTPUT_DIR = "/content/drive/MyDrive/acts_scie_hist_psy_X_grader_prof_meta_2025-10-25"
+DATASET_OUTPUT_FILE = "/content/drive/MyDrive/scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
+SUMMARY_FILE = "/content/drive/MyDrive/extraction_summary_scie_hist_psy_X_grader_prof_meta_2025-10-25.json"
 
 # =============================================================================
 # ACTIVATION EXTRACTION PARAMETERS (easy to tune)
@@ -180,4 +180,36 @@ with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
 print(f"\nReady for Step 4: separability analysis")
 print(f"Use activation dataset: {DATASET_OUTPUT_FILE}")
 
-c
+# CELL 6: Verify Results Saved to Google Drive
+print("\n=== CELL 6: Verify Results Saved to Google Drive ===")
+
+# Check if files exist in Drive
+if os.path.exists(DATASET_OUTPUT_FILE):
+    print(f"Dataset file saved to Drive: {DATASET_OUTPUT_FILE}")
+    print(f"  Size: {os.path.getsize(DATASET_OUTPUT_FILE) / (1024**2):.2f} MB")
+else:
+    print(f"Warning: Dataset file not found at {DATASET_OUTPUT_FILE}")
+
+if os.path.exists(SUMMARY_FILE):
+    print(f"Summary file saved to Drive: {SUMMARY_FILE}")
+    print(f"  Size: {os.path.getsize(SUMMARY_FILE) / 1024:.2f} KB")
+else:
+    print(f"Warning: Summary file not found at {SUMMARY_FILE}")
+
+# Check activation directory
+if os.path.exists(OUTPUT_DIR):
+    num_files = len([f for f in os.listdir(OUTPUT_DIR) if f.endswith('.pt')])
+    print(f"Activation directory saved to Drive: {OUTPUT_DIR}")
+    print(f"  Number of .pt files: {num_files}")
+else:
+    print(f"Warning: Activation directory not found at {OUTPUT_DIR}")
+
+print(f"\n=== EXPERIMENT COMPLETE ===")
+print(f"Results are saved in your Google Drive (MyDrive):")
+print(f"  - Activations: {OUTPUT_DIR}")
+print(f"  - Dataset: {DATASET_OUTPUT_FILE}")
+print(f"  - Summary: {SUMMARY_FILE}")
+print(f"\nNext steps:")
+print(f"  1. Access files from your Google Drive on any device")
+print(f"  2. Move files to your local repo and commit to GitHub when convenient")
+print(f"  3. Run separability analysis on the activation dataset")
