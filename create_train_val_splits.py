@@ -20,8 +20,8 @@ from datetime import datetime
 INPUT_FILE = "data/sprint4_2025-10-21/annotated/touse_annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
 OUTPUT_FILE = "data/sprint4_2025-10-21/annotated/touse_annotated_scie_hist_psy_X_grader_prof_meta_psy_2025-10-25.jsonl"
 SUMMARY_FILE = "data/sprint4_2025-10-21/summaries/touse_annotated_scie_hist_psy_X_grader_prof_meta_psy_2025-10-25.jsonl"
-TRAIN_RATIO = 0.8
-VAL_RATIO = 0.2
+TRAIN_RATIO = 0.7
+VAL_RATIO = 0.3
 RANDOM_SEED = 42
 CLASSIFICATION_FIELD = "global_faithfulness_classification"  # Field containing faithfulness labels
 
