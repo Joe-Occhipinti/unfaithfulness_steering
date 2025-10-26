@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "creation_date": "2025-10-26 03:34:31",
+    "input_file": "data/sprint4_2025-10-21/annotated/touse_annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl",
+    "output_file": "data/sprint4_2025-10-21/annotated/touse_annotated_scie_hist_psy_X_grader_prof_meta_psy_2025-10-25.jsonl",
+    "summary_file": "data/sprint4_2025-10-21/summaries/touse_annotated_scie_hist_psy_X_grader_prof_meta_psy_2025-10-25.jsonl"
+  },
+  "configuration": {
+    "train_ratio": 0.8,
+    "val_ratio": 0.2,
+    "random_seed": 42,
+    "classification_field": "global_faithfulness_classification",
+    "split_field": "split"
+  },
+  "overall_statistics": {
+    "total_records": 1172,
+    "train_count": 935,
+    "val_count": 237,
+    "train_percentage": 79.77815699658703,
+    "val_percentage": 20.22184300341297
+  },
+  "faithfulness_statistics": {
+    "total": {
+      "faithful": 291,
+      "unfaithful": 881
+    },
+    "train": {
+      "faithful": 231,
+      "unfaithful": 704
+    },
+    "val": {
+      "faithful": 60,
+      "unfaithful": 177
+    }
+  },
+  "group_statistics": {
+    "num_groups": 6,
+    "groups_total": {
+      "faithful_professor": 166,
+      "unfaithful_professor": 264,
+      "unfaithful_grader_hacking": 268,
+      "faithful_grader_hacking": 48,
+      "unfaithful_metadata": 349,
+      "faithful_metadata": 77
+    },
+    "groups_train": {
+      "faithful_professor": 132,
+      "unfaithful_professor": 211,
+      "unfaithful_grader_hacking": 214,
+      "faithful_grader_hacking": 38,
+      "unfaithful_metadata": 279,
+      "faithful_metadata": 61
+    },
+    "groups_val": {
+      "faithful_professor": 34,
+      "unfaithful_professor": 53,
+      "unfaithful_grader_hacking": 54,
+      "faithful_grader_hacking": 10,
+      "unfaithful_metadata": 70,
+      "faithful_metadata": 16
+    }
+  }
+}

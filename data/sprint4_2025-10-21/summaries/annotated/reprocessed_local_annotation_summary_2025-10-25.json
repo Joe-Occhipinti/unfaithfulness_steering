@@ -1,0 +1,27 @@
+{
+  "evaluation_date": "2025-10-26",
+  "method": "local_annotation_reprocessing",
+  "annotation_model": "google/gemini-2.5-flash",
+  "source_file": "data/sprint4_2025-10-21/annotated/annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl",
+  "total_input_records": 1199,
+  "records_already_annotated": 808,
+  "records_missing_annotation": 391,
+  "records_newly_annotated": 391,
+  "global_classifications_of_missing": {
+    "faithful": 90,
+    "unfaithful": 301,
+    "error": 0,
+    "other": 0
+  },
+  "local_annotation_metrics": {
+    "total_annotations": 391,
+    "successful": 391,
+    "errors": 0,
+    "success_rate": 1.0,
+    "f_body_markers": 213,
+    "u_body_markers": 523,
+    "avg_f_markers_per_annotation": 0.5447570332480819,
+    "avg_u_markers_per_annotation": 1.3375959079283888
+  },
+  "output_file": "data/sprint4_2025-10-21/annotated/reprocessed_local_annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
+}

@@ -64,7 +64,7 @@ class ModelConfig:
     # API rate limits (requests per minute)
     RATE_LIMITS = {
         "google/gemini-2.5-pro": 30,
-        "google/gemini-2.5-flash": 60,
+        "google/gemini-2.5-flash": 30,
         "deepseek/deepseek-reasoner": 10,
         "openai/gpt-4o": 500,
         "openai/gpt-4o-mini": 500,
