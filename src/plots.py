@@ -1569,7 +1569,7 @@ def plot_text_length_histogram(
         ...     save_path="plots/length_histogram.png"
         ... )
     """
-    from src.text_utils import count_words
+    from src.utilities.text_utils import count_words
 
     setup_plot_style()
 
@@ -1706,7 +1706,7 @@ def plot_text_length_sorted_bar(
         ...     save_path="plots/length_sorted.png"
         ... )
     """
-    from src.text_utils import count_words
+    from src.utilities.text_utils import count_words
 
     setup_plot_style()
 
@@ -1822,7 +1822,7 @@ def plot_filtering_comparison(
         ...     save_path="plots/filtering_comparison.png"
         ... )
     """
-    from src.text_utils import count_words
+    from src.utilities.text_utils import count_words
 
     setup_plot_style()
 
@@ -1882,6 +1882,228 @@ def plot_filtering_comparison(
         print(f"Filtering comparison plot saved to {save_path}")
 
     # Show plot
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+
+def plot_global_faithfulness_stacked(
+    hinted_results: List[Dict],
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> None:
+    """
+    Plot stacked bar chart showing global faithfulness distribution by hint template.
+
+    Creates one stacked bar per hint template, with segments for faithful, unfaithful,
+    and error. The y-axis shows percentages relative to the total dataset size, and
+    absolute counts are displayed inside each segment.
+
+    Args:
+        hinted_results: List of hinted evaluation results with faithfulness_classification
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+    """
+    setup_plot_style()
+
+    # Filter for biased results only
+    biased_results = [r for r in hinted_results if r.get('bias_label') == 'biased']
+
+    if not biased_results:
+        print("No biased results found for faithfulness stacked plot")
+        return
+
+    # Total dataset size for percentage calculation
+    total_dataset_size = len(hinted_results)
+
+    # Group by bias type (hint_template)
+    bias_type_data = {}
+    for result in biased_results:
+        bias_type = result.get('hint_template', 'unknown')
+        if bias_type not in bias_type_data:
+            bias_type_data[bias_type] = []
+        bias_type_data[bias_type].append(result)
+
+    # Global judge classifications
+    faithfulness_labels = ['faithful', 'unfaithful', 'error']
+    bias_types = sorted(bias_type_data.keys())
+
+    # Calculate counts and percentages for each bias type
+    # Also subdivide by whether final answer was correct
+    data_by_bias = {}
+    for bias_type in bias_types:
+        results = bias_type_data[bias_type]
+
+        counts = {label: 0 for label in faithfulness_labels}
+        # Subdivide each label by correct/wrong hint
+        counts_correct_hint = {label: 0 for label in faithfulness_labels}  # hint_letter == ground_truth
+        counts_wrong_hint = {label: 0 for label in faithfulness_labels}    # hint_letter != ground_truth
+
+        for result in results:
+            classification = result.get('faithfulness_classification', 'error')
+            if classification not in counts:
+                classification = 'error'
+
+            counts[classification] += 1
+
+            # Check if the hint itself was correct
+            hint_letter = result.get('hint_letter')
+            ground_truth = result.get('ground_truth_letter')
+
+            if hint_letter == ground_truth:
+                counts_correct_hint[classification] += 1
+            else:
+                counts_wrong_hint[classification] += 1
+
+        # Calculate percentages relative to this hint template's total
+        total_in_template = len(results)
+        percentages = {
+            label: (counts[label] / total_in_template * 100) if total_in_template > 0 else 0
+            for label in faithfulness_labels
+        }
+        percentages_correct_hint = {
+            label: (counts_correct_hint[label] / total_in_template * 100) if total_in_template > 0 else 0
+            for label in faithfulness_labels
+        }
+        percentages_wrong_hint = {
+            label: (counts_wrong_hint[label] / total_in_template * 100) if total_in_template > 0 else 0
+            for label in faithfulness_labels
+        }
+
+        data_by_bias[bias_type] = {
+            'counts': counts,
+            'counts_correct_hint': counts_correct_hint,
+            'counts_wrong_hint': counts_wrong_hint,
+            'percentages': percentages,
+            'percentages_correct_hint': percentages_correct_hint,
+            'percentages_wrong_hint': percentages_wrong_hint,
+            'total': total_in_template
+        }
+
+    # Print summary
+    print(f"\nGlobal faithfulness distribution by hint template (Total dataset: {total_dataset_size}):")
+    print(f"Biased prompts: {len(biased_results)} ({len(biased_results)/total_dataset_size*100:.1f}%)")
+    for bias_type in bias_types:
+        print(f"\n{bias_type} (n={data_by_bias[bias_type]['total']}):")
+        for label in faithfulness_labels:
+            count = data_by_bias[bias_type]['counts'][label]
+            pct = data_by_bias[bias_type]['percentages'][label]
+            if count > 0:
+                print(f"  {label}: {count} ({pct:.1f}% of template)")
+
+    # Create grouped bar chart
+    fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+
+    # Define colors for global judge classifications
+    label_colors = {
+        'faithful': '#E8B4C8',          # Light pastel pink - faithful reasoning
+        'unfaithful': '#7AA8C7',        # Darker pastel blue - unfaithful reasoning
+        'error': '#C0C0C0'              # Silver gray - API/parsing errors
+    }
+
+    # X positions for bars
+    n_labels = len(faithfulness_labels)
+    x_positions = np.arange(len(bias_types))
+    bar_width = 0.2  # Narrower bars
+
+    # Offset positions for grouped bars
+    offsets = np.linspace(-(n_labels-1)*bar_width/2, (n_labels-1)*bar_width/2, n_labels)
+
+    # Track legend handles for custom legend
+    legend_handles = []
+    legend_labels = []
+
+    for idx, label in enumerate(faithfulness_labels):
+        # Get percentages subdivided by correct/wrong HINT for this label across all bias types
+        heights_wrong_hint = [data_by_bias[bt]['percentages_wrong_hint'][label] for bt in bias_types]
+        heights_correct_hint = [data_by_bias[bt]['percentages_correct_hint'][label] for bt in bias_types]
+        counts_wrong_hint = [data_by_bias[bt]['counts_wrong_hint'][label] for bt in bias_types]
+        counts_correct_hint = [data_by_bias[bt]['counts_correct_hint'][label] for bt in bias_types]
+
+        # Create bottom segment (correct hints) solid
+        bars_correct_hint = ax.bar(
+            x_positions + offsets[idx],
+            heights_correct_hint,
+            bar_width,
+            label=f'{label.capitalize()} (Correct Hint)' if idx == 0 else '',
+            color=label_colors[label],
+            edgecolor='white',
+            linewidth=1.5
+        )
+
+        # Create top segment (wrong hints) with hatched pattern, stacked on top
+        bars_wrong_hint = ax.bar(
+            x_positions + offsets[idx],
+            heights_wrong_hint,
+            bar_width,
+            bottom=heights_correct_hint,
+            label=f'{label.capitalize()} (Wrong Hint)' if idx == 0 else '',
+            color=label_colors[label],
+            edgecolor='white',
+            linewidth=1.5,
+            hatch='///',  # Diagonal hatching
+            alpha=0.7
+        )
+
+        # Add count labels for correct hint segment (bottom, if tall enough)
+        for i, (bar, count, height) in enumerate(zip(bars_correct_hint, counts_correct_hint, heights_correct_hint)):
+            if height > 3 and count > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    height / 2,
+                    f'{count}',
+                    ha='center',
+                    va='center',
+                    fontsize=8,
+                    fontweight='bold',
+                    color='black'
+                )
+
+        # Add count labels for wrong hint segment (top, if tall enough)
+        for i, (bar, count, height, bottom) in enumerate(zip(bars_wrong_hint, counts_wrong_hint, heights_wrong_hint, heights_correct_hint)):
+            if height > 3 and count > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bottom + height / 2,
+                    f'{count}',
+                    ha='center',
+                    va='center',
+                    fontsize=8,
+                    fontweight='bold',
+                    color='black'
+                )
+
+        # Store handles for legend (only once per label type)
+        if idx == 0:
+            legend_handles.extend([bars_wrong_hint, bars_correct_hint])
+            legend_labels.extend([f'Wrong Hint (hatched)', f'Correct Hint (solid)'])
+
+    # Customize plot
+    ax.set_xlabel('Hint Template', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Percentage (%)', fontsize=14, fontweight='bold')
+    ax.set_title('Global Faithfulness Distribution by Hint Template\n(Biased Prompts Only)',
+                 fontsize=16, fontweight='bold', pad=20)
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(bias_types, rotation=45, ha='right')
+    ax.set_ylim(0, 100)  # Percentages are now within each template, so max is 100%
+
+    # Create custom legend combining faithfulness labels and correct/wrong hint patterns
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=label_colors['faithful'], edgecolor='white', label='Faithful'),
+        Patch(facecolor=label_colors['unfaithful'], edgecolor='white', label='Unfaithful'),
+        Patch(facecolor='gray', edgecolor='white', hatch='///', alpha=0.7, label='Wrong Hint'),
+        Patch(facecolor='gray', edgecolor='white', label='Correct Hint')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', framealpha=0.9)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to {save_path}")
+
     if show_plot:
         plt.show()
     else:

@@ -1,2 +1,5 @@
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
+data/sprint_4_2025-10-15/steered/*.jsonl filter=lfs diff=lfs merge=lfs -text
+data/sprint_4_2025-10-15/annotated/steered/*.jsonl filter=lfs diff=lfs merge=lfs -text
+data/sprint_4_2025-10-15/behavioural/*.jsonl filter=lfs diff=lfs merge=lfs -text

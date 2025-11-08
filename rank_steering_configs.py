@@ -2,8 +2,7 @@
 rank_steering_configs.py
 
 Complete ranking system for steering configurations with:
-- Separate analysis for Correct groups (CU/CF) and Wrong groups (WU/WF)
-- Combined analysis with proper sample-size weighting
+- Separate analysis for Correct groups (CU/CF) and Wrong groups (WU/WF) hint-wise
 - Unified analysis (averaging CU+WU and CF+WF)
 - All ranking functionality in one place
 """
@@ -18,7 +17,7 @@ from scipy import stats
 # CONFIGURATION
 # =============================================================================
 
-DEFAULT_INPUT_FILE = "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_neg_bas_psyXprof_2025-10-19.json"
+DEFAULT_INPUT_FILE = "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_sprint4_2025-10-27.json"
 
 # =============================================================================
 # METRICS EXTRACTION FOR SEPARATED GROUPS
@@ -38,6 +37,28 @@ def extract_metrics_correct_only(config: Dict[str, Any], apply_confidence_penalt
 
     def calculate_confidence_weight(group_name: str, transition_type: str,
                                    is_desirable: bool = True) -> float:
+        """
+        Calculate confidence weight based on statistical significance.
+
+        Uses binomial test against p=0.0 (deterministic baseline with temp=0).
+        Maps p-values to continuous weights with different thresholds for
+        desirable outcomes (effectiveness) vs undesirable outcomes (side effects).
+
+        Philosophy:
+        - For effectiveness: Require strong evidence (low weight for weak evidence)
+        - For side effects: Conservative approach (higher weight even for weak evidence)
+
+        Args:
+            group_name: Group to test (e.g., 'positive_on_CU')
+            transition_type: Transition to test (e.g., 'to_same_answer_faithful')
+            is_desirable: True for effectiveness metrics, False for side effects/errors
+
+        Returns:
+            Weight between 0.0 and 1.0:
+            - For desirable: 0.2-1.0 (lower baseline for weak evidence)
+            - For undesirable: 0.6-1.0 (higher baseline for risk aversion)
+            - Returns 0.0 if group doesn't exist or has no data
+        """
         if not apply_confidence_penalty:
             return 1.0
 
@@ -53,20 +74,39 @@ def extract_metrics_correct_only(config: Dict[str, Any], apply_confidence_penalt
         if n <= 0:
             return 0.0
 
+        # Run binomial test
+        # H0: p = 0.0 (no transitions without steering - deterministic with temp=0)
+        # H1: p > 0.0 (steering causes transitions)
+        p_value = stats.binomtest(count, n, p=0.0, alternative='greater').pvalue
+
+        # Map p-value to weight based on evidence strength
         if is_desirable:
-            # Test if effectiveness is significantly > 0%
-            p_value = stats.binomtest(count, n, p=0.0, alternative='greater').pvalue
+            # WANTED outcomes (effectiveness): Require strong evidence
+            # Lower weights for weak evidence - don't give credit for noise
+            if p_value < 0.001:
+                final_weight = 1.0    # Very strong evidence (p < 0.1%)
+            elif p_value < 0.01:
+                final_weight = 0.8    # Strong evidence (p < 1%)
+            elif p_value < 0.05:
+                final_weight = 0.6    # Moderate evidence (p < 5%)
+            elif p_value < 0.10:
+                final_weight = 0.4    # Weak evidence (p < 10%)
+            else:
+                final_weight = 0.2    # Very weak/no evidence (p ≥ 10%)
         else:
-            # Test if side effects are significantly > 0% (same as desirable)
-            p_value = stats.binomtest(count, n, p=0.0, alternative='greater').pvalue
-
-        if p_value < 0.05:
-            final_weight = 1.0  # Significant - full weight
-        else:
-            final_weight = 0.5  # Not significant - half weight
-
-        if not is_desirable:
-            final_weight = max(0.5, final_weight)  # Side effects always get at least 0.5
+            # UNWANTED outcomes (side effects, hint errors, incomplete):
+            # Conservative approach - higher weights even for weak evidence
+            # Risk aversion: don't ignore potential problems
+            if p_value < 0.001:
+                final_weight = 1.0    # Very strong evidence
+            elif p_value < 0.01:
+                final_weight = 0.95   # Strong evidence - nearly full weight
+            elif p_value < 0.05:
+                final_weight = 0.85   # Moderate evidence - still high weight
+            elif p_value < 0.10:
+                final_weight = 0.75   # Weak evidence - meaningful weight
+            else:
+                final_weight = 0.6    # Very weak evidence - still count it (safety buffer)
 
         return final_weight
 
@@ -150,6 +190,28 @@ def extract_metrics_wrong_only(config: Dict[str, Any], apply_confidence_penalty:
 
     def calculate_confidence_weight(group_name: str, transition_type: str,
                                    is_desirable: bool = True) -> float:
+        """
+        Calculate confidence weight based on statistical significance.
+
+        Uses binomial test against p=0.0 (deterministic baseline with temp=0).
+        Maps p-values to continuous weights with different thresholds for
+        desirable outcomes (effectiveness) vs undesirable outcomes (side effects).
+
+        Philosophy:
+        - For effectiveness: Require strong evidence (low weight for weak evidence)
+        - For side effects: Conservative approach (higher weight even for weak evidence)
+
+        Args:
+            group_name: Group to test (e.g., 'positive_on_CU')
+            transition_type: Transition to test (e.g., 'to_same_answer_faithful')
+            is_desirable: True for effectiveness metrics, False for side effects/errors
+
+        Returns:
+            Weight between 0.0 and 1.0:
+            - For desirable: 0.2-1.0 (lower baseline for weak evidence)
+            - For undesirable: 0.6-1.0 (higher baseline for risk aversion)
+            - Returns 0.0 if group doesn't exist or has no data
+        """
         if not apply_confidence_penalty:
             return 1.0
 
@@ -165,20 +227,39 @@ def extract_metrics_wrong_only(config: Dict[str, Any], apply_confidence_penalty:
         if n <= 0:
             return 0.0
 
+        # Run binomial test
+        # H0: p = 0.0 (no transitions without steering - deterministic with temp=0)
+        # H1: p > 0.0 (steering causes transitions)
+        p_value = stats.binomtest(count, n, p=0.0, alternative='greater').pvalue
+
+        # Map p-value to weight based on evidence strength
         if is_desirable:
-            # Test if effectiveness is significantly > 0%
-            p_value = stats.binomtest(count, n, p=0.0, alternative='greater').pvalue
+            # WANTED outcomes (effectiveness): Require strong evidence
+            # Lower weights for weak evidence - don't give credit for noise
+            if p_value < 0.001:
+                final_weight = 1.0    # Very strong evidence (p < 0.1%)
+            elif p_value < 0.01:
+                final_weight = 0.8    # Strong evidence (p < 1%)
+            elif p_value < 0.05:
+                final_weight = 0.6    # Moderate evidence (p < 5%)
+            elif p_value < 0.10:
+                final_weight = 0.4    # Weak evidence (p < 10%)
+            else:
+                final_weight = 0.2    # Very weak/no evidence (p ≥ 10%)
         else:
-            # Test if side effects are significantly > 0% (same as desirable)
-            p_value = stats.binomtest(count, n, p=0.0, alternative='greater').pvalue
-
-        if p_value < 0.05:
-            final_weight = 1.0  # Significant - full weight
-        else:
-            final_weight = 0.5  # Not significant - half weight
-
-        if not is_desirable:
-            final_weight = max(0.5, final_weight)  # Side effects always get at least 0.5
+            # UNWANTED outcomes (side effects, hint errors, incomplete):
+            # Conservative approach - higher weights even for weak evidence
+            # Risk aversion: don't ignore potential problems
+            if p_value < 0.001:
+                final_weight = 1.0    # Very strong evidence
+            elif p_value < 0.01:
+                final_weight = 0.95   # Strong evidence - nearly full weight
+            elif p_value < 0.05:
+                final_weight = 0.85   # Moderate evidence - still high weight
+            elif p_value < 0.10:
+                final_weight = 0.75   # Weak evidence - meaningful weight
+            else:
+                final_weight = 0.6    # Very weak evidence - still count it (safety buffer)
 
         return final_weight
 
@@ -211,9 +292,10 @@ def extract_metrics_wrong_only(config: Dict[str, Any], apply_confidence_penalty:
         confidence = calculate_confidence_weight('negative_on_WU', 'to_same_answer_faithful', is_desirable=False)
         neg_unwanted = rate * confidence
 
-    # Hint errors and incompleteness for W groups only
+    # Hint errors, incompleteness, and to_correct for W groups only
     hint_errors = []
     incompleteness = []
+    to_corrects = []
     w_groups = ['positive_on_WU', 'positive_on_WF', 'negative_on_WU', 'negative_on_WF']
 
     for group_name in w_groups:
@@ -228,8 +310,14 @@ def extract_metrics_wrong_only(config: Dict[str, Any], apply_confidence_penalty:
             confidence = calculate_confidence_weight(group_name, 'to_incomplete', is_desirable=False)
             incompleteness.append(rate * confidence)
 
+            # To correct (unwanted - accidentally fixing wrong answers)
+            rate = config[group_name].get('transitions', {}).get('to_correct', {}).get('rate', 0)
+            confidence = calculate_confidence_weight(group_name, 'to_correct', is_desirable=False)
+            to_corrects.append(rate * confidence)
+
     hint_error_rate = np.mean(hint_errors) if hint_errors else 0.0
     incomplete_rate = np.mean(incompleteness) if incompleteness else 0.0
+    to_correct_rate = np.mean(to_corrects) if to_corrects else 0.0
 
     # Check if we have any W groups at all
     has_w_groups = (group_exists('positive_on_WU') or group_exists('negative_on_WF') or
@@ -242,6 +330,7 @@ def extract_metrics_wrong_only(config: Dict[str, Any], apply_confidence_penalty:
         'neg_unwanted_faithful': neg_unwanted,
         'hint_error': hint_error_rate,
         'incomplete': incomplete_rate,
+        'to_correct': to_correct_rate,
         'layer': config.get('layer'),
         'coefficient': config.get('coefficient_magnitude'),
         'has_data': has_w_groups
@@ -262,10 +351,10 @@ def dominates(metrics_a: Dict[str, float], metrics_b: Dict[str, float],
     if criteria is None:
         criteria = ['pos_effectiveness', 'neg_effectiveness',
                    'pos_unwanted_faithful', 'neg_unwanted_faithful',
-                   'hint_error', 'incomplete']
+                   'hint_error', 'incomplete', 'to_correct']
 
     lower_is_better = {'pos_unwanted_faithful', 'neg_unwanted_faithful',
-                      'hint_error', 'incomplete'}
+                      'hint_error', 'incomplete', 'to_correct'}
 
     at_least_as_good = True
     strictly_better_found = False
@@ -493,34 +582,39 @@ def print_separated_analysis(c_results: Dict, w_results: Dict, weights: Dict[str
 # MAIN FUNCTION
 # =============================================================================
 
-def main(input_file: str = DEFAULT_INPUT_FILE, apply_confidence_penalty: bool = True):
+def analyze_single_hint(hint_template: str, configurations: List[Dict],
+                        subject: str, apply_confidence_penalty: bool = True,
+                        research_weights: Dict[str, float] = None) -> Dict[str, Any]:
     """
-    Main function for separated Pareto ranking (C groups vs W groups).
+    Analyze configurations for a single hint template.
+
+    Returns:
+        Dictionary with c_results, w_results, combined_rankings
     """
-    # Load data
-    input_path = Path(input_file)
-    if not input_path.exists():
-        print(f"Error: Input file not found: {input_file}")
-        return
-
-    print(f"Loading summary from: {input_file}")
-    with open(input_path, 'r', encoding='utf-8') as f:
-        summary_data = json.load(f)
-
-    # Extract metadata
-    subject = summary_data.get('subject', 'unknown')
-    total_configs = len(summary_data.get('all_configurations', []))
-
+    print(f"\n{'=' * 80}")
+    print(f"ANALYZING HINT TEMPLATE: {hint_template}")
+    print(f"{'=' * 80}")
     print(f"Subject: {subject}")
-    print(f"Total configurations: {total_configs}")
+    print(f"Total configurations: {len(configurations)}")
 
     if apply_confidence_penalty:
         print("\n*** APPLYING CONFIDENCE-BASED PENALTIES ***")
 
+    if research_weights is None:
+        research_weights = {
+            'pos_effectiveness': 3.0,
+            'neg_effectiveness': 2.0,
+            'pos_unwanted_faithful': 3.0,
+            'neg_unwanted_faithful': 3.0,
+            'hint_error': 2.0,
+            'incomplete': 2.0,
+            'to_correct': 2.0
+        }
+
     # Process configurations for C groups
     print("\nProcessing CORRECT groups (CU/CF)...")
     c_configs_with_metrics = []
-    for config in summary_data['all_configurations']:
+    for config in configurations:
         metrics = extract_metrics_correct_only(config, apply_confidence_penalty)
         if metrics['has_data']:  # Only include if has C group data
             c_configs_with_metrics.append((config, metrics))
@@ -528,23 +622,13 @@ def main(input_file: str = DEFAULT_INPUT_FILE, apply_confidence_penalty: bool = 
     # Process configurations for W groups
     print("Processing WRONG groups (WU/WF)...")
     w_configs_with_metrics = []
-    for config in summary_data['all_configurations']:
+    for config in configurations:
         metrics = extract_metrics_wrong_only(config, apply_confidence_penalty)
         if metrics['has_data']:  # Only include if has W group data
             w_configs_with_metrics.append((config, metrics))
 
     print(f"\nConfigs with C groups: {len(c_configs_with_metrics)}")
     print(f"Configs with W groups: {len(w_configs_with_metrics)}")
-
-    # Research weights
-    research_weights = {
-        'pos_effectiveness': 1.5,
-        'neg_effectiveness': 1.0,
-        'pos_unwanted_faithful': 1.5,
-        'neg_unwanted_faithful': 1.0,
-        'hint_error': 0.5,
-        'incomplete': 0.5
-    }
 
     # Analyze C groups
     c_results = {
@@ -566,13 +650,13 @@ def main(input_file: str = DEFAULT_INPUT_FILE, apply_confidence_penalty: bool = 
     # Combined ranking if both groups present
     if c_configs_with_metrics and w_configs_with_metrics:
         print("\n" + "=" * 80)
-        print("COMBINED RANKING (Sample-Size Weighted)")
+        print("COMBINED RANKING (Equal Weight to C and W)")
         print("=" * 80)
 
         # Create combined rankings
         combined_rankings = []
 
-        for config in summary_data['all_configurations']:
+        for config in configurations:
             # Get metrics for each group
             c_metrics = extract_metrics_correct_only(config, apply_confidence_penalty)
             w_metrics = extract_metrics_wrong_only(config, apply_confidence_penalty)
@@ -593,14 +677,8 @@ def main(input_file: str = DEFAULT_INPUT_FILE, apply_confidence_penalty: bool = 
                 c_score_details = calculate_euclidean_distance_score(c_metrics, research_weights)
                 w_score_details = calculate_euclidean_distance_score(w_metrics, research_weights)
 
-                # Combine scores weighted by sample size
-                if total_samples > 0:
-                    combined_score = (
-                        c_score_details['score'] * total_c_samples +
-                        w_score_details['score'] * total_w_samples
-                    ) / total_samples
-                else:
-                    combined_score = 0
+                # Combine scores with simple mean (equal weight to C and W)
+                combined_score = (c_score_details['score'] + w_score_details['score']) / 2
 
                 combined_rankings.append({
                     'config': config,
@@ -649,98 +727,263 @@ def main(input_file: str = DEFAULT_INPUT_FILE, apply_confidence_penalty: bool = 
                 print(f"  Best for W only: Layer {best_w[1]['layer']}, Coeff ±{best_w[1]['coefficient']}")
         else:
             print("\n[WARNING] No combined rankings available (no configs with both C and W data)")
+            combined_rankings = []
 
-    # Save results
+    # Return results dictionary
+    return {
+        'hint_template': hint_template,
+        'c_results': c_results,
+        'w_results': w_results,
+        'combined_rankings': combined_rankings,
+        'c_configs_with_metrics': c_configs_with_metrics,
+        'w_configs_with_metrics': w_configs_with_metrics
+    }
+
+
+def main(input_file: str = DEFAULT_INPUT_FILE, apply_confidence_penalty: bool = True):
+    """
+    Main function for separated Pareto ranking (C groups vs W groups).
+    Handles both old format (single hint) and new format (multi-hint).
+    """
+    # Load data
+    input_path = Path(input_file)
+    if not input_path.exists():
+        print(f"Error: Input file not found: {input_file}")
+        return
+
+    print(f"Loading summary from: {input_file}")
+    with open(input_path, 'r', encoding='utf-8') as f:
+        summary_data = json.load(f)
+
+    # Extract metadata
+    subject = summary_data.get('subject', 'unknown')
+
+    if apply_confidence_penalty:
+        print("\n*** APPLYING CONFIDENCE-BASED PENALTIES ***")
+
+    # Research weights (shared across all analyses)
+    research_weights = {
+        'pos_effectiveness': 3.0,
+        'neg_effectiveness': 2.0,
+        'pos_unwanted_faithful': 3.0,
+        'neg_unwanted_faithful': 3.0,
+        'hint_error': 2.0,
+        'incomplete': 2.0,
+        'to_correct': 2.0
+    }
+
+    # Detect format: old (single hint) or new (multi-hint)
+    if 'all_configurations' in summary_data:
+        # Old format: single hint with all_configurations
+        print("\n[Detected: Single-hint format]")
+        hint_template = summary_data.get('hint_template', 'unknown')
+        configurations = summary_data['all_configurations']
+
+        results = analyze_single_hint(
+            hint_template=hint_template,
+            configurations=configurations,
+            subject=subject,
+            apply_confidence_penalty=apply_confidence_penalty,
+            research_weights=research_weights
+        )
+        all_results = {hint_template: results}
+
+    elif 'configurations_by_hint' in summary_data:
+        # New format: multi-hint with configurations_by_hint
+        print("\n[Detected: Multi-hint format]")
+        hint_templates = summary_data.get('hint_templates', [])
+        print(f"Hint templates found: {hint_templates}")
+
+        all_results = {}
+        for hint_template in hint_templates:
+            configurations = summary_data['configurations_by_hint'].get(hint_template, [])
+            if configurations:
+                results = analyze_single_hint(
+                    hint_template=hint_template,
+                    configurations=configurations,
+                    subject=subject,
+                    apply_confidence_penalty=apply_confidence_penalty,
+                    research_weights=research_weights
+                )
+                all_results[hint_template] = results
+            else:
+                print(f"\n[WARNING] No configurations found for hint template: {hint_template}")
+    else:
+        print("[ERROR] Unrecognized summary format. Expected 'all_configurations' or 'configurations_by_hint'")
+        return
+
+    # Save results - one combined file with all hints
     output_dir = Path("data/sprint4_2025-10-21/analysis")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     from datetime import datetime
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_file = output_dir / f"pareto_separated_{subject}_{timestamp}.json"
+    timestamp = datetime.now().strftime("%Y-%m-%d")
 
-    # Prepare results for saving
-    results_to_save = {
+    # Build combined results structure
+    combined_results_file = {
         'metadata': {
             'source_file': str(input_file),
             'subject': subject,
             'timestamp': timestamp,
-            'total_configs': total_configs,
-            'confidence_penalty_applied': apply_confidence_penalty
+            'confidence_penalty_applied': apply_confidence_penalty,
+            'hint_templates': list(all_results.keys())
         },
-        'sample_distribution': {
-            'configs_with_c_groups': len(c_configs_with_metrics),
-            'configs_with_w_groups': len(w_configs_with_metrics),
-        }
+        'results_by_hint': {}
     }
 
-    # Add C group results if available
-    if c_results['ranked']:
-        results_to_save['c_groups'] = {
-            'top_config': {
-                'layer': c_results['ranked'][0][1]['layer'],
-                'coefficient': c_results['ranked'][0][1]['coefficient'],
-                'score': c_results['ranked'][0][2]['score'],
-                'metrics': {k: v for k, v in c_results['ranked'][0][1].items()
-                           if k not in ['layer', 'coefficient', 'has_data']}
-            },
-            'top_5': [{
-                'rank': i+1,
-                'layer': config[1]['layer'],
-                'coefficient': config[1]['coefficient'],
-                'score': config[2]['score']
-            } for i, config in enumerate(c_results['ranked'][:5])]
+    # Add results for each hint
+    for hint_template, results in all_results.items():
+        c_results = results['c_results']
+        w_results = results['w_results']
+        combined_rankings = results['combined_rankings']
+        c_configs_with_metrics = results['c_configs_with_metrics']
+        w_configs_with_metrics = results['w_configs_with_metrics']
+
+        hint_results = {
+            'sample_distribution': {
+                'configs_with_c_groups': len(c_configs_with_metrics),
+                'configs_with_w_groups': len(w_configs_with_metrics),
+            }
         }
 
-    # Add W group results if available
-    if w_results['ranked']:
-        results_to_save['w_groups'] = {
-            'top_config': {
-                'layer': w_results['ranked'][0][1]['layer'],
-                'coefficient': w_results['ranked'][0][1]['coefficient'],
-                'score': w_results['ranked'][0][2]['score'],
-                'metrics': {k: v for k, v in w_results['ranked'][0][1].items()
-                           if k not in ['layer', 'coefficient', 'has_data']}
-            },
-            'top_5': [{
-                'rank': i+1,
-                'layer': config[1]['layer'],
-                'coefficient': config[1]['coefficient'],
-                'score': config[2]['score']
-            } for i, config in enumerate(w_results['ranked'][:5])]
-        }
+        # Add C group results if available
+        if c_results['ranked']:
+            hint_results['c_groups'] = {
+                'top_config': {
+                    'layer': c_results['ranked'][0][1]['layer'],
+                    'coefficient': c_results['ranked'][0][1]['coefficient'],
+                    'score': c_results['ranked'][0][2]['score'],
+                    'metrics': {k: v for k, v in c_results['ranked'][0][1].items()
+                               if k not in ['layer', 'coefficient', 'has_data']}
+                },
+                'top_5': [{
+                    'rank': i+1,
+                    'layer': config[1]['layer'],
+                    'coefficient': config[1]['coefficient'],
+                    'score': config[2]['score']
+                } for i, config in enumerate(c_results['ranked'][:5])]
+            }
 
-    # Add combined results if both groups present
-    if c_configs_with_metrics and w_configs_with_metrics and 'combined_rankings' in locals():
-        results_to_save['combined'] = {
-            'sample_weights': {
-                'average_c_samples': np.mean([r['c_samples'] for r in combined_rankings]),
-                'average_w_samples': np.mean([r['w_samples'] for r in combined_rankings]),
-                'c_weight': combined_rankings[0]['c_weight'] if combined_rankings else 0,
-                'w_weight': combined_rankings[0]['w_weight'] if combined_rankings else 0
-            },
-            'top_config': {
-                'layer': combined_rankings[0]['layer'],
-                'coefficient': combined_rankings[0]['coefficient'],
-                'combined_score': combined_rankings[0]['combined_score'],
-                'c_score': combined_rankings[0]['c_score'],
-                'w_score': combined_rankings[0]['w_score']
-            } if combined_rankings else {},
-            'top_10': [{
-                'rank': i+1,
-                'layer': r['layer'],
-                'coefficient': r['coefficient'],
-                'combined_score': r['combined_score'],
-                'c_score': r['c_score'],
-                'w_score': r['w_score'],
-                'c_weight': r['c_weight']
-            } for i, r in enumerate(combined_rankings[:10])]
-        }
+        # Add W group results if available
+        if w_results['ranked']:
+            hint_results['w_groups'] = {
+                'top_config': {
+                    'layer': w_results['ranked'][0][1]['layer'],
+                    'coefficient': w_results['ranked'][0][1]['coefficient'],
+                    'score': w_results['ranked'][0][2]['score'],
+                    'metrics': {k: v for k, v in w_results['ranked'][0][1].items()
+                               if k not in ['layer', 'coefficient', 'has_data']}
+                },
+                'top_5': [{
+                    'rank': i+1,
+                    'layer': config[1]['layer'],
+                    'coefficient': config[1]['coefficient'],
+                    'score': config[2]['score']
+                } for i, config in enumerate(w_results['ranked'][:5])]
+            }
 
-    # Save to JSON
+        # Add combined results if both groups present
+        if c_configs_with_metrics and w_configs_with_metrics and combined_rankings:
+            hint_results['combined'] = {
+                'sample_weights': {
+                    'average_c_samples': float(np.mean([r['c_samples'] for r in combined_rankings])) if combined_rankings else 0,
+                    'average_w_samples': float(np.mean([r['w_samples'] for r in combined_rankings])) if combined_rankings else 0,
+                    'c_weight': combined_rankings[0]['c_weight'] if combined_rankings else 0,
+                    'w_weight': combined_rankings[0]['w_weight'] if combined_rankings else 0
+                },
+                'top_config': {
+                    'layer': combined_rankings[0]['layer'],
+                    'coefficient': combined_rankings[0]['coefficient'],
+                    'combined_score': combined_rankings[0]['combined_score'],
+                    'c_score': combined_rankings[0]['c_score'],
+                    'w_score': combined_rankings[0]['w_score']
+                } if combined_rankings else {},
+                'top_10': [{
+                    'rank': i+1,
+                    'layer': r['layer'],
+                    'coefficient': r['coefficient'],
+                    'combined_score': r['combined_score'],
+                    'c_score': r['c_score'],
+                    'w_score': r['w_score'],
+                    'c_weight': r['c_weight']
+                } for i, r in enumerate(combined_rankings[:10])]
+            }
+
+        combined_results_file['results_by_hint'][hint_template] = hint_results
+
+    # Compute overall ranking across all hints (if multi-hint)
+    if len(all_results) > 1:
+        print("\n" + "=" * 80)
+        print("OVERALL RANKING ACROSS ALL HINTS")
+        print("=" * 80)
+
+        # Collect all unique (layer, coefficient) combinations
+        all_configs_map = {}  # (layer, coeff) -> {hint: combined_score}
+
+        for hint_template, results in all_results.items():
+            combined_rankings = results['combined_rankings']
+            for ranking in combined_rankings:
+                key = (ranking['layer'], ranking['coefficient'])
+                if key not in all_configs_map:
+                    all_configs_map[key] = {}
+                all_configs_map[key][hint_template] = ranking['combined_score']
+
+        # Only keep configs that have combined scores for ALL hints
+        hint_templates = list(all_results.keys())
+        overall_rankings = []
+
+        for (layer, coeff), hint_scores in all_configs_map.items():
+            if len(hint_scores) == len(hint_templates):  # Has data for all hints
+                # Compute overall score as mean of combined scores across hints
+                overall_score = np.mean(list(hint_scores.values()))
+                overall_rankings.append({
+                    'layer': layer,
+                    'coefficient': coeff,
+                    'overall_score': overall_score,
+                    'scores_by_hint': hint_scores
+                })
+
+        # Sort by overall score
+        overall_rankings.sort(key=lambda x: x['overall_score'], reverse=True)
+
+        if overall_rankings:
+            print(f"\nConfigs with data for all {len(hint_templates)} hints: {len(overall_rankings)}")
+            print("\nTop 10 Overall Rankings:")
+            print("-" * 80)
+            print(f"{'Rank':<5} {'Layer':<7} {'Coeff':<8} {'Overall':<10} {' | '.join([f'{h[:8]:<10}' for h in hint_templates])}")
+            print("-" * 80)
+
+            for i, result in enumerate(overall_rankings[:10], 1):
+                hint_scores_str = ' | '.join([f"{result['scores_by_hint'][h]:<10.3f}" for h in hint_templates])
+                print(f"{i:<5} {result['layer']:<7} ±{result['coefficient']:<7.2f} "
+                      f"{result['overall_score']:<10.3f} {hint_scores_str}")
+
+            # Add to results
+            combined_results_file['overall_ranking'] = {
+                'description': 'Configs ranked by average combined score across all hints',
+                'top_config': {
+                    'layer': overall_rankings[0]['layer'],
+                    'coefficient': overall_rankings[0]['coefficient'],
+                    'overall_score': overall_rankings[0]['overall_score'],
+                    'scores_by_hint': overall_rankings[0]['scores_by_hint']
+                },
+                'top_10': [{
+                    'rank': i+1,
+                    'layer': r['layer'],
+                    'coefficient': r['coefficient'],
+                    'overall_score': r['overall_score'],
+                    'scores_by_hint': r['scores_by_hint']
+                } for i, r in enumerate(overall_rankings[:10])]
+            }
+        else:
+            print("\n[WARNING] No configs have combined scores for all hints")
+
+    # Save single combined JSON file
+    output_file = output_dir / f"pareto_rankings_{timestamp}.json"
     with open(output_file, 'w') as f:
-        json.dump(results_to_save, f, indent=2, default=lambda x: float(x) if isinstance(x, np.floating) else x)
+        json.dump(combined_results_file, f, indent=2, default=lambda x: float(x) if isinstance(x, np.floating) else x)
 
-    print(f"\n[SAVED] Results saved to: {output_file}")
+    print(f"\n[SAVED] Combined results saved to: {output_file}")
 
     print("\n" + "=" * 80)
     print("ANALYSIS COMPLETE")

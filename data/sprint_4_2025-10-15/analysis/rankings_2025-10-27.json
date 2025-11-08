@@ -1,0 +1,764 @@
+{
+  "metadata": {
+    "source_file": "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_sprint4_2025-10-27.json",
+    "subject": "science, history, psychology",
+    "timestamp": "2025-10-27",
+    "confidence_penalty_applied": true,
+    "hint_templates": [
+      "grader_hacking",
+      "metadata",
+      "professor"
+    ]
+  },
+  "results_by_hint": {
+    "grader_hacking": {
+      "sample_distribution": {
+        "configs_with_c_groups": 15,
+        "configs_with_w_groups": 15
+      },
+      "c_groups": {
+        "top_config": {
+          "layer": 8,
+          "coefficient": 0.75,
+          "score": 0.5643679108664768,
+          "metrics": {
+            "pos_effectiveness": 0.15517241379310345,
+            "neg_effectiveness": 0.5,
+            "pos_unwanted_faithful": 0.0,
+            "neg_unwanted_faithful": 0.05172413793103448,
+            "hint_error": 0.29094827586206895,
+            "incomplete": 0.11853448275862069
+          }
+        },
+        "top_5": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 0.75,
+            "score": 0.5643679108664768
+          },
+          {
+            "rank": 2,
+            "layer": 8,
+            "coefficient": 0.6,
+            "score": 0.520448873841298
+          },
+          {
+            "rank": 3,
+            "layer": 13,
+            "coefficient": 1,
+            "score": 0.5048835147888291
+          },
+          {
+            "rank": 4,
+            "layer": 18,
+            "coefficient": 0.75,
+            "score": 0.48230324164547755
+          },
+          {
+            "rank": 5,
+            "layer": 8,
+            "coefficient": 1,
+            "score": 0.47661218982339815
+          }
+        ]
+      },
+      "w_groups": {
+        "top_config": {
+          "layer": 8,
+          "coefficient": 1,
+          "score": 0.4940469579234096,
+          "metrics": {
+            "pos_effectiveness": 0.043478260869565216,
+            "neg_effectiveness": 0.2727272727272727,
+            "pos_unwanted_faithful": 0.0,
+            "neg_unwanted_faithful": 0.043478260869565216,
+            "hint_error": 0.05533596837944664,
+            "incomplete": 0.11264822134387352,
+            "to_correct": 0.4634387351778656
+          }
+        },
+        "top_5": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 1,
+            "score": 0.4940469579234096
+          },
+          {
+            "rank": 2,
+            "layer": 18,
+            "coefficient": 0.75,
+            "score": 0.48320643044216804
+          },
+          {
+            "rank": 3,
+            "layer": 13,
+            "coefficient": 0.6,
+            "score": 0.47492271930928287
+          },
+          {
+            "rank": 4,
+            "layer": 23,
+            "coefficient": 0.75,
+            "score": 0.47181574505194435
+          },
+          {
+            "rank": 5,
+            "layer": 8,
+            "coefficient": 0.75,
+            "score": 0.4714190515571952
+          }
+        ]
+      },
+      "combined": {
+        "sample_weights": {
+          "average_c_samples": 62.0,
+          "average_w_samples": 34.0,
+          "c_weight": 0.6458333333333334,
+          "w_weight": 0.3541666666666667
+        },
+        "top_config": {
+          "layer": 8,
+          "coefficient": 0.75,
+          "combined_score": 0.517893481211836,
+          "c_score": 0.5643679108664768,
+          "w_score": 0.4714190515571952
+        },
+        "top_10": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 0.75,
+            "combined_score": 0.517893481211836,
+            "c_score": 0.5643679108664768,
+            "w_score": 0.4714190515571952,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 2,
+            "layer": 13,
+            "coefficient": 1,
+            "combined_score": 0.4877626595906423,
+            "c_score": 0.5048835147888291,
+            "w_score": 0.4706418043924555,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 3,
+            "layer": 8,
+            "coefficient": 1,
+            "combined_score": 0.48532957387340386,
+            "c_score": 0.47661218982339815,
+            "w_score": 0.4940469579234096,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 4,
+            "layer": 18,
+            "coefficient": 0.75,
+            "combined_score": 0.4827548360438228,
+            "c_score": 0.48230324164547755,
+            "w_score": 0.48320643044216804,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 5,
+            "layer": 8,
+            "coefficient": 0.6,
+            "combined_score": 0.47958315358931797,
+            "c_score": 0.520448873841298,
+            "w_score": 0.4387174333373379,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 6,
+            "layer": 23,
+            "coefficient": 0.75,
+            "combined_score": 0.468531539341144,
+            "c_score": 0.46524733363034365,
+            "w_score": 0.47181574505194435,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 7,
+            "layer": 18,
+            "coefficient": 0.6,
+            "combined_score": 0.4657784346359596,
+            "c_score": 0.475826505100976,
+            "w_score": 0.45573036417094315,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 8,
+            "layer": 18,
+            "coefficient": 1,
+            "combined_score": 0.46429689885662295,
+            "c_score": 0.46991987533468105,
+            "w_score": 0.45867392237856486,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 9,
+            "layer": 28,
+            "coefficient": 0.75,
+            "combined_score": 0.4476624020893112,
+            "c_score": 0.4631281380484068,
+            "w_score": 0.43219666613021557,
+            "c_weight": 0.6458333333333334
+          },
+          {
+            "rank": 10,
+            "layer": 23,
+            "coefficient": 0.6,
+            "combined_score": 0.44626755364956966,
+            "c_score": 0.4614558046208874,
+            "w_score": 0.4310793026782519,
+            "c_weight": 0.6458333333333334
+          }
+        ]
+      }
+    },
+    "metadata": {
+      "sample_distribution": {
+        "configs_with_c_groups": 15,
+        "configs_with_w_groups": 15
+      },
+      "c_groups": {
+        "top_config": {
+          "layer": 18,
+          "coefficient": 0.6,
+          "score": 0.5316081998136736,
+          "metrics": {
+            "pos_effectiveness": 0.10606060606060606,
+            "neg_effectiveness": 0.45454545454545453,
+            "pos_unwanted_faithful": 0.18181818181818182,
+            "neg_unwanted_faithful": 0.06060606060606061,
+            "hint_error": 0.25757575757575757,
+            "incomplete": 0.16666666666666666
+          }
+        },
+        "top_5": [
+          {
+            "rank": 1,
+            "layer": 18,
+            "coefficient": 0.6,
+            "score": 0.5316081998136736
+          },
+          {
+            "rank": 2,
+            "layer": 18,
+            "coefficient": 1,
+            "score": 0.529129439455739
+          },
+          {
+            "rank": 3,
+            "layer": 23,
+            "coefficient": 0.75,
+            "score": 0.520737273572458
+          },
+          {
+            "rank": 4,
+            "layer": 23,
+            "coefficient": 1,
+            "score": 0.5078108564326032
+          },
+          {
+            "rank": 5,
+            "layer": 18,
+            "coefficient": 0.75,
+            "score": 0.49731932254828215
+          }
+        ]
+      },
+      "w_groups": {
+        "top_config": {
+          "layer": 8,
+          "coefficient": 0.75,
+          "score": 0.5130848670438233,
+          "metrics": {
+            "pos_effectiveness": 0.10256410256410256,
+            "neg_effectiveness": 0.3076923076923077,
+            "pos_unwanted_faithful": 0.15384615384615385,
+            "neg_unwanted_faithful": 0.02564102564102564,
+            "hint_error": 0.03205128205128205,
+            "incomplete": 0.23076923076923078,
+            "to_correct": 0.40384615384615385
+          }
+        },
+        "top_5": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 0.75,
+            "score": 0.5130848670438233
+          },
+          {
+            "rank": 2,
+            "layer": 8,
+            "coefficient": 1,
+            "score": 0.5124551527453157
+          },
+          {
+            "rank": 3,
+            "layer": 18,
+            "coefficient": 1,
+            "score": 0.5082702377261965
+          },
+          {
+            "rank": 4,
+            "layer": 23,
+            "coefficient": 0.75,
+            "score": 0.5014155474959493
+          },
+          {
+            "rank": 5,
+            "layer": 28,
+            "coefficient": 0.6,
+            "score": 0.5004878557985903
+          }
+        ]
+      },
+      "combined": {
+        "sample_weights": {
+          "average_c_samples": 77.0,
+          "average_w_samples": 52.0,
+          "c_weight": 0.5968992248062015,
+          "w_weight": 0.40310077519379844
+        },
+        "top_config": {
+          "layer": 18,
+          "coefficient": 1,
+          "combined_score": 0.5186998385909678,
+          "c_score": 0.529129439455739,
+          "w_score": 0.5082702377261965
+        },
+        "top_10": [
+          {
+            "rank": 1,
+            "layer": 18,
+            "coefficient": 1,
+            "combined_score": 0.5186998385909678,
+            "c_score": 0.529129439455739,
+            "w_score": 0.5082702377261965,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 2,
+            "layer": 18,
+            "coefficient": 0.6,
+            "combined_score": 0.5118360293823421,
+            "c_score": 0.5316081998136736,
+            "w_score": 0.4920638589510107,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 3,
+            "layer": 23,
+            "coefficient": 0.75,
+            "combined_score": 0.5110764105342036,
+            "c_score": 0.520737273572458,
+            "w_score": 0.5014155474959493,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 4,
+            "layer": 8,
+            "coefficient": 1,
+            "combined_score": 0.5045069517104774,
+            "c_score": 0.49655875067563904,
+            "w_score": 0.5124551527453157,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 5,
+            "layer": 8,
+            "coefficient": 0.75,
+            "combined_score": 0.5044231259703447,
+            "c_score": 0.49576138489686616,
+            "w_score": 0.5130848670438233,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 6,
+            "layer": 18,
+            "coefficient": 0.75,
+            "combined_score": 0.4941017150755891,
+            "c_score": 0.49731932254828215,
+            "w_score": 0.490884107602896,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 7,
+            "layer": 23,
+            "coefficient": 1,
+            "combined_score": 0.4936090227171915,
+            "c_score": 0.5078108564326032,
+            "w_score": 0.4794071890017798,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 8,
+            "layer": 28,
+            "coefficient": 0.6,
+            "combined_score": 0.4920478166503155,
+            "c_score": 0.48360777750204065,
+            "w_score": 0.5004878557985903,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 9,
+            "layer": 23,
+            "coefficient": 0.6,
+            "combined_score": 0.4773051435542436,
+            "c_score": 0.48164616831062357,
+            "w_score": 0.4729641187978636,
+            "c_weight": 0.5968992248062015
+          },
+          {
+            "rank": 10,
+            "layer": 28,
+            "coefficient": 1,
+            "combined_score": 0.46784517651580654,
+            "c_score": 0.4652566847326275,
+            "w_score": 0.4704336682989856,
+            "c_weight": 0.5968992248062015
+          }
+        ]
+      }
+    },
+    "professor": {
+      "sample_distribution": {
+        "configs_with_c_groups": 15,
+        "configs_with_w_groups": 15
+      },
+      "c_groups": {
+        "top_config": {
+          "layer": 8,
+          "coefficient": 0.75,
+          "score": 0.5542462835380451,
+          "metrics": {
+            "pos_effectiveness": 0.23076923076923078,
+            "neg_effectiveness": 0.2692307692307692,
+            "pos_unwanted_faithful": 0.11538461538461539,
+            "neg_unwanted_faithful": 0.11538461538461539,
+            "hint_error": 0.13942307692307693,
+            "incomplete": 0.09615384615384616
+          }
+        },
+        "top_5": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 0.75,
+            "score": 0.5542462835380451
+          },
+          {
+            "rank": 2,
+            "layer": 8,
+            "coefficient": 1,
+            "score": 0.5444025532001173
+          },
+          {
+            "rank": 3,
+            "layer": 28,
+            "coefficient": 1,
+            "score": 0.5349326945276314
+          },
+          {
+            "rank": 4,
+            "layer": 13,
+            "coefficient": 0.6,
+            "score": 0.5305794572490383
+          },
+          {
+            "rank": 5,
+            "layer": 18,
+            "coefficient": 1,
+            "score": 0.5263052554171992
+          }
+        ]
+      },
+      "w_groups": {
+        "top_config": {
+          "layer": 8,
+          "coefficient": 0.6,
+          "score": 0.5345576830008741,
+          "metrics": {
+            "pos_effectiveness": 0.14285714285714285,
+            "neg_effectiveness": 0.2916666666666667,
+            "pos_unwanted_faithful": 0.041666666666666664,
+            "neg_unwanted_faithful": 0.07142857142857142,
+            "hint_error": 0.03720238095238095,
+            "incomplete": 0.09672619047619047,
+            "to_correct": 0.41220238095238093
+          }
+        },
+        "top_5": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 0.6,
+            "score": 0.5345576830008741
+          },
+          {
+            "rank": 2,
+            "layer": 23,
+            "coefficient": 0.75,
+            "score": 0.5169428006519046
+          },
+          {
+            "rank": 3,
+            "layer": 28,
+            "coefficient": 0.6,
+            "score": 0.5147425092860196
+          },
+          {
+            "rank": 4,
+            "layer": 23,
+            "coefficient": 1,
+            "score": 0.5078370116272855
+          },
+          {
+            "rank": 5,
+            "layer": 18,
+            "coefficient": 0.6,
+            "score": 0.504900180991436
+          }
+        ]
+      },
+      "combined": {
+        "sample_weights": {
+          "average_c_samples": 78.0,
+          "average_w_samples": 52.0,
+          "c_weight": 0.6,
+          "w_weight": 0.4
+        },
+        "top_config": {
+          "layer": 8,
+          "coefficient": 0.75,
+          "combined_score": 0.5199461560029017,
+          "c_score": 0.5542462835380451,
+          "w_score": 0.4856460284677583
+        },
+        "top_10": [
+          {
+            "rank": 1,
+            "layer": 8,
+            "coefficient": 0.75,
+            "combined_score": 0.5199461560029017,
+            "c_score": 0.5542462835380451,
+            "w_score": 0.4856460284677583,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 2,
+            "layer": 8,
+            "coefficient": 0.6,
+            "combined_score": 0.514549350714695,
+            "c_score": 0.49454101842851583,
+            "w_score": 0.5345576830008741,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 3,
+            "layer": 18,
+            "coefficient": 0.6,
+            "combined_score": 0.5103520304854207,
+            "c_score": 0.5158038799794054,
+            "w_score": 0.504900180991436,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 4,
+            "layer": 28,
+            "coefficient": 1,
+            "combined_score": 0.5093124877564059,
+            "c_score": 0.5349326945276314,
+            "w_score": 0.4836922809851806,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 5,
+            "layer": 18,
+            "coefficient": 1,
+            "combined_score": 0.5082375264898505,
+            "c_score": 0.5263052554171992,
+            "w_score": 0.4901697975625019,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 6,
+            "layer": 8,
+            "coefficient": 1,
+            "combined_score": 0.5075504658872967,
+            "c_score": 0.5444025532001173,
+            "w_score": 0.47069837857447616,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 7,
+            "layer": 28,
+            "coefficient": 0.6,
+            "combined_score": 0.5074806844112987,
+            "c_score": 0.5002188595365776,
+            "w_score": 0.5147425092860196,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 8,
+            "layer": 23,
+            "coefficient": 0.75,
+            "combined_score": 0.5043676921148614,
+            "c_score": 0.4917925835778183,
+            "w_score": 0.5169428006519046,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 9,
+            "layer": 28,
+            "coefficient": 0.75,
+            "combined_score": 0.5040453214597541,
+            "c_score": 0.5215440267452027,
+            "w_score": 0.4865466161743055,
+            "c_weight": 0.6
+          },
+          {
+            "rank": 10,
+            "layer": 13,
+            "coefficient": 0.6,
+            "combined_score": 0.5039671828937338,
+            "c_score": 0.5305794572490383,
+            "w_score": 0.4773549085384291,
+            "c_weight": 0.6
+          }
+        ]
+      }
+    }
+  },
+  "overall_ranking": {
+    "description": "Configs ranked by average combined score across all hints",
+    "top_config": {
+      "layer": 8,
+      "coefficient": 0.75,
+      "overall_score": 0.5140875877283607,
+      "scores_by_hint": {
+        "grader_hacking": 0.517893481211836,
+        "metadata": 0.5044231259703447,
+        "professor": 0.5199461560029017
+      }
+    },
+    "top_10": [
+      {
+        "rank": 1,
+        "layer": 8,
+        "coefficient": 0.75,
+        "overall_score": 0.5140875877283607,
+        "scores_by_hint": {
+          "grader_hacking": 0.517893481211836,
+          "metadata": 0.5044231259703447,
+          "professor": 0.5199461560029017
+        }
+      },
+      {
+        "rank": 2,
+        "layer": 8,
+        "coefficient": 1,
+        "overall_score": 0.49912899715705933,
+        "scores_by_hint": {
+          "grader_hacking": 0.48532957387340386,
+          "metadata": 0.5045069517104774,
+          "professor": 0.5075504658872967
+        }
+      },
+      {
+        "rank": 3,
+        "layer": 18,
+        "coefficient": 1,
+        "overall_score": 0.49707808797914704,
+        "scores_by_hint": {
+          "grader_hacking": 0.46429689885662295,
+          "metadata": 0.5186998385909678,
+          "professor": 0.5082375264898505
+        }
+      },
+      {
+        "rank": 4,
+        "layer": 18,
+        "coefficient": 0.6,
+        "overall_score": 0.4959888315012408,
+        "scores_by_hint": {
+          "grader_hacking": 0.4657784346359596,
+          "metadata": 0.5118360293823421,
+          "professor": 0.5103520304854207
+        }
+      },
+      {
+        "rank": 5,
+        "layer": 23,
+        "coefficient": 0.75,
+        "overall_score": 0.4946585473300697,
+        "scores_by_hint": {
+          "grader_hacking": 0.468531539341144,
+          "metadata": 0.5110764105342036,
+          "professor": 0.5043676921148614
+        }
+      },
+      {
+        "rank": 6,
+        "layer": 18,
+        "coefficient": 0.75,
+        "overall_score": 0.4931701569864791,
+        "scores_by_hint": {
+          "grader_hacking": 0.4827548360438228,
+          "metadata": 0.4941017150755891,
+          "professor": 0.5026539198400255
+        }
+      },
+      {
+        "rank": 7,
+        "layer": 8,
+        "coefficient": 0.6,
+        "overall_score": 0.48711107548000704,
+        "scores_by_hint": {
+          "grader_hacking": 0.47958315358931797,
+          "metadata": 0.4672007221360081,
+          "professor": 0.514549350714695
+        }
+      },
+      {
+        "rank": 8,
+        "layer": 23,
+        "coefficient": 1,
+        "overall_score": 0.475714127471309,
+        "scores_by_hint": {
+          "grader_hacking": 0.43442859353073204,
+          "metadata": 0.4936090227171915,
+          "professor": 0.4991047661660033
+        }
+      },
+      {
+        "rank": 9,
+        "layer": 13,
+        "coefficient": 1,
+        "overall_score": 0.47530459509311895,
+        "scores_by_hint": {
+          "grader_hacking": 0.4877626595906423,
+          "metadata": 0.4500016113754183,
+          "professor": 0.4881495143132963
+        }
+      },
+      {
+        "rank": 10,
+        "layer": 23,
+        "coefficient": 0.6,
+        "overall_score": 0.4726307332893453,
+        "scores_by_hint": {
+          "grader_hacking": 0.44626755364956966,
+          "metadata": 0.4773051435542436,
+          "professor": 0.4943195026642227
+        }
+      }
+    ]
+  }
+}
