@@ -380,7 +380,7 @@ def build_activation_dataset(
         target_tags = ActivationConfig.TARGET_TAGS
 
     if metadata_fields is None:
-        metadata_fields = ["hint_template", "faithfulness_classification", "split"]
+        metadata_fields = ["hint_template", "faithfulness_classification", "split", "subject", "correct_hint"]
 
     print(f"\n--- Building Activation Dataset ---")
     print(f"Source Directory: {activations_dir}")
@@ -409,10 +409,23 @@ def build_activation_dataset(
             for idx, line in enumerate(f):
                 try:
                     record = json.loads(line)
-                    metadata_by_index[idx] = {
+                    # Extract standard fields (all except correct_hint which needs to be computed)
+                    metadata = {
                         field: record.get(field)
                         for field in metadata_fields
+                        if field != "correct_hint"
                     }
+
+                    # Compute correct_hint from hint_letter and ground_truth_letter
+                    hint_letter = record.get("hint_letter")
+                    ground_truth_letter = record.get("ground_truth_letter")
+
+                    if hint_letter is not None and ground_truth_letter is not None:
+                        metadata["correct_hint"] = "True" if hint_letter == ground_truth_letter else "False"
+                    else:
+                        metadata["correct_hint"] = None  # Missing data
+
+                    metadata_by_index[idx] = metadata
                 except json.JSONDecodeError:
                     print(f"Warning: Skipping malformed line {idx} in {source_jsonl}")
         print(f"Loaded metadata for {len(metadata_by_index)} prompts")

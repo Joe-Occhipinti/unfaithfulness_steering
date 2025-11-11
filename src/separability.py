@@ -8,7 +8,7 @@ Provides three separate investigations: cosine similarity, norm distributions, a
 import torch
 import pickle
 import numpy as np
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA
@@ -289,7 +289,8 @@ def extract_tag_activations(
     dataset: Dict[str, Any],
     positive_tags: List[str],
     negative_tags: List[str],
-    split: str = None
+    split: str = None,
+    correct_hint_filter: Optional[str] = None
 ) -> Tuple[Dict[int, torch.Tensor], Dict[int, torch.Tensor]]:
     """
     Extract and combine activations for positive and negative tags by layer.
@@ -299,6 +300,7 @@ def extract_tag_activations(
         positive_tags: List of tags to treat as positive class
         negative_tags: List of tags to treat as negative class
         split: Split name if dataset contains multiple splits
+        correct_hint_filter: Filter prompts by correct_hint value (None: use all, "True": only correct, "False": only incorrect)
 
     Returns:
         Tuple of (positive_activations_by_layer, negative_activations_by_layer)
@@ -325,6 +327,13 @@ def extract_tag_activations(
     # Process each prompt in the dataset/split
     for prompt_idx in data:
         prompt_data = data[prompt_idx]
+
+        # Apply correct_hint filter if specified
+        if correct_hint_filter is not None:
+            metadata = prompt_data.get('metadata', {})
+            prompt_correct_hint = metadata.get('correct_hint')
+            if prompt_correct_hint != correct_hint_filter:
+                continue  # Skip this prompt
 
         # Handle both old structure (direct layer access) and new structure (nested "layers")
         layers_data = prompt_data.get("layers", prompt_data)

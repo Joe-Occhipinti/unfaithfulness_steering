@@ -51,15 +51,7 @@ NEGATIVE_TAGS = ["U_body"]     # Unfaithful tags
 LAYERS_TO_COMPUTE = list(range(32))  # All layers for DeepSeek (tunable)
 # LAYERS_TO_COMPUTE = [15, 20, 25, 30, 31]  # Specific layers only
 
-# Config-weighted computation (NEW!)
-USE_CONFIG_WEIGHTING = True  # Default: True (equal weight per config)
-CONFIG_FIELDS = ['subject', 'hint_template', 'correct_hint']  # Fields defining a config
-# Set USE_CONFIG_WEIGHTING = False to use old pooling behavior
-
-# Correct hint filtering (NEW!)
-CORRECT_HINT_FILTER = None  # Options: None (use all), "True" (only correct hints), "False" (only incorrect hints)
-
-# Split configuration --> this is ignored if split info is in the activations metadata
+# Split configuration --> this is ignored if split info is the in the activations metadata
 TRAIN_RATIO = 1
 VAL_RATIO = 0.0
 RANDOM_SEED = 42
@@ -137,28 +129,15 @@ print(f"  Negative ({NEGATIVE_TAGS}): {train_neg_count} activations")
 
 # STEP 3: Compute Steering Vectors (using TRAIN split only)
 print("\n=== STEP 3: Computing Steering Vectors ===")
+print("Computing steering vectors as mean(positive) - mean(negative) per layer...")
 print("IMPORTANT: Using only TRAIN split to avoid data leakage (same as linear probe training)")
-
-if USE_CONFIG_WEIGHTING:
-    print("Mode: Config-weighted (equal weight per metadata configuration)")
-    print(f"Config fields: {CONFIG_FIELDS}")
-else:
-    print("Mode: Pooled (all activations pooled together)")
-
-if CORRECT_HINT_FILTER is not None:
-    print(f"Filtering: Using only prompts with correct_hint={CORRECT_HINT_FILTER}")
-else:
-    print("Filtering: Using all prompts (no correct_hint filter)")
 
 steering_vectors, computation_stats = compute_steering_vectors_by_layer(
     dataset_splits=dataset_splits,
     positive_tags=POSITIVE_TAGS,
     negative_tags=NEGATIVE_TAGS,
     layers=LAYERS_TO_COMPUTE,
-    split="train",
-    use_config_weighting=USE_CONFIG_WEIGHTING,
-    config_fields=CONFIG_FIELDS,
-    correct_hint_filter=CORRECT_HINT_FILTER
+    split="train"
 )
 
 print(f"Computed steering vectors for {len(steering_vectors)} layers")
@@ -221,9 +200,6 @@ if SAVE_JSON_SUMMARY:
             'positive_tags': POSITIVE_TAGS,
             'negative_tags': NEGATIVE_TAGS,
             'layers_to_compute': LAYERS_TO_COMPUTE,
-            'use_config_weighting': USE_CONFIG_WEIGHTING,
-            'config_fields': CONFIG_FIELDS,
-            'correct_hint_filter': CORRECT_HINT_FILTER,
             'save_results': SAVE_RESULTS,
             'save_json_summary': SAVE_JSON_SUMMARY
         },
@@ -234,12 +210,6 @@ if SAVE_JSON_SUMMARY:
             'processing_time_seconds': processing_time
         }
     }
-
-    # Add config-specific stats if config weighting was used
-    if USE_CONFIG_WEIGHTING and 'total_configs' in computation_stats:
-        config_data['results_summary']['total_configs'] = computation_stats['total_configs']
-        config_data['results_summary']['configs_with_data'] = computation_stats['configs_with_data']
-        config_data['results_summary']['configs_skipped'] = computation_stats['configs_skipped']
 
     with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
         json.dump(config_data, f, indent=2, ensure_ascii=False)
