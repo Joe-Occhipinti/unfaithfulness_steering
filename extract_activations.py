@@ -127,7 +127,12 @@ dataset = build_activation_dataset(
 )
 
 # Save dataset
-os.makedirs(os.path.dirname(DATASET_OUTPUT_FILE), exist_ok=True)
+# Note: Don't need makedirs for MyDrive root - it's already mounted
+# Only create subdirectories if using nested paths
+parent_dir = os.path.dirname(DATASET_OUTPUT_FILE)
+if parent_dir and parent_dir != "/content/drive/MyDrive":
+    os.makedirs(parent_dir, exist_ok=True)
+
 save_activation_dataset(dataset, DATASET_OUTPUT_FILE)
 
 # Print dataset summary
@@ -148,7 +153,11 @@ extraction_summary = {
 }
 
 import json
-os.makedirs(os.path.dirname(SUMMARY_FILE), exist_ok=True)
+# Note: Don't need makedirs for MyDrive root - it's already mounted
+parent_dir = os.path.dirname(SUMMARY_FILE)
+if parent_dir and parent_dir != "/content/drive/MyDrive":
+    os.makedirs(parent_dir, exist_ok=True)
+
 with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
     json.dump(extraction_summary, f, indent=2, ensure_ascii=False)
 print(f"Saved extraction summary to {SUMMARY_FILE}")

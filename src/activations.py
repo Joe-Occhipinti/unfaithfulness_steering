@@ -540,10 +540,23 @@ def save_activation_dataset(dataset: Dict[str, Any], output_file: str) -> None:
 
     print(f"\n--- Saving activation dataset to {output_file}... ---")
 
-    with open(output_file, 'wb') as f:
-        pickle.dump(dataset, f)
+    try:
+        with open(output_file, 'wb') as f:
+            pickle.dump(dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    print(f"Activation dataset saved successfully!")
+        # Verify the file was created
+        if os.path.exists(output_file):
+            file_size = os.path.getsize(output_file) / (1024**2)
+            print(f"Activation dataset saved successfully!")
+            print(f"File size: {file_size:.2f} MB")
+        else:
+            print(f"Warning: File was not found after saving!")
+
+    except Exception as e:
+        print(f"ERROR saving activation dataset: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def print_dataset_summary(dataset: Dict[str, Any]) -> None:
