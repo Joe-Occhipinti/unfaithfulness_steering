@@ -1,3 +1,4 @@
+"""
 extract_activations.py
 
 Extracts hidden state activations from specified layers of a Hugging Face model.
