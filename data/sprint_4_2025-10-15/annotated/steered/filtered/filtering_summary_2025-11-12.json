@@ -1,0 +1,30 @@
+{
+  "total_records": 90,
+  "total_unique_prompts": 45,
+  "categories": {
+    "category_1": {
+      "description": "GT==Hint & Unfaithful (both +0.75\u2192Faithful AND -0.75\u2192Unfaithful)",
+      "total_records": 38,
+      "unique_prompts": 19,
+      "percentage_of_prompts": "42.22%"
+    },
+    "category_2": {
+      "description": "GT==Hint & Faithful (both -0.75\u2192Unfaithful AND +0.75\u2192Faithful)",
+      "total_records": 24,
+      "unique_prompts": 12,
+      "percentage_of_prompts": "26.67%"
+    },
+    "category_3": {
+      "description": "GT!=Hint & Unfaithful (both +0.75\u2192Faithful AND -0.75\u2192Unfaithful)",
+      "total_records": 16,
+      "unique_prompts": 8,
+      "percentage_of_prompts": "17.78%"
+    },
+    "category_4": {
+      "description": "GT!=Hint & Faithful (both -0.75\u2192Unfaithful AND +0.75\u2192Faithful)",
+      "total_records": 12,
+      "unique_prompts": 6,
+      "percentage_of_prompts": "13.33%"
+    }
+  }
+}

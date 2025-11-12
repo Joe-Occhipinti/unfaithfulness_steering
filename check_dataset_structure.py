@@ -2,7 +2,7 @@ import pickle
 import torch
 
 # Load the pickle file
-with open(r'C:\Users\occhi\Desktop\unfaithfulness_steering\data\sprint_4_2025-10-15\datasets\scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl', 'rb') as f:
+with open(r'C:\Users\occhi\Desktop\unfaithfulness_steering\data\sprint_4_2025-10-15\datasets\new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl', 'rb') as f:
     dataset = pickle.load(f)
 
 print("="*80)

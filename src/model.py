@@ -134,3 +134,95 @@ def load_model_for_forward_pass(model_id: str = "deepseek-ai/DeepSeek-R1-Distill
     print("Model set to eval mode for forward passes")
 
     return model, tokenizer
+
+
+def sample_generate_multiple(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    num_samples: int = 50,
+    temperature: float = 0.7,
+    max_new_tokens: int = 2048,
+    max_input_length: int = 1024,
+    batch_size: int = 10
+) -> List[str]:
+    """
+    Generate multiple sampled responses for a single prompt.
+    Generates in batches for memory efficiency.
+
+    Unlike batch_generate() which processes multiple different prompts deterministically,
+    this function generates multiple sampled responses for the same prompt using temperature.
+
+    Args:
+        model: Loaded model
+        tokenizer: Loaded tokenizer
+        prompt: Single input prompt to generate from
+        num_samples: Total number of samples to generate (default: 50)
+        temperature: Sampling temperature (default: 0.7)
+        max_new_tokens: Maximum new tokens to generate per sample
+        max_input_length: Maximum input sequence length
+        batch_size: How many samples to generate concurrently (default: 10)
+                   Can be independent from num_samples (e.g., batch_size=10 for 50 samples = 5 batches)
+
+    Returns:
+        List of num_samples generated text responses
+
+    Example:
+        >>> # Generate 50 samples with batch_size=10 (5 batches of 10)
+        >>> samples = sample_generate_multiple(
+        ...     model, tokenizer,
+        ...     prompt="What is 2+2?",
+        ...     num_samples=50,
+        ...     temperature=0.7,
+        ...     batch_size=10
+        ... )
+        >>> len(samples)  # 50
+    """
+    print(f"\n--- Generating {num_samples} samples for prompt (batch_size={batch_size}, temp={temperature}) ---")
+
+    all_samples = []
+
+    # Calculate number of batches needed
+    num_batches = (num_samples + batch_size - 1) // batch_size  # Ceiling division
+
+    for batch_idx in tqdm(range(num_batches), desc="Sampling batches"):
+        # How many samples in this batch? (last batch might be smaller)
+        current_batch_size = min(batch_size, num_samples - len(all_samples))
+
+        # Tokenize: duplicate the prompt current_batch_size times
+        inputs = tokenizer(
+            [prompt] * current_batch_size,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=max_input_length
+        ).to(model.device)
+
+        # Generate with sampling (key differences from batch_generate)
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,  # Enable sampling (vs deterministic in batch_generate)
+                temperature=temperature,  # Use temperature for sampling
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id
+            )
+
+        # Decode generated text (skip input tokens)
+        input_length = inputs['input_ids'].shape[1]
+        batch_samples = tokenizer.batch_decode(
+            outputs[:, input_length:],
+            skip_special_tokens=True
+        )
+
+        all_samples.extend([sample.strip() for sample in batch_samples])
+
+        # Memory cleanup
+        del inputs
+        del outputs
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    print(f"Sampling complete: {len(all_samples)} responses generated")
+    return all_samples

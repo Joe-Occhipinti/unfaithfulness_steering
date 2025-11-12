@@ -624,37 +624,75 @@ def print_steering_summary(
 
     # Compute statistics across layers
     layer_stats = computation_stats["layer_stats"]
+    use_config_weighting = computation_stats.get("use_config_weighting", False)
 
-    # Sample statistics
-    pos_samples = [stats["positive_samples"] for stats in layer_stats.values()]
-    neg_samples = [stats["negative_samples"] for stats in layer_stats.values()]
-    vector_norms = [stats["steering_vector_norm"] for stats in layer_stats.values()]
+    # Check which mode was used
+    if use_config_weighting:
+        # Config-weighted mode: different stats structure
+        vector_norms = [stats["steering_vector_norm"] for stats in layer_stats.values()]
+        configs_contributing = [stats["configs_contributing"] for stats in layer_stats.values()]
 
-    print(f"\nSample counts per layer:")
-    print(f"  Positive: min={min(pos_samples)}, max={max(pos_samples)}, avg={sum(pos_samples)/len(pos_samples):.1f}")
-    print(f"  Negative: min={min(neg_samples)}, max={max(neg_samples)}, avg={sum(neg_samples)/len(neg_samples):.1f}")
+        print(f"\nConfig-weighted mode:")
+        print(f"  Total configs: {computation_stats.get('total_configs', 'N/A')}")
+        print(f"  Configs with data: {computation_stats.get('configs_with_data', 'N/A')}")
+        print(f"  Configs skipped: {computation_stats.get('configs_skipped', 'N/A')}")
 
-    print(f"\nSteering vector norms:")
-    print(f"  Min: {min(vector_norms):.4f}")
-    print(f"  Max: {max(vector_norms):.4f}")
-    print(f"  Mean: {sum(vector_norms)/len(vector_norms):.4f}")
+        print(f"\nConfigs contributing per layer:")
+        print(f"  Min: {min(configs_contributing)}")
+        print(f"  Max: {max(configs_contributing)}")
+        print(f"  Avg: {sum(configs_contributing)/len(configs_contributing):.1f}")
 
-    # Show top/bottom layers by norm
-    sorted_layers = sorted(steering_vectors.items(), key=lambda x: x[1].norm().item())
+        print(f"\nSteering vector norms:")
+        print(f"  Min: {min(vector_norms):.4f}")
+        print(f"  Max: {max(vector_norms):.4f}")
+        print(f"  Mean: {sum(vector_norms)/len(vector_norms):.4f}")
 
-    print(f"\nTop 5 layers by steering vector norm:")
-    for layer_idx, vec in sorted_layers[-5:]:
-        norm = vec.norm().item()
-        pos_count = layer_stats[layer_idx]["positive_samples"]
-        neg_count = layer_stats[layer_idx]["negative_samples"]
-        print(f"  Layer {layer_idx}: norm={norm:.4f} (pos={pos_count}, neg={neg_count})")
+        # Show top/bottom layers by norm
+        sorted_layers = sorted(steering_vectors.items(), key=lambda x: x[1].norm().item())
 
-    print(f"\nBottom 5 layers by steering vector norm:")
-    for layer_idx, vec in sorted_layers[:5]:
-        norm = vec.norm().item()
-        pos_count = layer_stats[layer_idx]["positive_samples"]
-        neg_count = layer_stats[layer_idx]["negative_samples"]
-        print(f"  Layer {layer_idx}: norm={norm:.4f} (pos={pos_count}, neg={neg_count})")
+        print(f"\nTop 5 layers by steering vector norm:")
+        for layer_idx, vec in sorted_layers[-5:]:
+            norm = vec.norm().item()
+            configs = layer_stats[layer_idx]["configs_contributing"]
+            print(f"  Layer {layer_idx}: norm={norm:.4f} (configs={configs})")
+
+        print(f"\nBottom 5 layers by steering vector norm:")
+        for layer_idx, vec in sorted_layers[:5]:
+            norm = vec.norm().item()
+            configs = layer_stats[layer_idx]["configs_contributing"]
+            print(f"  Layer {layer_idx}: norm={norm:.4f} (configs={configs})")
+
+    else:
+        # Pooled mode: original stats structure
+        pos_samples = [stats["positive_samples"] for stats in layer_stats.values()]
+        neg_samples = [stats["negative_samples"] for stats in layer_stats.values()]
+        vector_norms = [stats["steering_vector_norm"] for stats in layer_stats.values()]
+
+        print(f"\nSample counts per layer:")
+        print(f"  Positive: min={min(pos_samples)}, max={max(pos_samples)}, avg={sum(pos_samples)/len(pos_samples):.1f}")
+        print(f"  Negative: min={min(neg_samples)}, max={max(neg_samples)}, avg={sum(neg_samples)/len(neg_samples):.1f}")
+
+        print(f"\nSteering vector norms:")
+        print(f"  Min: {min(vector_norms):.4f}")
+        print(f"  Max: {max(vector_norms):.4f}")
+        print(f"  Mean: {sum(vector_norms)/len(vector_norms):.4f}")
+
+        # Show top/bottom layers by norm
+        sorted_layers = sorted(steering_vectors.items(), key=lambda x: x[1].norm().item())
+
+        print(f"\nTop 5 layers by steering vector norm:")
+        for layer_idx, vec in sorted_layers[-5:]:
+            norm = vec.norm().item()
+            pos_count = layer_stats[layer_idx]["positive_samples"]
+            neg_count = layer_stats[layer_idx]["negative_samples"]
+            print(f"  Layer {layer_idx}: norm={norm:.4f} (pos={pos_count}, neg={neg_count})")
+
+        print(f"\nBottom 5 layers by steering vector norm:")
+        for layer_idx, vec in sorted_layers[:5]:
+            norm = vec.norm().item()
+            pos_count = layer_stats[layer_idx]["positive_samples"]
+            neg_count = layer_stats[layer_idx]["negative_samples"]
+            print(f"  Layer {layer_idx}: norm={norm:.4f} (pos={pos_count}, neg={neg_count})")
 
 
 def save_steering_summary_json(
@@ -671,6 +709,7 @@ def save_steering_summary_json(
         output_file: Path to save the JSON summary
     """
     layer_stats = computation_stats["layer_stats"]
+    use_config_weighting = computation_stats.get("use_config_weighting", False)
 
     # Prepare serializable summary
     summary = {
@@ -678,15 +717,39 @@ def save_steering_summary_json(
             "positive_tags": computation_stats["positive_tags"],
             "negative_tags": computation_stats["negative_tags"],
             "layers_computed": computation_stats["layers_computed"],
-            "total_layers": len(steering_vectors)
+            "total_layers": len(steering_vectors),
+            "use_config_weighting": use_config_weighting,
+            "correct_hint_filter": computation_stats.get("correct_hint_filter")
         },
         "statistics": {
             "vector_dimension": list(steering_vectors.values())[0].shape[0] if steering_vectors else 0,
             "average_vector_norm": sum(v.norm().item() for v in steering_vectors.values()) / len(steering_vectors) if steering_vectors else 0,
             "min_vector_norm": min(v.norm().item() for v in steering_vectors.values()) if steering_vectors else 0,
             "max_vector_norm": max(v.norm().item() for v in steering_vectors.values()) if steering_vectors else 0,
-        },
-        "layer_details": {
+        }
+    }
+
+    # Add mode-specific info
+    if use_config_weighting:
+        summary["computation_info"]["config_fields"] = computation_stats.get("config_fields", [])
+        summary["statistics"]["total_configs"] = computation_stats.get("total_configs", 0)
+        summary["statistics"]["configs_with_data"] = computation_stats.get("configs_with_data", 0)
+        summary["statistics"]["configs_skipped"] = computation_stats.get("configs_skipped", 0)
+
+        # Config-weighted layer details
+        summary["layer_details"] = {
+            str(layer_idx): {
+                "configs_contributing": stats["configs_contributing"],
+                "config_vector_norms_min": stats["config_vector_norms_min"],
+                "config_vector_norms_max": stats["config_vector_norms_max"],
+                "config_vector_norms_mean": stats["config_vector_norms_mean"],
+                "steering_vector_norm": stats["steering_vector_norm"]
+            }
+            for layer_idx, stats in layer_stats.items()
+        }
+    else:
+        # Pooled mode layer details
+        summary["layer_details"] = {
             str(layer_idx): {
                 "positive_samples": stats["positive_samples"],
                 "negative_samples": stats["negative_samples"],
@@ -696,7 +759,6 @@ def save_steering_summary_json(
             }
             for layer_idx, stats in layer_stats.items()
         }
-    }
 
     # Ensure output directory exists
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
