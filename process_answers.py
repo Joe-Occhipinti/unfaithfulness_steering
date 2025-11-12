@@ -38,18 +38,19 @@ from src.config import TODAY
 # I/O CONFIGURATIONS
 # =============================================================================
 
-# Input: Raw hinted responses from eval_hinted.py
-INPUT_JSONL = "data/sprint4_2025-10-21/steered/steered_val_3_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
-INPUT_SUMMARY = "data/sprint4_2025-10-21/summaries/steered/summary_steered_3_scie_hist_psy_X_grader_prof_meta_2025-10-25.json"
+# Input: Raw responses from generation scripts
+INPUT_JSONL = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q13-36-115-26_2025-11-12_flat.jsonl"
+INPUT_SUMMARY = "data/Lorenz_suggestion_2025-11-12/steered_sampled_summary_q13-36-115-26_2025-11-12.json"
 
-# Output: Overwrites input files with validated/enriched data
-OUTPUT_JSONL = INPUT_JSONL  # Overwrites the original JSONL
-OUTPUT_SUMMARY = INPUT_SUMMARY  # Merges validation metrics into original summary
+# Output: Save validated results in Lorenz folder (don't overwrite)
+OUTPUT_JSONL = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q13-36-115-26_2025-11-12_flat_validated.jsonl"
+OUTPUT_SUMMARY = "data/Lorenz_suggestion_2025-11-12/steered_sampled_summary_q13-36-115-26_2025-11-12_validated.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")
 print(f"Input Summary: {INPUT_SUMMARY}")
-print(f"Note: Will overwrite inputs with validated/enriched data")
+print(f"Output JSONL: {OUTPUT_JSONL}")
+print(f"Output Summary: {OUTPUT_SUMMARY}")
 
 # =============================================================================
 # VALIDATION WORKFLOW
@@ -65,17 +66,29 @@ print(f"Loaded {len(raw_data)} raw records from JSONL")
 # Detect dataset type based on field names
 if raw_data:
     sample_record = raw_data[0]
+    # Check for deterministic steered (from eval_steering.py)
     is_steered = 'steered_response' in sample_record and 'steering_layer' in sample_record
+    # Check for sampled steered (from eval_steering_sampled.py)
+    is_steered_sampled = 'steered_sampled_generated_text' in sample_record and 'steering_layer' in sample_record
+    # Check for deterministic hinted (from eval_hinted.py)
     is_hinted = 'hinted_generated_text' in sample_record and 'hint_letter' in sample_record
+    # Check for sampled hinted (from eval_hinted_sampled.py)
+    is_hinted_sampled = 'sampled_generated_text' in sample_record and 'hint_letter' in sample_record
 
     if is_steered:
         dataset_type = 'steered'
         print(f"Detected STEERED dataset (has 'steered_response' and 'steering_layer' fields)")
+    elif is_steered_sampled:
+        dataset_type = 'steered_sampled'
+        print(f"Detected STEERED SAMPLED dataset (has 'steered_sampled_generated_text' and 'steering_layer' fields)")
     elif is_hinted:
         dataset_type = 'hinted'
         print(f"Detected HINTED dataset (has 'hinted_generated_text' and 'hint_letter' fields)")
+    elif is_hinted_sampled:
+        dataset_type = 'hinted_sampled'
+        print(f"Detected HINTED SAMPLED dataset (has 'sampled_generated_text' and 'hint_letter' fields)")
     else:
-        raise ValueError("Unknown dataset type - missing required fields for both steered and hinted datasets")
+        raise ValueError("Unknown dataset type - missing required fields for all known dataset types")
 else:
     raise ValueError("Empty dataset")
 
@@ -85,14 +98,14 @@ print(f"Loaded original summary")
 
 # Group by configuration (if steered) or process all together (if hinted)
 configs = {}
-if dataset_type == 'steered':
+if dataset_type in ['steered', 'steered_sampled']:
     for record in raw_data:
         key = (record['steering_layer'], record['steering_coefficient'])
         if key not in configs:
             configs[key] = []
         configs[key].append(record)
     print(f"Found {len(configs)} steering configurations")
-elif dataset_type == 'hinted':
+elif dataset_type in ['hinted', 'hinted_sampled']:
     # Hinted datasets don't have configurations - process all together
     configs['hinted'] = raw_data
     print(f"Processing single hinted dataset with {len(raw_data)} examples")
@@ -119,7 +132,16 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
         response_field = 'steered_response'
         answer_field = 'steered_answer_letter'
         accuracy_field = 'steered_accuracy'
-    else:  # hinted
+    elif dataset_type == 'steered_sampled':
+        layer_idx, coeff = config_key
+        print(f"\nValidating layer {layer_idx}, coefficient {coeff:+.1f} (SAMPLED)")
+        print(f"  {len(records)} sampled responses to validate")
+        # Extract steered sampled responses
+        responses_to_validate = [r['steered_sampled_generated_text'] for r in records]
+        response_field = 'steered_sampled_generated_text'
+        answer_field = 'steered_sampled_answer_letter'
+        accuracy_field = 'steered_sampled_accuracy'
+    elif dataset_type == 'hinted':
         print(f"\nValidating hinted responses")
         print(f"  {len(records)} responses to validate")
         # Extract hinted responses
@@ -127,6 +149,14 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
         response_field = 'hinted_generated_text'
         answer_field = 'hinted_answer_letter'
         accuracy_field = 'accuracy_label'
+    else:  # hinted_sampled
+        print(f"\nValidating hinted sampled responses")
+        print(f"  {len(records)} sampled responses to validate")
+        # Extract hinted sampled responses
+        responses_to_validate = [r['sampled_generated_text'] for r in records]
+        response_field = 'sampled_generated_text'
+        answer_field = 'sampled_answer_letter'
+        accuracy_field = 'sampled_accuracy_label'
 
     # Validate with OpenRouter (with rate limit handling)
     try:
@@ -168,7 +198,7 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
 
     # For hinted datasets, compute bias metrics
     bias_labels = []
-    if dataset_type == 'hinted':
+    if dataset_type in ['hinted', 'hinted_sampled']:
         biased_count = 0
         not_biased_count = 0
         hint_induced_error_count = 0
@@ -213,7 +243,7 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
         hint_induced_error_rate = hint_induced_error_count / len(records) if records else 0
 
     # Store stats for summary
-    if dataset_type == 'steered':
+    if dataset_type in ['steered', 'steered_sampled']:
         config_stats[(layer_idx, coeff)] = {
             'accuracy_rate': accuracy_rate,
             'correct_count': correct_count,
@@ -221,7 +251,7 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
             'compliance_rate': compliance_rate,
             'completeness_rate': completeness_rate
         }
-    else:  # hinted
+    else:  # hinted or hinted_sampled
         config_stats['hinted'] = {
             'accuracy_rate': accuracy_rate,
             'correct_count': correct_count,
@@ -237,7 +267,7 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
 
     print(f"  Accuracy: {accuracy_rate:.1%} ({correct_count}/{len(records)})")
     print(f"  Compliance: {compliance_rate:.1%}, Completeness: {completeness_rate:.1%}")
-    if dataset_type == 'hinted':
+    if dataset_type in ['hinted', 'hinted_sampled']:
         print(f"  Bias Rate: {bias_rate:.1%} ({biased_count}/{len(records)})")
         print(f"  Hint-Induced Error Rate: {hint_induced_error_rate:.1%} ({hint_induced_error_count}/{len(records)})")
 
@@ -248,23 +278,22 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
         validated_record['compliance'] = compliance_labels[i]
         validated_record['completeness'] = completeness_labels[i]
         validated_record[accuracy_field] = accuracy_labels[i]
-        if dataset_type == 'hinted':
+        if dataset_type in ['hinted', 'hinted_sampled']:
             validated_record['bias_label'] = bias_labels[i]
         validated_record['validation_date'] = TODAY
         validated_data.append(validated_record)
 
-# STEP 4: Save validated output (overwrites original JSONL)
+# STEP 4: Save validated output
 print("\n=== STEP 4: Save Validated Output ===")
 save_jsonl(validated_data, OUTPUT_JSONL)
 print(f"Saved {len(validated_data)} validated records to {OUTPUT_JSONL}")
-print(f"  (Original file overwritten with enriched data)")
 
-# STEP 5: Merge validation metrics into original summary (overwrites)
+# STEP 5: Merge validation metrics into summary
 print("\n=== STEP 5: Merge Validation Metrics into Summary ===")
 end_time = time.time()
 
 # Add validation metrics based on dataset type
-if dataset_type == 'steered':
+if dataset_type in ['steered', 'steered_sampled']:
     # Add validation metrics to each configuration in original summary
     for key, stats in config_stats.items():
         layer, coeff = key
@@ -274,7 +303,7 @@ if dataset_type == 'steered':
             original_summary['all_configurations'][config_key].update(stats)
         else:
             print(f"  Warning: {config_key} not found in original summary")
-elif dataset_type == 'hinted':
+elif dataset_type in ['hinted', 'hinted_sampled']:
     # Add validation metrics directly to summary
     original_summary['validation_metrics'] = config_stats['hinted']
 
@@ -289,18 +318,17 @@ original_summary['metadata']['note'] = f'Validation completed - {dataset_type} d
 if 'note' in original_summary:
     del original_summary['note']
 
-# Save enriched summary (overwrites original)
+# Save enriched summary
 with open(OUTPUT_SUMMARY, 'w', encoding='utf-8') as f:
     json.dump(original_summary, f, indent=2, ensure_ascii=False)
 
 print(f"Summary enriched and saved to {OUTPUT_SUMMARY}")
-print(f"  (Original file overwritten with validation metrics)")
 
 print(f"\n=== VALIDATION COMPLETE ===")
 print(f"Dataset type: {dataset_type.upper()}")
 print(f"Validation time: {(end_time - start_time) / 60:.2f} minutes")
 print(f"Validated {len(validated_data)} records across {len(config_stats)} configuration(s)")
-if dataset_type == 'steered':
+if dataset_type in ['steered', 'steered_sampled']:
     print(f"\nNext steps:")
     print(f"  - Analyze validated results to select best steering configuration")
     print(f"  - Run faithfulness evaluation on best configuration")

@@ -162,12 +162,13 @@ wrapped_layers = apply_steering_to_model(
 
 print(f"Applied steering wrappers to {len(wrapped_layers)} layers")
 
-# CELL 4: Multi-Sample Steered Generation
+# CELL 4: Multi-Sample Steered Generation (FLAT structure)
 print("\n=== CELL 4: Multi-Sample Steered Generation ===")
 print(f"Generating {NUM_SAMPLES} samples per (question × layer × coefficient) combination")
 print(f"Total configurations: {len(filtered_data)} questions × {len(layers_to_test)} layers × {len(COEFFICIENTS)} coefficients")
+print("Saving in FLAT structure (one record per sample)")
 
-results = []
+flat_results = []
 
 for i, record in enumerate(filtered_data):
     qid = record['question_id']
@@ -182,8 +183,25 @@ for i, record in enumerate(filtered_data):
     print(f"Question: {record.get('question', 'N/A')[:100]}...")
     print(f"{'='*80}")
 
-    # Store steering configs for this question
-    steering_configs = []
+    # Base fields common to all samples for this question
+    base_fields = {
+        'question_id': qid,
+        'question': record.get('question'),
+        'subject': record.get('subject'),
+        'choices': record.get('choices'),
+        'answer': record.get('answer'),
+        'ground_truth_letter': record.get('ground_truth_letter'),
+        'hint_letter': record.get('hint_letter'),
+        'hint_template': record.get('hint_template'),
+        'biased_input_prompt': biased_input_prompt,
+        'baseline_answer_letter': record.get('baseline_answer_letter'),
+        'biased_answer_letter': record.get('biased_answer_letter'),
+        'faithfulness_classification': record.get('faithfulness_classification'),
+        # Metadata
+        'temperature': TEMPERATURE,
+        'model': MODEL_ID,
+        'date': TODAY
+    }
 
     # Test all layer × coefficient combinations
     for layer_idx in layers_to_test:
@@ -206,83 +224,40 @@ for i, record in enumerate(filtered_data):
                 max_input_length=MAX_INPUT_LENGTH
             )
 
-            # Structure samples
-            samples = [
-                {
+            # Create flat records (one per sample)
+            config_fields = {
+                **base_fields,
+                'steering_layer': layer_idx,
+                'steering_coefficient': coeff
+            }
+
+            for j, sample_text in enumerate(samples_text):
+                flat_record = {
+                    **config_fields,
                     'sample_id': j,
                     'steered_sampled_generated_text': sample_text,
                     'steered_sampled_prompt': biased_input_prompt + sample_text
                 }
-                for j, sample_text in enumerate(samples_text)
-            ]
+                flat_results.append(flat_record)
 
-            # Store this configuration
-            steering_config = {
-                'steering_layer': layer_idx,
-                'steering_coefficient': coeff,
-                'samples': samples
-            }
+            print(f"Generated {len(samples_text)} samples for layer {layer_idx}, coeff {coeff:+.2f}")
 
-            steering_configs.append(steering_config)
-
-            print(f"Generated {len(samples)} samples for layer {layer_idx}, coeff {coeff:+.2f}")
-
-    # Create result record with nested structure (Option 1)
-    result = {
-        # Identifiers
-        'question_id': qid,
-
-        # Original question data
-        'question': record.get('question'),
-        'subject': record.get('subject'),
-        'choices': record.get('choices'),
-        'answer': record.get('answer'),
-
-        # Ground truth and hints
-        'ground_truth_letter': record.get('ground_truth_letter'),
-        'hint_letter': record.get('hint_letter'),
-        'hint_template': record.get('hint_template'),
-
-        # Input prompt used for steering
-        'biased_input_prompt': biased_input_prompt,
-
-        # Original baseline/hinted data (for reference)
-        'baseline_answer_letter': record.get('baseline_answer_letter'),
-        'biased_answer_letter': record.get('biased_answer_letter'),
-        'faithfulness_classification': record.get('faithfulness_classification'),
-
-        # NEW: Steering configs with samples nested inside
-        'steering_configs': steering_configs,
-
-        # Metadata
-        'metadata': {
-            'num_samples_per_config': NUM_SAMPLES,
-            'temperature': TEMPERATURE,
-            'layers_tested': layers_to_test,
-            'coefficients_tested': COEFFICIENTS,
-            'num_configs': len(steering_configs),
-            'model': MODEL_ID,
-            'date': TODAY,
-            'sample_batch_size': SAMPLE_BATCH_SIZE
-        }
-    }
-
-    results.append(result)
-
-    print(f"\nCompleted question_id {qid}: {len(steering_configs)} configs × {NUM_SAMPLES} samples each")
+    num_configs = len(layers_to_test) * len(COEFFICIENTS)
+    print(f"\nCompleted question_id {qid}: {num_configs} configs × {NUM_SAMPLES} samples each = {num_configs * NUM_SAMPLES} flat records")
 
 # CELL 5: Save Output JSONL and Summary
 print("\n=== CELL 5: Save Output JSONL and Summary ===")
 
-# Save detailed results
-save_jsonl(results, OUTPUT_FILE)
-print(f"Saved {len(results)} records (each with multiple steering configs) to {OUTPUT_FILE}")
+# Save flat results
+save_jsonl(flat_results, OUTPUT_FILE)
+print(f"Saved {len(flat_results)} flat records to {OUTPUT_FILE}")
+
+# Calculate metrics from flat results
+num_questions_processed = len(set(r['question_id'] for r in flat_results))
+num_configs = len(layers_to_test) * len(COEFFICIENTS)
 
 # Save summary metrics
 end_time = time.time()
-
-total_configs = sum(len(r['steering_configs']) for r in results)
-total_samples = total_configs * NUM_SAMPLES
 
 summary = {
     'metadata': {
@@ -291,10 +266,10 @@ summary = {
         'input_file': INPUT_PROMPTS_FILE,
         'steering_vectors_file': INPUT_VECTORS_FILE,
         'output_file': OUTPUT_FILE,
-        'num_questions': len(results),
+        'num_questions': num_questions_processed,
         'question_ids': QUESTION_IDS,
-        'total_configs': total_configs,
-        'total_samples': total_samples,
+        'total_configs': num_questions_processed * num_configs,
+        'total_samples': len(flat_results),
         'processing_time_seconds': end_time - start_time,
         'processing_time_minutes': (end_time - start_time) / 60
     },
@@ -308,11 +283,11 @@ summary = {
         'max_input_length': MAX_INPUT_LENGTH
     },
     'results': {
-        'questions_processed': len(results),
-        'questions_skipped': len(QUESTION_IDS) - len(results),
-        'configs_per_question': len(layers_to_test) * len(COEFFICIENTS),
+        'questions_processed': num_questions_processed,
+        'questions_skipped': len(QUESTION_IDS) - num_questions_processed,
+        'configs_per_question': num_configs,
         'samples_per_config': NUM_SAMPLES,
-        'total_samples_generated': total_samples
+        'total_samples_generated': len(flat_results)
     }
 }
 
@@ -323,10 +298,10 @@ print(f"Summary saved to {SUMMARY_FILE}")
 
 print(f"\n=== STEERING EVALUATION WITH SAMPLING COMPLETE ===")
 print(f"Processing time: {(end_time - start_time) / 60:.2f} minutes")
-print(f"\nGenerated samples for {len(results)} questions")
-print(f"  Configs per question: {len(layers_to_test)} layers × {len(COEFFICIENTS)} coefficients = {len(layers_to_test) * len(COEFFICIENTS)}")
+print(f"\nGenerated samples for {num_questions_processed} questions")
+print(f"  Configs per question: {len(layers_to_test)} layers × {len(COEFFICIENTS)} coefficients = {num_configs}")
 print(f"  Samples per config: {NUM_SAMPLES}")
-print(f"  Total samples: {total_samples}")
+print(f"  Total flat records: {len(flat_results)}")
 print(f"\nResults saved to:")
 print(f"  Data: {OUTPUT_FILE}")
 print(f"  Summary: {SUMMARY_FILE}")
