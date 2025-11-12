@@ -50,10 +50,10 @@ from src.config import TODAY
 # =============================================================================
 
 # Input file - read from cloned repo
-INPUT_FILE = "data/sprint_3_2025-09-15/data_sprint_3_2025-09-15/annotated_pos+bas_biased_csXcons_scieXgrad_physXarg_psyXprof_histXmeta_econXsquare.jsonl"
+INPUT_FILE = "data/sprint_4_2025-10-15/annotated/steered/annotated_steered_sprint4_2025-10-27.jsonl"
 
 # Question IDs to process (hardcoded list)
-QUESTION_IDS = [0, 1, 2, 3, 4]  # Modify this list as needed
+QUESTION_IDS = [13, 36, 115, 26]  # Modify this list as needed
 
 # Output files - save directly to Google Drive root (no download consent needed)
 OUTPUT_FILE = f"/content/drive/MyDrive/sampled_q{'-'.join(map(str, QUESTION_IDS))}_{TODAY}.jsonl"
@@ -70,7 +70,7 @@ MAX_INPUT_LENGTH = 1024
 # NEW: Sampling parameters
 NUM_SAMPLES = 50
 TEMPERATURE = 0.7
-SAMPLE_BATCH_SIZE = 10  # Tune based on GPU memory (10, 25, 50)
+SAMPLE_BATCH_SIZE = 50  # Tune based on GPU memory (10, 25, 50)
 
 print(f"=== MULTI-SAMPLE GENERATION ===")
 print(f"Model: {MODEL_ID}")
@@ -98,19 +98,16 @@ print(f"Loading dataset from: {INPUT_FILE}")
 full_data = load_jsonl(INPUT_FILE)
 print(f"Loaded {len(full_data)} total records")
 
-# Filter by question IDs (match actual question_id field in records)
+# Filter by question IDs (using list index as question_id)
 filtered_data = []
 for qid in QUESTION_IDS:
-    # Find record with matching question_id field
-    matching_records = [r for r in full_data if r.get('question_id') == qid]
-
-    if len(matching_records) == 1:
-        filtered_data.append(matching_records[0])
-    elif len(matching_records) == 0:
-        print(f"Warning: No record found with question_id={qid}")
+    if qid < len(full_data):
+        record = full_data[qid]
+        # Add question_id to record for tracking
+        record['question_id'] = qid
+        filtered_data.append(record)
     else:
-        print(f"Warning: Multiple records found with question_id={qid}, using first one")
-        filtered_data.append(matching_records[0])
+        print(f"Warning: question_id {qid} out of range (max: {len(full_data)-1})")
 
 print(f"Filtered to {len(filtered_data)} records based on question_ids: {QUESTION_IDS}")
 
@@ -146,7 +143,7 @@ for i, record in enumerate(filtered_data):
     samples = [
         {
             'sample_id': j,
-            'sampled_generated_text': sample_text,
+            'generated_text': sample_text,
             'sampled_prompt': biased_input_prompt + sample_text
         }
         for j, sample_text in enumerate(samples_text)
@@ -253,10 +250,10 @@ else:
     print(f"✗ Warning: Output file not found at {OUTPUT_FILE}")
 
 if os.path.exists(SUMMARY_FILE):
-    print(f"✓ Summary file saved to Drive: {SUMMARY_FILE}")
+    print(f"Summary file saved to Drive: {SUMMARY_FILE}")
     print(f"  Size: {os.path.getsize(SUMMARY_FILE) / 1024:.2f} KB")
 else:
-    print(f"✗ Warning: Summary file not found at {SUMMARY_FILE}")
+    print(f"Warning: Summary file not found at {SUMMARY_FILE}")
 
 print(f"\n=== EXPERIMENT COMPLETE ===")
 print(f"Results are saved in your Google Drive (MyDrive root):")
