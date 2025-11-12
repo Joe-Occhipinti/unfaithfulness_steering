@@ -1023,3 +1023,124 @@ def sweep_coefficients(
 
     print(f"\nCompleted coefficient sweep: {len(results)} configurations tested")
     return results
+
+
+def sample_generate_steered_multiple(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    wrapped_layers: Dict[int, LayerSteeringWrapper],
+    layer_idx: int,
+    coefficient: float,
+    steering_vectors: Dict[int, torch.Tensor],
+    num_samples: int = 50,
+    temperature: float = 0.7,
+    batch_size: int = 10,
+    max_new_tokens: int = 2048,
+    max_input_length: int = 1024
+) -> List[str]:
+    """
+    Generate multiple SAMPLED steered responses for a single prompt.
+
+    Combines steering vector application with temperature-based sampling.
+    Similar to sample_generate_multiple() but applies steering during generation.
+
+    Args:
+        model: The model with steering wrappers applied
+        tokenizer: Model tokenizer
+        prompt: Single input prompt to generate from
+        wrapped_layers: Dict of wrapped layer instances
+        layer_idx: Layer to apply steering to
+        coefficient: Steering coefficient strength
+        steering_vectors: Dict of steering vectors
+        num_samples: Total number of samples to generate (default: 50)
+        temperature: Sampling temperature (default: 0.7)
+        batch_size: How many samples to generate concurrently (default: 10)
+        max_new_tokens: Max tokens to generate per sample
+        max_input_length: Max input sequence length
+
+    Returns:
+        List of num_samples generated steered responses
+
+    Example:
+        >>> # Generate 50 steered samples with temperature 0.7
+        >>> samples = sample_generate_steered_multiple(
+        ...     model, tokenizer,
+        ...     prompt="What is 2+2?",
+        ...     wrapped_layers=wrapped_layers,
+        ...     layer_idx=15,
+        ...     coefficient=0.75,
+        ...     steering_vectors=steering_vectors,
+        ...     num_samples=50,
+        ...     temperature=0.7,
+        ...     batch_size=10
+        ... )
+        >>> len(samples)  # 50
+    """
+    from tqdm import tqdm
+
+    print(f"\n--- Generating {num_samples} STEERED samples (layer={layer_idx}, coeff={coefficient:.2f}, temp={temperature}) ---")
+
+    # Reset all wrappers
+    for wrapper in wrapped_layers.values():
+        wrapper.reset()
+
+    # Set up steering for target layer
+    if layer_idx in wrapped_layers and layer_idx in steering_vectors:
+        wrapped_layers[layer_idx].set_steering(
+            steering_vectors[layer_idx],
+            coefficient
+        )
+    else:
+        raise ValueError(f"Layer {layer_idx} not available in wrapped_layers or steering_vectors")
+
+    all_samples = []
+
+    # Calculate number of batches needed
+    num_batches = (num_samples + batch_size - 1) // batch_size  # Ceiling division
+
+    for batch_idx in tqdm(range(num_batches), desc=f"Steered sampling (L{layer_idx}, C{coefficient:.1f})"):
+        # How many samples in this batch? (last batch might be smaller)
+        current_batch_size = min(batch_size, num_samples - len(all_samples))
+
+        # Tokenize: duplicate the prompt current_batch_size times
+        inputs = tokenizer(
+            [prompt] * current_batch_size,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=max_input_length
+        )
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+        # Generate with steering AND sampling (key difference from generate_steered_batch)
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,  # Enable sampling (vs deterministic)
+                temperature=temperature,  # Use temperature for sampling
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id
+            )
+
+        # Decode generated text (skip input tokens)
+        input_length = inputs['input_ids'].shape[1]
+        batch_samples = tokenizer.batch_decode(
+            outputs[:, input_length:],
+            skip_special_tokens=True
+        )
+
+        all_samples.extend([sample.strip() for sample in batch_samples])
+
+        # Memory cleanup
+        del inputs, outputs
+        gc.collect()
+        torch.cuda.empty_cache()
+
+    # Reset wrapper after generation
+    if layer_idx in wrapped_layers:
+        wrapped_layers[layer_idx].reset()
+
+    print(f"Steered sampling complete: {len(all_samples)} responses generated")
+    return all_samples
