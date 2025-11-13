@@ -16,11 +16,11 @@ from src.data import load_jsonl
 # CONFIGURATION
 # =============================================================================
 
-# Input files - annotated steered results
-INPUT_FILES = [
-    "data/Lorenz_suggestion_2025-11-12/annotated_steered_sampled_q26_2025-11-12.jsonl",
-    "data/Lorenz_suggestion_2025-11-12/annotated_steered_sampled_q115_2025-11-12.jsonl",
-]
+# Input file - annotated steered results (can contain multiple question IDs)
+INPUT_FILE = "data/Lorenz_suggestion_2025-11-12/annotated_steered_sampled_q115-26_2025-11-12.jsonl"
+
+# Question IDs to plot (set to None to plot all questions in the file)
+QUESTION_IDS = None  # or specify list like [26, 115]
 
 # Output directory for plots
 OUTPUT_DIR = "data/Lorenz_suggestion_2025-11-12/plots"
@@ -30,12 +30,13 @@ OUTPUT_DIR = "data/Lorenz_suggestion_2025-11-12/plots"
 # =============================================================================
 
 
-def analyze_steered_file(file_path):
+def analyze_steered_file(file_path, question_id=None):
     """
-    Analyze a single steered annotation file, grouped by steering coefficient.
+    Analyze steered annotation records for a specific question ID, grouped by steering coefficient.
 
     Args:
         file_path: Path to annotated JSONL file
+        question_id: Specific question ID to analyze (required)
 
     Returns:
         Dictionary with analysis results
@@ -44,15 +45,21 @@ def analyze_steered_file(file_path):
         print(f"Warning: File not found: {file_path}")
         return None
 
-    records = load_jsonl(file_path)
+    all_records = load_jsonl(file_path)
+
+    if len(all_records) == 0:
+        print(f"Warning: No records in {file_path}")
+        return None
+
+    # Filter records for this question_id
+    records = [r for r in all_records if r.get('question_id') == question_id]
 
     if len(records) == 0:
-        print(f"Warning: No records in {file_path}")
+        print(f"Warning: No records found for question_id={question_id}")
         return None
 
     # Extract question_id and hint info from first record
     first_record = records[0]
-    question_id = first_record.get('question_id')
     hint_letter = first_record.get('hint_letter')
     hint_template = first_record.get('hint_template', 'unknown')
 
@@ -313,14 +320,33 @@ def main():
     print(f"STEERED FAITHFULNESS PLOTTING")
     print(f"{'='*60}")
 
+    # Check if input file exists
+    if not os.path.exists(INPUT_FILE):
+        print(f"Error: Input file not found: {INPUT_FILE}")
+        return
+
     # Create output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    # Analyze all input files
+    # Load all records to determine question IDs
+    print(f"\nLoading: {INPUT_FILE}")
+    all_records = load_jsonl(INPUT_FILE)
+    print(f"Loaded {len(all_records)} total records")
+
+    # Determine which question IDs to plot
+    if QUESTION_IDS is None:
+        # Extract all unique question IDs from the file
+        unique_qids = sorted(set(r.get('question_id') for r in all_records if r.get('question_id') is not None))
+        print(f"Found question IDs: {unique_qids}")
+    else:
+        unique_qids = QUESTION_IDS
+        print(f"Plotting specified question IDs: {unique_qids}")
+
+    # Analyze each question ID
     analyses = []
-    for file_path in INPUT_FILES:
-        print(f"\nAnalyzing: {file_path}")
-        analysis = analyze_steered_file(file_path)
+    for qid in unique_qids:
+        print(f"\nAnalyzing Question {qid}...")
+        analysis = analyze_steered_file(INPUT_FILE, question_id=qid)
         if analysis:
             analyses.append(analysis)
 

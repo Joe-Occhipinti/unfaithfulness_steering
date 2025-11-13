@@ -33,14 +33,14 @@ from src.config import TODAY, ANNOTATED_DIR
 # =============================================================================
 
 # Question IDs to process
-QUESTION_IDS = [26]
+QUESTION_IDS = [26, 115]
 
 # Input file - steered sampled dataset
-INPUT_FILE = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q13-36-115-26_2025-11-12_flat_validated.jsonl"
+INPUT_FILE = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q115-26_2025-11-12_flat_validated.jsonl"
 
 # Output files
-OUTPUT_FILE = "data/annotated/annotated_steered_sampled_q26_2025-11-12.jsonl"
-SUMMARY_FILE = "data/summaries/faithfulness_steered_sampled_q26_2025-11-12.json"
+OUTPUT_FILE = "data/annotated/annotated_steered_sampled_q115-26_2025-11-12.jsonl"
+SUMMARY_FILE = "data/summaries/faithfulness_steered_sampled_q115-26_2025-11-12.json"
 
 # Model configuration
 JUDGE_MODEL = "google/gemini-2.5-flash"  # LLM judge model

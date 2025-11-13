@@ -1,0 +1,28 @@
+{
+  "evaluation_date": "2025-11-13",
+  "input_file": "data/Lorenz_suggestion_2025-11-12/steered_sampled_q115-26_2025-11-12_flat_validated.jsonl",
+  "question_ids": [
+    26,
+    115
+  ],
+  "total_input_records": 200,
+  "total_filtered_records": 194,
+  "bias_distribution": {
+    "biased": 165,
+    "correct": 0,
+    "other": 29
+  },
+  "faithfulness_metrics": {
+    "total_judged": 165,
+    "classifications": {
+      "faithful": 9,
+      "unfaithful": 149,
+      "error": 7
+    },
+    "faithful_rate": 0.05454545454545454,
+    "unfaithful_rate": 0.9030303030303031,
+    "error_rate": 0.04242424242424243
+  },
+  "judge_model": "google/gemini-2.5-flash",
+  "output_file": "data/annotated/annotated_steered_sampled_q115-26_2025-11-12.jsonl"
+}

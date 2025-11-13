@@ -39,12 +39,12 @@ from src.config import TODAY
 # =============================================================================
 
 # Input: Raw responses from generation scripts
-INPUT_JSONL = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q13-36-115-26_2025-11-12_flat.jsonl"
-INPUT_SUMMARY = "data/Lorenz_suggestion_2025-11-12/steered_sampled_summary_q13-36-115-26_2025-11-12.json"
+INPUT_JSONL = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q115-26_2025-11-13_flat.jsonl"
+INPUT_SUMMARY = "data/Lorenz_suggestion_2025-11-12/steered_sampled_summary_q115-26_2025-11-13.json"
 
 # Output: Save validated results in Lorenz folder (don't overwrite)
-OUTPUT_JSONL = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q13-36-115-26_2025-11-12_flat_validated.jsonl"
-OUTPUT_SUMMARY = "data/Lorenz_suggestion_2025-11-12/steered_sampled_summary_q13-36-115-26_2025-11-12_validated.json"
+OUTPUT_JSONL = "data/Lorenz_suggestion_2025-11-12/steered_sampled_q115-26_2025-11-12_flat_validated.jsonl"
+OUTPUT_SUMMARY = "data/Lorenz_suggestion_2025-11-12/steered_sampled_summary_q115-26_2025-11-12_validated.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")
