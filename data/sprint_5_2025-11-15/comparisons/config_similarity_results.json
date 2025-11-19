@@ -1,0 +1,279 @@
+{
+  "comparison_info": {
+    "activation_dataset_file": "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl",
+    "num_configs": 9,
+    "num_layers_compared": 32,
+    "config_labels": [
+      "psychology\u00d7prof",
+      "history\u00d7prof",
+      "science\u00d7prof",
+      "history\u00d7grader",
+      "science\u00d7grader",
+      "psychology\u00d7grader",
+      "psychology\u00d7meta",
+      "science\u00d7meta",
+      "history\u00d7meta"
+    ],
+    "configs": [
+      [
+        "psychology",
+        "professor",
+        "False"
+      ],
+      [
+        "history",
+        "professor",
+        "False"
+      ],
+      [
+        "science",
+        "professor",
+        "False"
+      ],
+      [
+        "history",
+        "grader_hacking",
+        "False"
+      ],
+      [
+        "science",
+        "grader_hacking",
+        "False"
+      ],
+      [
+        "psychology",
+        "grader_hacking",
+        "False"
+      ],
+      [
+        "psychology",
+        "metadata",
+        "False"
+      ],
+      [
+        "science",
+        "metadata",
+        "False"
+      ],
+      [
+        "history",
+        "metadata",
+        "False"
+      ]
+    ],
+    "config_fields": [
+      "domain",
+      "hint_template",
+      "correct_hint"
+    ],
+    "positive_tags": [
+      "F_body"
+    ],
+    "negative_tags": [
+      "U_body"
+    ]
+  },
+  "average_similarity_matrix": {
+    "labels": [
+      "psychology\u00d7prof",
+      "history\u00d7prof",
+      "science\u00d7prof",
+      "history\u00d7grader",
+      "science\u00d7grader",
+      "psychology\u00d7grader",
+      "psychology\u00d7meta",
+      "science\u00d7meta",
+      "history\u00d7meta"
+    ],
+    "matrix": [
+      [
+        1.0001983642578125,
+        0.5021133422851562,
+        0.575958251953125,
+        0.480682373046875,
+        0.38953590393066406,
+        0.2718925476074219,
+        0.3758878707885742,
+        0.4834747314453125,
+        0.3331155776977539
+      ],
+      [
+        0.5021133422851562,
+        1.0001678466796875,
+        0.5911483764648438,
+        0.5973358154296875,
+        0.47345733642578125,
+        0.5217666625976562,
+        0.508880615234375,
+        0.35825681686401367,
+        0.567962646484375
+      ],
+      [
+        0.575958251953125,
+        0.5911483764648438,
+        1.00006103515625,
+        0.5221443176269531,
+        0.44065189361572266,
+        0.2938804626464844,
+        0.36223316192626953,
+        0.41159820556640625,
+        0.3695259094238281
+      ],
+      [
+        0.480682373046875,
+        0.5973358154296875,
+        0.5221443176269531,
+        1.000030517578125,
+        0.41991424560546875,
+        0.4220123291015625,
+        0.45961761474609375,
+        0.35090065002441406,
+        0.436431884765625
+      ],
+      [
+        0.38953590393066406,
+        0.47345733642578125,
+        0.44065189361572266,
+        0.41991424560546875,
+        1.0001678466796875,
+        0.4219322204589844,
+        0.4858245849609375,
+        0.4135017395019531,
+        0.2867240905761719
+      ],
+      [
+        0.2718925476074219,
+        0.5217666625976562,
+        0.2938804626464844,
+        0.4220123291015625,
+        0.4219322204589844,
+        1.00006103515625,
+        0.3236274719238281,
+        0.3028602600097656,
+        0.3899726867675781
+      ],
+      [
+        0.3758878707885742,
+        0.508880615234375,
+        0.36223316192626953,
+        0.45961761474609375,
+        0.4858245849609375,
+        0.3236274719238281,
+        1.0000457763671875,
+        0.4394721984863281,
+        0.5254287719726562
+      ],
+      [
+        0.4834747314453125,
+        0.35825681686401367,
+        0.41159820556640625,
+        0.35090065002441406,
+        0.4135017395019531,
+        0.3028602600097656,
+        0.4394721984863281,
+        0.999969482421875,
+        0.3615603446960449
+      ],
+      [
+        0.3331155776977539,
+        0.567962646484375,
+        0.3695259094238281,
+        0.436431884765625,
+        0.2867240905761719,
+        0.3899726867675781,
+        0.5254287719726562,
+        0.3615603446960449,
+        1.0000457763671875
+      ]
+    ]
+  },
+  "category_statistics": {
+    "same_domain_diff_hint": {
+      "mean": 0.42654334174262154,
+      "std": 0.09828206852952166,
+      "n_pairs": 9
+    },
+    "diff_domain_same_hint": {
+      "mean": 0.47328223122490776,
+      "std": 0.0743294129796202,
+      "n_pairs": 9
+    },
+    "diff_domain_diff_hint": {
+      "mean": 0.4096029864417182,
+      "std": 0.07974122636471404,
+      "n_pairs": 18
+    }
+  },
+  "within_vs_cross": {
+    "within_domain": {
+      "mean": 0.42654334174262154,
+      "std": 0.09828206852952166
+    },
+    "cross_domain": {
+      "mean": 0.4308294013694481,
+      "std": 0.08355746952905523
+    },
+    "within_hint": {
+      "mean": 0.47328223122490776,
+      "std": 0.0743294129796202
+    },
+    "cross_hint": {
+      "mean": 0.4152497715420193,
+      "std": 0.0867333239505874
+    }
+  },
+  "most_similar_pairs": [
+    {
+      "config1": "psychology\u00d7meta",
+      "config2": "history\u00d7meta",
+      "similarity": 0.5254287719726562
+    },
+    {
+      "config1": "history\u00d7prof",
+      "config2": "history\u00d7meta",
+      "similarity": 0.567962646484375
+    },
+    {
+      "config1": "psychology\u00d7prof",
+      "config2": "science\u00d7prof",
+      "similarity": 0.575958251953125
+    },
+    {
+      "config1": "history\u00d7prof",
+      "config2": "science\u00d7prof",
+      "similarity": 0.5911483764648438
+    },
+    {
+      "config1": "history\u00d7prof",
+      "config2": "history\u00d7grader",
+      "similarity": 0.5973358154296875
+    }
+  ],
+  "least_similar_pairs": [
+    {
+      "config1": "psychology\u00d7prof",
+      "config2": "psychology\u00d7grader",
+      "similarity": 0.2718925476074219
+    },
+    {
+      "config1": "science\u00d7grader",
+      "config2": "history\u00d7meta",
+      "similarity": 0.2867240905761719
+    },
+    {
+      "config1": "science\u00d7prof",
+      "config2": "psychology\u00d7grader",
+      "similarity": 0.2938804626464844
+    },
+    {
+      "config1": "psychology\u00d7grader",
+      "config2": "science\u00d7meta",
+      "similarity": 0.3028602600097656
+    },
+    {
+      "config1": "psychology\u00d7grader",
+      "config2": "psychology\u00d7meta",
+      "similarity": 0.3236274719238281
+    }
+  ]
+}

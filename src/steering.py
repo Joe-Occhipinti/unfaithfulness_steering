@@ -126,7 +126,9 @@ def group_activations_by_config(
     negative_tags: List[str],
     split: str = "train",
     config_fields: List[str] = None,
-    correct_hint_filter: Optional[str] = None
+    correct_hint_filter: Optional[str] = None,
+    domain_mapping: Optional[Dict[str, str]] = None,
+    domain_filter: Optional[str] = None
 ) -> Dict[tuple, Dict]:
     """
     Group activations by metadata configuration.
@@ -142,6 +144,8 @@ def group_activations_by_config(
         split: Which split to use ('train', 'val', 'test')
         config_fields: Metadata fields that define a config (default: ['subject', 'hint_template', 'correct_hint'])
         correct_hint_filter: Filter prompts by correct_hint value (None: use all, "True": only correct, "False": only incorrect)
+        domain_mapping: Optional mapping from subject -> domain (e.g., {'college_biology': 'science'})
+        domain_filter: Optional domain to filter by (e.g., 'science', 'history', 'psychology'). Only subjects in this domain will be used.
 
     Returns:
         Dictionary mapping config_key -> {
@@ -165,11 +169,16 @@ def group_activations_by_config(
     print(f"Negative tags: {negative_tags}")
     if correct_hint_filter is not None:
         print(f"Filtering by correct_hint: {correct_hint_filter}")
+    if domain_filter is not None:
+        print(f"Filtering by domain: {domain_filter}")
+    if domain_mapping is not None:
+        print(f"Domain mapping enabled: {len(domain_mapping)} subjects mapped")
 
     # Initialize groups and tracking
     groups = {}
     prompts_filtered = 0
     prompts_processed = 0
+    unknown_subjects = set()
 
     # Iterate through all prompts in the split
     for prompt_idx in data:
@@ -184,17 +193,51 @@ def group_activations_by_config(
                 prompts_filtered += 1
                 continue  # Skip this prompt
 
+        # Apply domain filter if specified (NEW!)
+        if domain_filter is not None and domain_mapping is not None:
+            subject = metadata.get('subject', 'unknown')
+            if subject in domain_mapping:
+                domain = domain_mapping[subject]
+                if domain != domain_filter:
+                    prompts_filtered += 1
+                    continue  # Skip this prompt
+
         prompts_processed += 1
 
-        # Create config key from metadata
-        config_key = tuple(metadata.get(field) for field in config_fields)
+        # Create config key from metadata, handling domain mapping
+        config_values = []
+        config_metadata = {}
+
+        for field in config_fields:
+            if field == 'domain':
+                # NEW: Compute domain from subject using mapping
+                subject = metadata.get('subject', 'unknown')
+                if domain_mapping is not None:
+                    if subject not in domain_mapping:
+                        unknown_subjects.add(subject)
+                        raise ValueError(
+                            f"Subject '{subject}' not found in domain_mapping. "
+                            f"Available subjects: {sorted(domain_mapping.keys())}"
+                        )
+                    domain = domain_mapping[subject]
+                else:
+                    domain = 'unknown'
+                config_values.append(domain)
+                config_metadata[field] = domain
+            else:
+                # Regular metadata field
+                value = metadata.get(field)
+                config_values.append(value)
+                config_metadata[field] = value
+
+        config_key = tuple(config_values)
 
         # Initialize this config if not seen before
         if config_key not in groups:
             groups[config_key] = {
                 'positive_by_layer': {layer_idx: [] for layer_idx in range(num_layers)},
                 'negative_by_layer': {layer_idx: [] for layer_idx in range(num_layers)},
-                'metadata': {field: metadata.get(field) for field in config_fields},
+                'metadata': config_metadata,  # Use the computed config metadata (includes domain if applicable)
                 'prompt_count': 0
             }
 
@@ -238,13 +281,68 @@ def group_activations_by_config(
         print(f"  Prompts filtered out: {prompts_filtered}")
     print(f"  Grouped into {len(groups)} unique configs")
 
-    print(f"\nConfig summary:")
+    # Detailed per-config breakdown
+    print(f"\n{'='*80}")
+    print(f"DETAILED CONFIG BREAKDOWN")
+    print(f"{'='*80}")
+
+    # Create readable config labels
     for config_key in sorted(groups.keys()):
-        prompt_count = groups[config_key]['prompt_count']
+        config_data = groups[config_key]
+        metadata = config_data['metadata']
+        prompt_count = config_data['prompt_count']
+
         # Count activations in layer 0 as representative
-        pos_count = groups[config_key]['positive_by_layer'][0].shape[0]
-        neg_count = groups[config_key]['negative_by_layer'][0].shape[0]
-        print(f"  {config_key}: {prompt_count} prompts, layer 0: {pos_count} pos / {neg_count} neg")
+        pos_count = config_data['positive_by_layer'][0].shape[0]
+        neg_count = config_data['negative_by_layer'][0].shape[0]
+
+        # Format config label from metadata
+        config_label = " | ".join([f"{k}={v}" for k, v in metadata.items()])
+
+        print(f"\n{config_label}")
+        print(f"  Prompts: {prompt_count}")
+        print(f"  Activations (layer 0): {pos_count} positive, {neg_count} negative")
+
+    # Validation: Check if all expected configs exist (if domain mapping is used)
+    if domain_mapping is not None and 'domain' in config_fields:
+        print(f"\n{'='*80}")
+        print(f"CONFIG VALIDATION")
+        print(f"{'='*80}")
+
+        # Extract unique domains and other config fields
+        unique_domains = set(domain_mapping.values())
+
+        # Extract other fields (non-domain)
+        other_fields = [f for f in config_fields if f != 'domain']
+
+        # Get unique values for other fields from the data
+        unique_values_per_field = {field: set() for field in other_fields}
+        for config_data in groups.values():
+            metadata = config_data['metadata']
+            for field in other_fields:
+                unique_values_per_field[field].add(metadata.get(field))
+
+        # Calculate expected number of configs
+        expected_configs = len(unique_domains)
+        for field, values in unique_values_per_field.items():
+            expected_configs *= len(values)
+
+        print(f"Domain mapping: {len(unique_domains)} unique domains ({', '.join(sorted(unique_domains))})")
+        for field, values in unique_values_per_field.items():
+            print(f"{field}: {len(values)} unique values ({', '.join(str(v) for v in sorted(values))})")
+
+        print(f"\nExpected configs: {expected_configs}")
+        print(f"Actual configs: {len(groups)}")
+
+        if len(groups) < expected_configs:
+            print(f"⚠️  WARNING: Missing {expected_configs - len(groups)} config(s)")
+            print(f"   Some domain × config combinations have no data")
+        elif len(groups) == expected_configs:
+            print(f"✓ All expected configs present")
+        else:
+            print(f"⚠️  WARNING: More configs than expected ({len(groups)} > {expected_configs})")
+
+    print(f"{'='*80}\n")
 
     return groups
 
@@ -402,7 +500,9 @@ def compute_steering_vectors_by_layer(
     split: str = "train",
     use_config_weighting: bool = True,
     config_fields: Optional[List[str]] = None,
-    correct_hint_filter: Optional[str] = None
+    correct_hint_filter: Optional[str] = None,
+    domain_mapping: Optional[Dict[str, str]] = None,
+    domain_filter: Optional[str] = None
 ) -> Tuple[Dict[int, torch.Tensor], Dict]:
     """
     Compute steering vectors for specified layers and tag combinations using dataset splits.
@@ -421,6 +521,8 @@ def compute_steering_vectors_by_layer(
         use_config_weighting: If True, use config-weighted averaging (default: True)
         config_fields: Metadata fields defining a config (default: ['subject', 'hint_template', 'correct_hint'])
         correct_hint_filter: Filter prompts by correct_hint value (None: use all, "True": only correct, "False": only incorrect)
+        domain_mapping: Optional mapping from subject -> domain (e.g., {'college_biology': 'science'})
+        domain_filter: Optional domain to filter by (e.g., 'science', 'history', 'psychology'). Only subjects in this domain will be used.
 
     Returns:
         steering_vectors: Dict mapping layer_idx -> steering_vector
@@ -444,6 +546,10 @@ def compute_steering_vectors_by_layer(
     if use_config_weighting:
         # === CONFIG-WEIGHTED MODE ===
         print(f"\nUsing config-weighted computation (equal weight per config)")
+        if domain_mapping is not None:
+            print(f"Domain grouping: ENABLED")
+        else:
+            print(f"Domain grouping: DISABLED")
 
         # Step 1: Group activations by config
         grouped_configs = group_activations_by_config(
@@ -452,7 +558,9 @@ def compute_steering_vectors_by_layer(
             negative_tags=negative_tags,
             split=split,
             config_fields=config_fields,
-            correct_hint_filter=correct_hint_filter
+            correct_hint_filter=correct_hint_filter,
+            domain_mapping=domain_mapping,
+            domain_filter=domain_filter
         )
 
         # Step 2: Compute config-wise steering vectors
@@ -478,6 +586,8 @@ def compute_steering_vectors_by_layer(
             "use_config_weighting": True,
             "config_fields": config_fields if config_fields else ['subject', 'hint_template', 'correct_hint'],
             "correct_hint_filter": correct_hint_filter,
+            "domain_mapping_used": domain_mapping is not None,
+            "domain_mapping": domain_mapping if domain_mapping else None,
             "total_configs": config_stats['total_configs'],
             "configs_with_data": config_stats['configs_with_data'],
             "configs_skipped": config_stats['configs_skipped'],
