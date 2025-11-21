@@ -1,0 +1,230 @@
+# -*- coding: utf-8 -*-
+"""extract_activations_mean_pooled.py
+
+Step 3 of faithfulness steering workflow: Extract hidden state activations from annotated biased prompts
+using MEAN POOLING across all tokens in tagged sentences.
+
+DIFFERENCE from extract_activations.py:
+- Instead of extracting only the last period token before closing tags,
+  this extracts ALL tokens within tagged sections and averages their activations
+- Uses mean pooling to create a single representation per tagged sentence
+- Output format remains identical for compatibility with downstream scripts
+
+Based on: extract_activations.py
+"""
+
+# Commented out IPython magic to ensure Python compatibility.
+# Setting up to work with the project GitHub Repository (importing scripts, pushing results)
+
+# Install required packages
+!pip install torch transformers bitsandbytes accelerate
+
+# Mount Google Drive first
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Clone the repo to import in Colab its packages from GitHub
+!git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering.git
+import os
+os.chdir('/content/unfaithfulness_steering')
+
+# Authenticate in GitHub
+!git config --global user.email "occhidipinti00@gmail.com"
+!git config --global user.name "Joe Occhipinti"
+
+# Put your GitHub token in Colab secrets
+from google.colab import userdata
+GITHUB_TOKEN = userdata.get('Colab')
+
+# Build authenticated repo url
+repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_steering.git"
+
+import time
+import sys
+from datetime import datetime
+
+# Import reusable modules - MODIFIED to use mean pooled version
+from src.activations_mean_pooled import (
+    extract_activations_mean_pooled,
+    get_activation_statistics,
+    print_activation_statistics,
+    build_activation_dataset,
+    save_activation_dataset,
+    print_dataset_summary
+)
+from src.config import TODAY, ACTIVATIONS_DIR, ANNOTATED_DIR, DATASETS_DIR, ActivationConfig
+
+# =============================================================================
+# I/O CONFIGURATION (manually specify all paths)
+# =============================================================================
+
+# Input and output files - manually specify the exact paths and dates
+INPUT_FILE = "data/sprint4_2025-10-21/annotated/annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
+
+# Output files - save directly to Google Drive root (no download consent needed)
+# MODIFIED: Add "_mean_pooled" suffix to distinguish from period-based extraction
+OUTPUT_DIR = "/content/drive/MyDrive/acts_scie_hist_psy_X_grader_prof_meta_2025-10-25_mean_pooled"
+DATASET_OUTPUT_FILE = "/content/drive/MyDrive/scie_hist_psy_X_grader_prof_meta_2025-10-25_mean_pooled.pkl"
+SUMMARY_FILE = "/content/drive/MyDrive/extraction_summary_scie_hist_psy_X_grader_prof_meta_2025-10-25_mean_pooled.json"
+
+# =============================================================================
+# ACTIVATION EXTRACTION PARAMETERS (easy to tune)
+# =============================================================================
+
+MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+
+# Get configuration defaults (non-path settings)
+config = ActivationConfig.configure_extraction(MODEL_ID)
+
+print(f"=== ACTIVATION EXTRACTION (MEAN POOLING) ===")
+print(f"Model: {MODEL_ID}")
+print(f"Input File: {INPUT_FILE}")
+print(f"Prompt Field: {config['prompt_field']}")
+print(f"Output Directory: {OUTPUT_DIR}")
+print(f"Target Tags: {config['target_tags']}")
+print(f"Layers: {len(config['layers_to_extract'])} layers (0-{max(config['layers_to_extract'])})")
+print(f"Extraction Mode: MEAN POOLING across all tokens in tagged sentences")
+
+# =============================================================================
+# ACTIVATION EXTRACTION WORKFLOW - CELL-BY-CELL FOR COLAB
+# =============================================================================
+
+# CELL 1: Extract Activations
+print("=== CELL 1: Extract Activations (Mean Pooled) ===")
+start_time = time.time()
+
+# Run the main extraction function - MODIFIED to use mean pooling
+extract_activations_mean_pooled(
+    jsonl_filename=INPUT_FILE,
+    prompt_field=config['prompt_field'],
+    output_dir=OUTPUT_DIR,
+    model_id=MODEL_ID,
+    target_tags=config['target_tags'],
+    layers_to_extract=config['layers_to_extract'],
+    verbose=config['verbose']
+)
+
+# CELL 2: Compute and Display Statistics
+print("\n=== CELL 2: Compute and Display Statistics ===")
+
+# Get statistics about extracted activations
+stats = get_activation_statistics(OUTPUT_DIR)
+
+# Print detailed report
+print_activation_statistics(stats)
+
+# CELL 3: Build Activation Dataset
+print("\n=== CELL 3: Build Activation Dataset ===")
+
+# Build aggregated dataset (layer-wise, all activations across prompts)
+dataset = build_activation_dataset(
+    activations_dir=OUTPUT_DIR,
+    source_jsonl=INPUT_FILE,
+    target_tags=config['target_tags'],
+    num_layers=len(config['layers_to_extract']),
+    hidden_dim=4096,  # DeepSeek hidden dimension
+)
+
+# Save dataset
+# Note: Don't need makedirs for MyDrive root - it's already mounted
+# Only create subdirectories if using nested paths
+parent_dir = os.path.dirname(DATASET_OUTPUT_FILE)
+if parent_dir and parent_dir != "/content/drive/MyDrive":
+    os.makedirs(parent_dir, exist_ok=True)
+
+save_activation_dataset(dataset, DATASET_OUTPUT_FILE)
+
+# Print dataset summary
+print_dataset_summary(dataset)
+
+# Save extraction summary (will add processing time later)
+extraction_summary = {
+    'date': TODAY,
+    'model_id': MODEL_ID,
+    'extraction_mode': 'mean_pooling',  # NEW field to track extraction method
+    'input_file': INPUT_FILE,
+    'output_dir': OUTPUT_DIR,
+    'dataset_file': DATASET_OUTPUT_FILE,
+    'prompt_field': config['prompt_field'],
+    'target_tags': config['target_tags'],
+    'layers_extracted': len(config['layers_to_extract']),
+    'activation_statistics': stats,
+    'dataset_info': dataset['info']
+}
+
+import json
+# Note: Don't need makedirs for MyDrive root - it's already mounted
+parent_dir = os.path.dirname(SUMMARY_FILE)
+if parent_dir and parent_dir != "/content/drive/MyDrive":
+    os.makedirs(parent_dir, exist_ok=True)
+
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
+    json.dump(extraction_summary, f, indent=2, ensure_ascii=False)
+print(f"Saved extraction summary to {SUMMARY_FILE}")
+
+# CELL 5: Summary and Completion
+print("\n=== CELL 5: Summary and Completion ===")
+
+end_time = time.time()
+processing_time = end_time - start_time
+
+print(f"\n=== ACTIVATION EXTRACTION (MEAN POOLING) COMPLETE ===")
+print(f"✅ All README workflow requirements fulfilled:")
+print(f"   ✅ Loaded annotated biased prompts from {INPUT_FILE}")
+print(f"   ✅ Extracted activations from ALL TOKENS in tagged sentences (not just periods)")
+print(f"   ✅ Applied mean pooling across tokens for each sentence")
+print(f"   ✅ Processed {stats['total_prompts']} prompts")
+print(f"   ✅ Extracted from {len(stats['layers_found'])} layers")
+print(f"   ✅ Found tags: {stats['tags_found']}")
+print(f"   ✅ Stored activations in individual .pt files: {OUTPUT_DIR}")
+print(f"   ✅ Maintained prompt-wise hierarchy: prompt → layer → label → activations")
+print(f"   ✅ Built aggregated activation dataset: {DATASET_OUTPUT_FILE}")
+print(f"   ✅ Dataset structure: layer → label → tensor([total_activations, hidden_dim])")
+
+print(f"\nProcessing time: {processing_time/60:.1f} minutes")
+
+# Update summary with processing time and re-save
+extraction_summary['processing_time_seconds'] = processing_time
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
+    json.dump(extraction_summary, f, indent=2, ensure_ascii=False)
+
+print(f"\nReady for Step 4: separability analysis")
+print(f"Use activation dataset: {DATASET_OUTPUT_FILE}")
+
+# CELL 6: Verify Results Saved to Google Drive
+print("\n=== CELL 6: Verify Results Saved to Google Drive ===")
+
+# Check if files exist in Drive
+if os.path.exists(DATASET_OUTPUT_FILE):
+    print(f"✅ Dataset file saved to Drive: {DATASET_OUTPUT_FILE}")
+    print(f"  Size: {os.path.getsize(DATASET_OUTPUT_FILE) / (1024**2):.2f} MB")
+else:
+    print(f"❌ Warning: Dataset file not found at {DATASET_OUTPUT_FILE}")
+
+if os.path.exists(SUMMARY_FILE):
+    print(f"✅ Summary file saved to Drive: {SUMMARY_FILE}")
+    print(f"  Size: {os.path.getsize(SUMMARY_FILE) / 1024:.2f} KB")
+else:
+    print(f"❌ Warning: Summary file not found at {SUMMARY_FILE}")
+
+# Check activation directory
+if os.path.exists(OUTPUT_DIR):
+    num_files = len([f for f in os.listdir(OUTPUT_DIR) if f.endswith('.pt')])
+    print(f"✅ Activation directory saved to Drive: {OUTPUT_DIR}")
+    print(f"  Number of .pt files: {num_files}")
+else:
+    print(f"❌ Warning: Activation directory not found at {OUTPUT_DIR}")
+
+print(f"\n=== EXPERIMENT COMPLETE ===")
+print(f"Results are saved in your Google Drive (MyDrive):")
+print(f"  - Activations: {OUTPUT_DIR}")
+print(f"  - Dataset: {DATASET_OUTPUT_FILE}")
+print(f"  - Summary: {SUMMARY_FILE}")
+print(f"\nExtraction Method: MEAN POOLING")
+print(f"  - Each activation is the average of all tokens in a tagged sentence")
+print(f"  - Compare with period-based extraction to evaluate different representations")
+print(f"\nNext steps:")
+print(f"  1. Access files from your Google Drive on any device")
+print(f"  2. Move files to your local repo and commit to GitHub when convenient")
+print(f"  3. Run separability analysis on the activation dataset")
+print(f"  4. Compare results with period-based extraction method")

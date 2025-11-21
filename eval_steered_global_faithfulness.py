@@ -41,7 +41,7 @@ from src.steered_global_faithfulness import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/sprint4_2025-10-21/steered/merged_steered_sprint4_2025-10-27.jsonl"
+INPUT_FILE = "data/sprint_5_2025-11-15/steered/steered_val_merged_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
 
 # Subject
 SUBJECT = "science, history, psychology"
@@ -60,14 +60,14 @@ TOP_K = 5  # Number of top configs to report
 
 OUTPUT_PATHS = {
     # Single combined outputs (all hint templates)
-    'annotated': "data/sprint4_2025-10-21/annotated/steered/annotated_steered_sprint4_2025-10-27.jsonl",
-    'summary': "data/sprint4_2025-10-21/summaries/steered_faithfulness/summary_faithfulness_steered_sprint4_2025-10-27.json",
+    'annotated': "data/sprint_5_2025-11-15/annotated/annotated_steered_val_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl",
+    'summary': "data/sprint_5_2025-11-15/summaries/steered_faithfulness/summary_steered_val_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl",
 
     # Plot directories per hint template (files auto-generated inside)
     'plots_by_hint': {
-        'grader_hacking': "data/sprint4_2025-10-21/plots/steered_sprint4_2025-10-27/grader_hacking",
-        'professor': "data/sprint4_2025-10-21/plots/steered_sprint4_2025-10-27/professor",
-        'metadata': "data/sprint4_2025-10-21/plots/steered_sprint4_2025-10-27/metadata"
+        'grader_hacking': "data/sprint_5_2025-11-15/plots/grader_hacking_1",
+        'professor': "data/sprint_5_2025-11-15/plots/3_steered_sprint_5_2025-11-15/professor",
+        'metadata': "data/sprint_5_2025-11-15/plots/3_steered_sprint_5_2025-11-15/metadata"
     }
 }
 
