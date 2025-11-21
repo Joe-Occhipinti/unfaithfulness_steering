@@ -24,13 +24,13 @@ from scipy import stats
 # =============================================================================
 
 # Input files
-HINTS_VECTORS_FILE = "data/sprint_5_2025-11-15/vectors/vectors_hints-weighting_scie_hist_psy_X_grader_prof_meta_2025-11-15.pkl"
-DOMAINS_VECTORS_FILE = "data/sprint_5_2025-11-15/vectors/vectors_domainsxhints-weighting_scie_hist_psy_X_grader_prof_meta_2025-11-15.pkl"
+VECTORS_FILE_1 = "data/sprint_5_2025-11-15/vectors/vectors_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.pkl"
+VECTORS_FILE_2 = "data/sprint_5_2025-11-15/vectors/vectors_mean_domainweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.pkl"
 
 # Output
-OUTPUT_DIR = "data/sprint_5_2025-11-15/comparisons"
-PLOT_FILE = f"{OUTPUT_DIR}/vector_comparison_hints_vs_domains.png"
-RESULTS_FILE = f"{OUTPUT_DIR}/comparison_results.json"
+OUTPUT_DIR = "data/sprint_5_2025-11-15/comparisons_averaging_approach"
+PLOT_FILE = f"{OUTPUT_DIR}/vector_comparison_mean_hints_vs_domains.png"
+RESULTS_FILE = f"{OUTPUT_DIR}/vector_comparison_mean_hints_vs_domains_comparison_results.json"
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -67,8 +67,8 @@ print("COMPARING STEERING VECTOR APPROACHES")
 print("="*80)
 print("\n=== STEP 1: Loading Vector Sets ===")
 
-hints_vectors, hints_stats = load_steering_vectors(HINTS_VECTORS_FILE)
-domains_vectors, domains_stats = load_steering_vectors(DOMAINS_VECTORS_FILE)
+hints_vectors, hints_stats = load_steering_vectors(VECTORS_FILE_1)
+domains_vectors, domains_stats = load_steering_vectors(VECTORS_FILE_2)
 
 print(f"\nHint-weighting:")
 print(f"  Layers: {len(hints_vectors)}")
@@ -241,8 +241,8 @@ print("\n=== STEP 5: Saving Results ===")
 
 results = {
     'comparison_info': {
-        'hints_file': HINTS_VECTORS_FILE,
-        'domains_file': DOMAINS_VECTORS_FILE,
+        'hints_file': VECTORS_FILE_1,
+        'domains_file': VECTORS_FILE_2,
         'hints_config_fields': hints_stats.get('config_fields'),
         'domains_config_fields': domains_stats.get('config_fields'),
         'hints_total_configs': hints_stats.get('total_configs'),

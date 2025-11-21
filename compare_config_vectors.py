@@ -34,7 +34,7 @@ from src.separability import split_dataset_by_prompts
 # =============================================================================
 
 # Input file - activation dataset
-ACTIVATION_DATASET_FILE = "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
+ACTIVATION_DATASET_FILE = "data/sprint_5_2025-11-15/activations/acts_mean_scie_hist_psy_X_grader_prof_meta_2025-11-21.pkl"
 
 # Steering vector configuration (must match how aggregate vectors were computed)
 POSITIVE_TAGS = ["F_body"]
@@ -66,10 +66,10 @@ VAL_RATIO = 0.0
 RANDOM_SEED = 42
 
 # Output
-OUTPUT_DIR = "data/sprint_5_2025-11-15/comparisons"
-HEATMAP_FILE = f"{OUTPUT_DIR}/config_similarity_matrix.png"
-LAYERWISE_FILE = f"{OUTPUT_DIR}/config_similarity_layerwise.png"
-RESULTS_FILE = f"{OUTPUT_DIR}/config_similarity_results.json"
+OUTPUT_DIR = "data/sprint_5_2025-11-15/comparisons_averaging_approach"
+HEATMAP_FILE = f"{OUTPUT_DIR}/averaging_approach_config_similarity_matrix.png"
+LAYERWISE_FILE = f"{OUTPUT_DIR}/averaging_approach_config_similarity_layerwise.png"
+RESULTS_FILE = f"{OUTPUT_DIR}/averaging_approach_config_similarity_results.json"
 
 # =============================================================================
 # HELPER FUNCTIONS

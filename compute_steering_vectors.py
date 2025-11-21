@@ -30,9 +30,9 @@ from src.config import TODAY
 # =============================================================================
 
 # Input and output files - manually specify the exact paths and dates
-INPUT_FILE = "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
-OUTPUT_FILE = "data/sprint_5_2025-11-15/vectors/vectors_psyxhints-weighting_scie_hist_psy_X_grader_prof_meta_2025-11-15.pkl"
-SUMMARY_FILE = "data/sprint_5_2025-11-15/summaries/vectors/summary_vectors_psyxhints-weighting_scie_hist_psy_X_grader_prof_meta_2025-11-15.json"
+INPUT_FILE = "data/sprint_5_2025-11-15/activations/acts_mean_scie_hist_psy_X_grader_prof_meta_2025-11-21.pkl"
+OUTPUT_FILE = "data/sprint_5_2025-11-15/vectors/vectors_mean_domainweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.pkl"
+SUMMARY_FILE = "data/sprint_5_2025-11-15/summaries/vectors/summary_vectors_mean_domainweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.json"
 # =============================================================================
 # STEERING VECTOR COMPUTATION PARAMETERS (easy to tune)
 # =============================================================================
@@ -96,7 +96,7 @@ else:
 CORRECT_HINT_FILTER = 'False'  # Options: None (use all), "True" (only correct hints), "False" (only incorrect hints)
 
 # Domain filtering (NEW!)
-DOMAIN_FILTER = 'psychology'  # Options: None (use all domains), 'science', 'history', 'psychology'
+DOMAIN_FILTER = None # Options: None (use all domains), 'science', 'history', 'psychology'
 # DOMAIN_FILTER = 'science'     # Uncomment to compute only science domain
 # DOMAIN_FILTER = 'history'     # Uncomment to compute only history domain
 # DOMAIN_FILTER = 'psychology'  # Uncomment to compute only psychology domain
