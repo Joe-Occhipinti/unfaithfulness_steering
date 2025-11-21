@@ -949,6 +949,79 @@ class LayerSteeringWrapper(torch.nn.Module):
         self.coefficient = 0.0
 
 
+class LayerSteeringWrapperFullInput(torch.nn.Module):
+    """
+    Wrapper for model layers to apply steering vectors during generation.
+
+    This version steers ALL tokens during input processing (not just the last token).
+
+    Steering behavior:
+    - During input processing (seq_len > 1): ALL tokens are steered
+    - During generation (seq_len == 1): Each new token is steered
+    """
+
+    def __init__(self, block: torch.nn.Module, layer_idx: int):
+        super().__init__()
+        self.block = block
+        self.layer_idx = layer_idx
+        self.steering_vector = None
+        self.coefficient = 0.0
+        self.active = False
+
+    def forward(self, *args, **kwargs):
+        """Forward pass with steering applied to all input tokens + generated tokens."""
+        output = self.block(*args, **kwargs)
+
+        if self.active and self.steering_vector is not None and output is not None:
+            try:
+                # Handle both tuple and tensor outputs
+                if isinstance(output, tuple):
+                    hidden_states = output[0]
+                else:
+                    hidden_states = output
+
+                if hidden_states.dim() == 3:  # [batch_size, seq_len, hidden_dim]
+                    batch_size = hidden_states.shape[0]
+                    seq_len = hidden_states.shape[1]
+                    modified_hidden_states = hidden_states.clone()
+
+                    steering_addition = self.steering_vector * self.coefficient
+
+                    # Check if we're processing input (seq_len > 1) or generating (seq_len == 1)
+                    if seq_len > 1:
+                        # Steer ALL tokens in the input (broadcasting)
+                        modified_hidden_states = modified_hidden_states + steering_addition
+                    else:
+                        # Steer only the last token (generation phase)
+                        modified_hidden_states[:, -1, :] = (
+                            modified_hidden_states[:, -1, :] +
+                            steering_addition.unsqueeze(0).expand(batch_size, -1)
+                        )
+
+                    # Return in the same format as input
+                    if isinstance(output, tuple):
+                        output = (modified_hidden_states,) + output[1:]
+                    else:
+                        output = modified_hidden_states
+
+            except Exception as e:
+                print(f"Error in layer {self.layer_idx} steering: {e}")
+
+        return output
+
+    def set_steering(self, vector: torch.Tensor, coefficient: float):
+        """Set steering vector and coefficient for this layer."""
+        self.steering_vector = vector.to(self.block.weight.device if hasattr(self.block, 'weight') else 'cuda')
+        self.coefficient = coefficient
+        self.active = True
+
+    def reset(self):
+        """Reset steering to inactive state."""
+        self.active = False
+        self.steering_vector = None
+        self.coefficient = 0.0
+
+
 def apply_steering_to_model(
     model: Any,
     steering_vectors: Dict[int, torch.Tensor],
@@ -1132,6 +1205,114 @@ def sweep_coefficients(
             torch.cuda.empty_cache()
 
     print(f"\nCompleted coefficient sweep: {len(results)} configurations tested")
+    return results
+
+
+# =============================================================================
+# FULL INPUT STEERING FUNCTIONS (steers ALL input tokens + generated tokens)
+# =============================================================================
+
+
+def apply_steering_to_model_full_input(
+    model: Any,
+    steering_vectors: Dict[int, torch.Tensor],
+    layers_to_wrap: Optional[List[int]] = None
+) -> Dict[int, LayerSteeringWrapperFullInput]:
+    """
+    Apply FULL INPUT steering wrappers to specified model layers.
+
+    Uses LayerSteeringWrapperFullInput which steers ALL input tokens during
+    initial forward pass (not just the last token).
+
+    Args:
+        model: The HuggingFace model
+        steering_vectors: Dict of layer_idx -> steering_vector
+        layers_to_wrap: List of layer indices to wrap (None = all layers with vectors)
+
+    Returns:
+        Dict of layer_idx -> LayerSteeringWrapperFullInput instance
+    """
+    if layers_to_wrap is None:
+        layers_to_wrap = list(steering_vectors.keys())
+
+    wrapped_layers = {}
+
+    for layer_idx in layers_to_wrap:
+        if layer_idx not in steering_vectors:
+            print(f"Warning: No steering vector for layer {layer_idx}, skipping")
+            continue
+
+        original_layer = model.model.layers[layer_idx]
+        wrapped_layer = LayerSteeringWrapperFullInput(original_layer, layer_idx)
+        model.model.layers[layer_idx] = wrapped_layer
+        wrapped_layers[layer_idx] = wrapped_layer
+
+    print(f"Applied FULL INPUT steering wrappers to {len(wrapped_layers)} layers")
+    return wrapped_layers
+
+
+def sweep_coefficients_full_input(
+    model: Any,
+    tokenizer: Any,
+    prompts: List[str],
+    steering_vectors: Dict[int, torch.Tensor],
+    layers_to_test: List[int],
+    coefficients: List[float],
+    batch_size: int = 5,
+    max_new_tokens: int = 2048
+) -> Dict[Tuple[int, float], List[str]]:
+    """
+    Sweep through different layers and coefficients with FULL INPUT steering.
+
+    This version steers ALL input tokens (not just the last token) during the
+    initial forward pass, then continues steering each generated token.
+
+    Args:
+        model: The model
+        tokenizer: Model tokenizer
+        prompts: Input prompts to test
+        steering_vectors: Dict of steering vectors
+        layers_to_test: List of layer indices to test
+        coefficients: List of coefficient values to test
+        batch_size: Batch size for generation
+        max_new_tokens: Max tokens to generate
+
+    Returns:
+        Dict mapping (layer_idx, coefficient) -> list of generated responses
+    """
+    print(f"\n=== COEFFICIENT SWEEP (FULL INPUT STEERING) ===")
+    print(f"Testing {len(layers_to_test)} layers with {len(coefficients)} coefficients")
+    print(f"Total configurations: {len(layers_to_test) * len(coefficients)}")
+    print(f"Steering mode: ALL INPUT TOKENS + GENERATED TOKENS")
+
+    # Apply FULL INPUT steering wrappers to model
+    wrapped_layers = apply_steering_to_model_full_input(model, steering_vectors, layers_to_test)
+
+    results = {}
+
+    for layer_idx in layers_to_test:
+        for coeff in coefficients:
+            print(f"\nTesting layer {layer_idx} with coefficient {coeff:.2f}")
+
+            responses = generate_steered_batch(
+                model=model,
+                tokenizer=tokenizer,
+                prompts=prompts,
+                wrapped_layers=wrapped_layers,
+                layer_idx=layer_idx,
+                coefficient=coeff,
+                steering_vectors=steering_vectors,
+                batch_size=batch_size,
+                max_new_tokens=max_new_tokens
+            )
+
+            results[(layer_idx, coeff)] = responses
+
+            # Memory cleanup between sweeps
+            gc.collect()
+            torch.cuda.empty_cache()
+
+    print(f"\nCompleted FULL INPUT coefficient sweep: {len(results)} configurations tested")
     return results
 
 

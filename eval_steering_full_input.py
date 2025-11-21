@@ -1,0 +1,331 @@
+# -*- coding: utf-8 -*-
+"""eval_steering_full_input.py
+
+Modified version of eval_steering.py that steers ALL tokens in the input prompt,
+not just the last token.
+
+Steering behavior:
+- During initial forward pass (processing input): ALL input tokens are steered
+- During generation (autoregressive): Each generated token is steered (as before)
+
+This script:
+1. Loads annotated biased prompts (filtered for unfaithful examples)
+2. Loads pre-computed steering vectors
+3. Tests layer-coefficient combinations via steering sweep
+4. Applies steering to ALL INPUT TOKENS + all generated tokens
+5. Validates steered outputs (format compliance, completeness, answer extraction)
+6. Computes accuracy metrics for each configuration
+7. Saves steered prompts with all metrics to JSONL
+8. Generates summary with performance statistics
+
+Note: Faithfulness evaluation is done separately in eval_faithfulness.py
+"""
+
+# Commented out IPython magic to ensure Python compatibility.
+# Setting up to work with the project GitHub Repository (importing scripts, pushing results)
+
+# Mount Google Drive first (this requires one-time consent, but persists across runs)
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Clone the repo to import in Colab its packages from GitHub
+!git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering.git
+import os
+os.chdir('/content/unfaithfulness_steering')
+
+# Authenticate in GitHub
+!git config --global user.email "occhidipinti00@gmail.com"
+!git config --global user.name "Joe-Occhipinti"
+
+# Put your GitHub token in Colab secrets
+from google.colab import userdata
+GITHUB_TOKEN = userdata.get('Colab')
+
+# Build authenticated repo url
+repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_steering.git"
+
+# Install required packages
+!pip install torch==2.4.1 transformers==4.44.2 bitsandbytes==0.43.3 accelerate==0.34.2
+
+# Set up OpenRouter API environment variables from Colab secrets
+import os
+os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
+
+import json
+import time
+import torch
+import gc
+import pickle
+from datetime import datetime
+from typing import Dict, Any, List, Tuple
+from tqdm import tqdm
+import random
+
+# Import reusable modules
+from src.data import load_jsonl, save_jsonl, split_data
+from src.model import load_model
+from src.steering import (
+    sweep_coefficients_full_input
+)
+from src.local_faithfulness import (
+    setup_openrouter_client
+)
+from src.performance_eval import (
+    extract_validation_data,
+    compute_accuracy_metrics,
+    validate_responses,
+    compute_completeness_metrics
+)
+from src.config import TODAY, BEHAVIOURAL_DIR, SUMMARIES_DIR, ANNOTATED_DIR, ModelConfig
+
+# =============================================================================
+# I/O CONFIGURATION (manually specify all paths)
+# =============================================================================
+
+# Input files - read from cloned repo (local, working dir is /content/unfaithfulness_steering)
+INPUT_PROMPTS_FILE = "data/annotated/annotated_biased_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+INPUT_VECTORS_FILE = "data/steering vectors/steering_vectors_F_vs_U_high_school_macroeconomics_microeconomics_2025-10-03.pkl"
+
+# Output files - save directly to Google Drive root (no download consent needed)
+OUTPUT_FILE = "/content/drive/MyDrive/steered_full_input_val_high_school_macroeconomics_microeconomics_2025-10-03.jsonl"
+SUMMARY_FILE = "/content/drive/MyDrive/tuning_steering_full_input_results_high_school_macroeconomics_microeconomics_2025-10-03.json"
+
+# =============================================================================
+# MODEL CONFIGURATION
+# =============================================================================
+MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+BATCH_SIZE = 10  # Batch size for generation
+MAX_NEW_TOKENS = 2048
+MAX_INPUT_LENGTH = 1024
+
+# =============================================================================
+# STEERING CONFIGURATION
+# =============================================================================
+LAYERS_TO_TEST = [15, 25]  # Middle-to-late layers typically work best
+COEFFICIENTS = [0.75, -0.75]  # Positive and negative coefficients
+
+print(f"=== STEERING EVALUATION (FULL INPUT) ===")
+print(f"Model: {MODEL_ID}")
+print(f"Input: {INPUT_PROMPTS_FILE}")
+print(f"Steering Vectors: {INPUT_VECTORS_FILE}")
+print(f"Layers to test: {LAYERS_TO_TEST}")
+print(f"Coefficients: {COEFFICIENTS}")
+print(f"Output: {OUTPUT_FILE}")
+print(f"\nSTEERING MODE: ALL INPUT TOKENS + GENERATED TOKENS")
+
+# =============================================================================
+# STEERING EVALUATION WORKFLOW - CELL-BY-CELL FOR COLAB
+# =============================================================================
+
+# CELL 1: Setup and Model Loading
+print("\n=== CELL 1: Setup and Model Loading ===")
+start_time = time.time()
+
+# Load model
+model, tokenizer = load_model(MODEL_ID)
+
+# Setup OpenRouter client for format validation with DeepSeek
+openrouter_client = setup_openrouter_client()
+
+print(f"Setup completed in {time.time() - start_time:.2f} seconds")
+
+# CELL 2: Load Data and Steering Vectors
+print("\n=== CELL 2: Load Data and Steering Vectors ===")
+
+# Load annotated biased prompts
+print(f"Loading annotated data from {INPUT_PROMPTS_FILE}...")
+annotated_data = load_jsonl(INPUT_PROMPTS_FILE)
+print(f"Loaded {len(annotated_data)} annotated examples")
+
+# Filter for validation split (split field should already be set in the input file)
+val_data = [
+    item for item in annotated_data
+    if item.get('split') == 'val'
+]
+print(f"Filtered {len(val_data)} validation examples (from 'split' field)")
+
+# Extract biased input prompts (test steering on all validation examples)
+input_prompts = []
+for item in val_data:
+    prompt = item.get('biased_input_prompt')
+    if not prompt:
+        raise ValueError(f"Missing 'biased_input_prompt' field in validation data for question_id: {item.get('question_id', 'unknown')}")
+    input_prompts.append(prompt)
+print(f"Extracted {len(input_prompts)} biased input prompts for steering")
+
+# Load steering vectors
+print(f"\nLoading steering vectors from {INPUT_VECTORS_FILE}...")
+with open(INPUT_VECTORS_FILE, 'rb') as f:
+    steering_data = pickle.load(f)
+
+steering_vectors = steering_data['steering_vectors']
+available_layers = sorted(steering_vectors.keys())
+print(f"Loaded steering vectors for {len(available_layers)} layers")
+
+# Filter layers to test based on availability
+layers_to_test = [l for l in LAYERS_TO_TEST if l in available_layers]
+print(f"Will test {len(layers_to_test)} layers: {layers_to_test}")
+
+# CELL 3: Coefficient and Layers Sweep (MAIN PROCESSING LOOP)
+print("\n=== CELL 3: Steering Sweep (FULL INPUT MODE) ===")
+print(f"Testing {len(layers_to_test)} layers × {len(COEFFICIENTS)} coefficients = {len(layers_to_test) * len(COEFFICIENTS)} configurations")
+print(f"Steering applied to: ALL INPUT TOKENS + ALL GENERATED TOKENS")
+
+# Run coefficient sweep with FULL INPUT steering
+steered_results = sweep_coefficients_full_input(
+    model=model,
+    tokenizer=tokenizer,
+    prompts=input_prompts,
+    steering_vectors=steering_vectors,
+    layers_to_test=layers_to_test,
+    coefficients=COEFFICIENTS,
+    batch_size=BATCH_SIZE,
+    max_new_tokens=MAX_NEW_TOKENS
+)
+
+print(f"Generated steered responses for {len(steered_results)} configurations")
+
+# CELL 4: Store Steered Results (Validation done separately offline)
+print("\n=== CELL 4: Store Steered Results ===")
+print("Note: Validation and answer extraction will be done offline in separate script")
+
+evaluation_results = {}
+
+for (layer_idx, coeff), steered_responses in tqdm(steered_results.items(), desc="Processing steering configs"):
+    print(f"\nProcessing layer {layer_idx}, coefficient {coeff:+.1f}")
+
+    # Create steered prompts (input prompt + steered response)
+    steered_prompts = [
+        prompt + response
+        for prompt, response in zip(input_prompts, steered_responses)
+    ]
+
+    # Store results for this configuration (no validation yet)
+    evaluation_results[(layer_idx, coeff)] = {
+        'steered_responses': steered_responses,
+        'steered_prompts': steered_prompts,
+        'total_prompts': len(val_data)
+    }
+
+    print(f"  Stored {len(steered_responses)} steered responses")
+
+print(f"\nProcessed results for {len(evaluation_results)} steering configurations")
+
+# CELL 5: Save Output JSONL and Summary
+print("\n=== CELL 5: Save Output JSONL and Summary ===")
+
+# Create output JSONL with ALL configurations
+print("Creating output JSONL with all steering configurations...")
+output_data = []
+
+for (layer_idx, coeff), results in evaluation_results.items():
+    print(f"  Adding records for layer {layer_idx}, coeff {coeff:+.1f}")
+
+    for i, orig_item in enumerate(val_data):
+        record = {
+            # Identifiers
+            'question_id': orig_item.get('question_id', i),
+            'prompt_index': i,
+
+            # Question data
+            'question': orig_item.get('question'),
+            'choices': orig_item.get('choices'),
+
+            # Input prompt (unannotated)
+            'biased_input_prompt': orig_item.get('biased_input_prompt'),
+            'hint_template': orig_item.get('hint_template'),
+
+            # Steering configuration
+            'steering_layer': layer_idx,
+            'steering_coefficient': coeff,
+            'steering_mode': 'full_input',  # NEW: indicates all input tokens steered
+
+            # Steered results (raw - validation done separately)
+            'steered_response': results['steered_responses'][i],
+            'steered_prompt': results['steered_prompts'][i],
+
+            # Ground truth and reference data
+            'ground_truth_letter': orig_item.get('ground_truth_letter'),
+            'hint_letter': orig_item.get('hint_letter'),
+            'biased_answer_letter': orig_item.get('biased_answer_letter'),
+
+            # Original faithfulness classification (from input file before steering)
+            'original_faithfulness_classification': orig_item.get('faithfulness_classification'),
+
+            # Metadata
+            'split': 'val',
+            'date': TODAY,
+            'model': MODEL_ID
+        }
+        output_data.append(record)
+
+save_jsonl(output_data, OUTPUT_FILE)
+print(f"Saved {len(output_data)} records to {OUTPUT_FILE}")
+print(f"  ({len(evaluation_results)} configurations x {len(val_data)} examples)")
+
+# Create summary file with aggregated metrics
+print("\nCreating summary file...")
+end_time = time.time()
+
+summary = {
+    'metadata': {
+        'date': TODAY,
+        'model': MODEL_ID,
+        'input_file': INPUT_PROMPTS_FILE,
+        'steering_vectors_file': INPUT_VECTORS_FILE,
+        'output_file': OUTPUT_FILE,
+        'num_examples': len(val_data),
+        'layers_tested': layers_to_test,
+        'coefficients_tested': COEFFICIENTS,
+        'steering_mode': 'full_input',
+        'steering_description': 'ALL input tokens + all generated tokens are steered',
+        'processing_time_seconds': end_time - start_time
+    },
+    'all_configurations': {
+        f"layer_{layer}_coeff_{coeff:+.1f}": {
+            'layer': layer,
+            'coefficient': coeff,
+            'total_prompts': results['total_prompts'],
+            'steering_mode': 'full_input'
+        }
+        for (layer, coeff), results in evaluation_results.items()
+    },
+    'note': 'Validation and answer extraction done separately in validate_steering.py'
+}
+
+with open(SUMMARY_FILE, 'w', encoding='utf-8') as f:
+    json.dump(summary, f, indent=2, ensure_ascii=False)
+print(f"Summary saved to {SUMMARY_FILE}")
+
+print(f"\n=== STEERING EVALUATION (FULL INPUT) COMPLETE ===")
+print(f"Processing time: {(end_time - start_time) / 60:.2f} minutes")
+print(f"\nTested {len(evaluation_results)} configurations on {len(val_data)} validation examples")
+print(f"Steering mode: ALL INPUT TOKENS + GENERATED TOKENS")
+print(f"\nResults saved to:")
+print(f"  Data: {OUTPUT_FILE}")
+print(f"  Summary: {SUMMARY_FILE}")
+
+# CELL 6: Verify Results Saved to Google Drive
+print("\n=== CELL 6: Verify Results Saved to Google Drive ===")
+
+# Check if files exist in Drive
+if os.path.exists(OUTPUT_FILE):
+    print(f"Output file saved to Drive: {OUTPUT_FILE}")
+    print(f"  Size: {os.path.getsize(OUTPUT_FILE) / 1024:.2f} KB")
+else:
+    print(f"Warning: Output file not found at {OUTPUT_FILE}")
+
+if os.path.exists(SUMMARY_FILE):
+    print(f"Summary file saved to Drive: {SUMMARY_FILE}")
+    print(f"  Size: {os.path.getsize(SUMMARY_FILE) / 1024:.2f} KB")
+else:
+    print(f"Warning: Summary file not found at {SUMMARY_FILE}")
+
+print(f"\n=== EXPERIMENT COMPLETE ===")
+print(f"Results are saved in your Google Drive (MyDrive root):")
+print(f"  - {os.path.basename(OUTPUT_FILE)}")
+print(f"  - {os.path.basename(SUMMARY_FILE)}")
+print(f"\nNext steps:")
+print(f"  1. Access files from your Google Drive on any device")
+print(f"  2. Move files to your local repo and commit to GitHub when convenient")
+print(f"  3. Run eval_faithfulness.py to evaluate faithfulness of steered outputs")
