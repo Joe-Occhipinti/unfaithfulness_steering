@@ -39,12 +39,12 @@ from src.config import TODAY
 # =============================================================================
 
 # Input: Raw responses from generation scripts
-INPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_1_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl"
-INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_steered_1_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.json"
+INPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_3_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl"
+INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_steered_3_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.json"
 
 # Output: Save validated results in Lorenz folder (don't overwrite)
-OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_1_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl"
-OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_steered_1_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.json"
+OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_3_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl"
+OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_steered_3_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")

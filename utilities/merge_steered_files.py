@@ -5,13 +5,13 @@ from pathlib import Path
 base_dir = Path(r"C:\Users\occhi\Desktop\unfaithfulness_steering\data\sprint_5_2025-11-15\steered")
 
 input_files = [
-    base_dir / "steered_val_1_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25_filtered.jsonl",
-    base_dir / "steered_val_2_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl",
-    base_dir / "steered_val_3_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
+    base_dir / "steered_val_1_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl",
+    base_dir / "steered_val_2_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl",
+    base_dir / "steered_val_3_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl"
 ]
 
 # Define output file
-output_file = base_dir / "steered_val_merged_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
+output_file = base_dir / "steered_val_mean_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-11-21.jsonl"
 
 # Merge files
 total_records = 0
