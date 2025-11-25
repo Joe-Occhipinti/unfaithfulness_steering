@@ -1,0 +1,333 @@
+{
+  "metadata": {
+    "date": "2025-11-23",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "input_file": "data/sprint_4_2025-10-15/annotated/touse_annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl",
+    "steering_vectors_file": "data/sprint_5_2025-11-15/vectors/vectors_hints-weighting_scie_hist_psy_X_grader_prof_meta_2025-11-15.pkl",
+    "output_file": "/content/drive/MyDrive/3_steered_full_input_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl",
+    "num_examples": 46,
+    "layers_tested": [
+      8,
+      13,
+      18,
+      23,
+      28
+    ],
+    "coefficients_tested": [
+      0.6,
+      -0.6,
+      0.75,
+      -0.75,
+      1,
+      -1
+    ],
+    "steering_mode": "full_input",
+    "steering_description": "ALL input tokens + all generated tokens are steered",
+    "processing_time_seconds": 18826.791285276413,
+    "validation_date": "2025-11-24",
+    "validation_time_seconds": 3357.567305326462,
+    "note": "Validation completed - steered dataset metrics added"
+  },
+  "all_configurations": {
+    "layer_8_coeff_+0.6": {
+      "layer": 8,
+      "coefficient": 0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.4782608695652174,
+      "correct_count": 22,
+      "compliance_rate": 0.8695652173913043,
+      "completeness_rate": 0.8478260869565217
+    },
+    "layer_8_coeff_-0.6": {
+      "layer": 8,
+      "coefficient": -0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.5434782608695652,
+      "correct_count": 25,
+      "compliance_rate": 0.8695652173913043,
+      "completeness_rate": 0.8913043478260869
+    },
+    "layer_8_coeff_+0.8": {
+      "layer": 8,
+      "coefficient": 0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.43478260869565216,
+      "correct_count": 20,
+      "compliance_rate": 0.6521739130434783,
+      "completeness_rate": 0.7608695652173914
+    },
+    "layer_8_coeff_-0.8": {
+      "layer": 8,
+      "coefficient": -0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.5652173913043478,
+      "correct_count": 26,
+      "compliance_rate": 0.8913043478260869,
+      "completeness_rate": 0.9565217391304348
+    },
+    "layer_8_coeff_+1.0": {
+      "layer": 8,
+      "coefficient": 1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.5217391304347826,
+      "correct_count": 24,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.7391304347826086
+    },
+    "layer_8_coeff_-1.0": {
+      "layer": 8,
+      "coefficient": -1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.5869565217391305,
+      "correct_count": 27,
+      "compliance_rate": 0.8043478260869565,
+      "completeness_rate": 0.9130434782608695
+    },
+    "layer_13_coeff_+0.6": {
+      "layer": 13,
+      "coefficient": 0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.6956521739130435
+    },
+    "layer_13_coeff_-0.6": {
+      "layer": 13,
+      "coefficient": -0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "compliance_rate": 0.6521739130434783,
+      "completeness_rate": 0.782608695652174
+    },
+    "layer_13_coeff_+0.8": {
+      "layer": 13,
+      "coefficient": 0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "compliance_rate": 0.6086956521739131,
+      "completeness_rate": 0.6086956521739131
+    },
+    "layer_13_coeff_-0.8": {
+      "layer": 13,
+      "coefficient": -0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.32608695652173914,
+      "correct_count": 15,
+      "compliance_rate": 0.5652173913043478,
+      "completeness_rate": 0.7608695652173914
+    },
+    "layer_13_coeff_+1.0": {
+      "layer": 13,
+      "coefficient": 1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.3695652173913043,
+      "correct_count": 17,
+      "compliance_rate": 0.5434782608695652,
+      "completeness_rate": 0.5652173913043478
+    },
+    "layer_13_coeff_-1.0": {
+      "layer": 13,
+      "coefficient": -1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.3695652173913043,
+      "correct_count": 17,
+      "compliance_rate": 0.717391304347826,
+      "completeness_rate": 0.7391304347826086
+    },
+    "layer_18_coeff_+0.6": {
+      "layer": 18,
+      "coefficient": 0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.5217391304347826,
+      "correct_count": 24,
+      "compliance_rate": 0.7608695652173914,
+      "completeness_rate": 0.8260869565217391
+    },
+    "layer_18_coeff_-0.6": {
+      "layer": 18,
+      "coefficient": -0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "compliance_rate": 0.7608695652173914,
+      "completeness_rate": 0.8043478260869565
+    },
+    "layer_18_coeff_+0.8": {
+      "layer": 18,
+      "coefficient": 0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.3695652173913043,
+      "correct_count": 17,
+      "compliance_rate": 0.5,
+      "completeness_rate": 0.6086956521739131
+    },
+    "layer_18_coeff_-0.8": {
+      "layer": 18,
+      "coefficient": -0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.32608695652173914,
+      "correct_count": 15,
+      "compliance_rate": 0.6086956521739131,
+      "completeness_rate": 0.8043478260869565
+    },
+    "layer_18_coeff_+1.0": {
+      "layer": 18,
+      "coefficient": 1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "compliance_rate": 0.5869565217391305,
+      "completeness_rate": 0.6956521739130435
+    },
+    "layer_18_coeff_-1.0": {
+      "layer": 18,
+      "coefficient": -1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.43478260869565216,
+      "correct_count": 20,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.782608695652174
+    },
+    "layer_23_coeff_+0.6": {
+      "layer": 23,
+      "coefficient": 0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.5869565217391305,
+      "correct_count": 27,
+      "compliance_rate": 0.8695652173913043,
+      "completeness_rate": 0.8913043478260869
+    },
+    "layer_23_coeff_-0.6": {
+      "layer": 23,
+      "coefficient": -0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.34782608695652173,
+      "correct_count": 16,
+      "compliance_rate": 0.8043478260869565,
+      "completeness_rate": 0.8260869565217391
+    },
+    "layer_23_coeff_+0.8": {
+      "layer": 23,
+      "coefficient": 0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.391304347826087,
+      "correct_count": 18,
+      "compliance_rate": 0.717391304347826,
+      "completeness_rate": 0.7391304347826086
+    },
+    "layer_23_coeff_-0.8": {
+      "layer": 23,
+      "coefficient": -0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.3695652173913043,
+      "correct_count": 17,
+      "compliance_rate": 0.6956521739130435,
+      "completeness_rate": 0.8260869565217391
+    },
+    "layer_23_coeff_+1.0": {
+      "layer": 23,
+      "coefficient": 1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.45652173913043476,
+      "correct_count": 21,
+      "compliance_rate": 0.6739130434782609,
+      "completeness_rate": 0.6956521739130435
+    },
+    "layer_23_coeff_-1.0": {
+      "layer": 23,
+      "coefficient": -1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.34782608695652173,
+      "correct_count": 16,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.8260869565217391
+    },
+    "layer_28_coeff_+0.6": {
+      "layer": 28,
+      "coefficient": 0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.4782608695652174,
+      "correct_count": 22,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.7391304347826086
+    },
+    "layer_28_coeff_-0.6": {
+      "layer": 28,
+      "coefficient": -0.6,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.391304347826087,
+      "correct_count": 18,
+      "compliance_rate": 0.6956521739130435,
+      "completeness_rate": 0.7608695652173914
+    },
+    "layer_28_coeff_+0.8": {
+      "layer": 28,
+      "coefficient": 0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.43478260869565216,
+      "correct_count": 20,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.8043478260869565
+    },
+    "layer_28_coeff_-0.8": {
+      "layer": 28,
+      "coefficient": -0.75,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.32608695652173914,
+      "correct_count": 15,
+      "compliance_rate": 0.6739130434782609,
+      "completeness_rate": 0.6739130434782609
+    },
+    "layer_28_coeff_+1.0": {
+      "layer": 28,
+      "coefficient": 1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.391304347826087,
+      "correct_count": 18,
+      "compliance_rate": 0.717391304347826,
+      "completeness_rate": 0.717391304347826
+    },
+    "layer_28_coeff_-1.0": {
+      "layer": 28,
+      "coefficient": -1,
+      "total_prompts": 46,
+      "steering_mode": "full_input",
+      "accuracy_rate": 0.45652173913043476,
+      "correct_count": 21,
+      "compliance_rate": 0.6739130434782609,
+      "completeness_rate": 0.8043478260869565
+    }
+  }
+}
