@@ -39,12 +39,12 @@ from src.config import TODAY
 # =============================================================================
 
 # Input: Raw responses from generation scripts
-INPUT_JSONL = "data/sprint_5_2025-11-15/steered/3_steered_full_input_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
-INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/3_tuning_steering_results_full_input_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.json"
+INPUT_JSONL = "data/sprint_5_2025-11-15/steered/3_steered_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
+INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/3_tuning_steering_results_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.json"
 
 # Output: Save validated results (overwrite)
-OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/3_steered_full_input_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
-OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/3_tuning_steering_results_full_input_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.json"
+OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/3_steered_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
+OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/3_tuning_steering_results_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")

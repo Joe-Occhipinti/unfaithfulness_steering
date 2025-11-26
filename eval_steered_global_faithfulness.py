@@ -41,7 +41,7 @@ from src.steered_global_faithfulness import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/sprint_5_2025-11-15/steered/steered_full_input_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
+INPUT_FILE = "data/sprint_5_2025-11-15/steered/steered_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
 
 # Subject
 SUBJECT = "science, history, psychology"
@@ -65,9 +65,9 @@ OUTPUT_PATHS = {
 
     # Plot directories per hint template (files auto-generated inside)
     'plots_by_hint': {
-        'grader_hacking': "data/sprint_5_2025-11-15/plots/grader_hacking_full_input",
-        'professor': "data/sprint_5_2025-11-15/plots/professor_full_input",
-        'metadata': "data/sprint_5_2025-11-15/plots/metadata_full_input"
+        'grader_hacking': "data/sprint_5_2025-11-15/plots/grader_hacking_full_input_mean",
+        'professor': "data/sprint_5_2025-11-15/plots/professor_full_input_mean",
+        'metadata': "data/sprint_5_2025-11-15/plots/metadata_full_input_mean"
     }
 }
 
