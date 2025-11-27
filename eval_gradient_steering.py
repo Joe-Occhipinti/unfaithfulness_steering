@@ -301,16 +301,22 @@ def main():
     print("\n=== CELL 1: Load Data ===")
     prompts, activations = load_prompts_and_activations(INPUT_JSONL, INPUT_ACTIVATIONS)
     
-    # Filter for validation split
+    # Filter for validation split AND ground_truth != hint
     val_prompts = []
     val_indices = []
     for idx, prompt_dict in enumerate(prompts):
         if prompt_dict.get('split') == 'val':
-            val_prompts.append(prompt_dict)
-            val_indices.append(idx)
+            # Check if ground_truth_letter != hint_letter
+            gt = prompt_dict.get('ground_truth_letter')
+            hint = prompt_dict.get('hint_letter')
+            
+            # Only include if both exist and are different (biased hint)
+            if gt and hint and gt != hint:
+                val_prompts.append(prompt_dict)
+                val_indices.append(idx)
     
     total_val = len(val_prompts)
-    print(f"Total Validation Prompts: {total_val}")
+    print(f"Total Validation Prompts (Biased Only): {total_val}")
     
     # --- SHARDING LOGIC ---
     shard_size = math.ceil(total_val / NUM_SHARDS)
@@ -341,6 +347,7 @@ def main():
                 print(f"Layer {layer_idx} | {direction.upper()} | Target {target_value}")
                 print(f"{'='*60}")
                 
+                # Verify input is biased_input_prompt
                 input_prompts = [p['biased_input_prompt'] for p in val_prompts]
                 
                 steered_responses = generate_with_gradient_steering(
