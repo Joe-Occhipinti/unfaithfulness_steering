@@ -18,13 +18,14 @@ Methodology (Section 4.4 of Paper):
 - Target values t: {5, 10, 15, 20, 30, 40}
 """
 
-# ... (Imports same as before)
 import json
 import time
 import torch
 import gc
 import pickle
 import os
+import math
+import shutil
 from datetime import datetime
 from typing import Dict, Any, List, Tuple, Optional
 from tqdm import tqdm
@@ -49,6 +50,7 @@ except ImportError:
     print("Not running in Colab - skipping Drive mount")
 
 if IN_COLAB:
+    # Clone the repo to import in Colab its packages from GitHub
     import os
     if not os.path.exists('/content/unfaithfulness_steering'):
         !git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering.git
@@ -57,16 +59,29 @@ if IN_COLAB:
         os.chdir('/content/unfaithfulness_steering')
         !git pull origin main
 
+    # Authenticate in GitHub
     !git config --global user.email "occhidipinti00@gmail.com"
     !git config --global user.name "Joe-Occhipinti"
     
+    # Put your GitHub token in Colab secrets
+    from google.colab import userdata
     try:
-        from google.colab import userdata
+        GITHUB_TOKEN = userdata.get('Colab')
+        if GITHUB_TOKEN:
+            # Build authenticated repo url
+            repo_url = f"https://{GITHUB_TOKEN}@github.com/Joe-Occhipinti/unfaithfulness_steering.git"
+            !git remote set-url origin {repo_url}
+    except:
+        print("GitHub token not found in secrets (optional for pulling public repo)")
+
+    # Install required packages
+    !pip install torch==2.4.1 transformers==4.44.2 bitsandbytes==0.43.3 accelerate==0.34.2
+
+    # Set up OpenRouter API environment variables from Colab secrets
+    try:
         os.environ['OPENROUTER_API_KEY'] = userdata.get('OPENROUTER_API_KEY')
     except:
         pass
-    
-    !pip install torch==2.4.1 transformers==4.44.2 bitsandbytes==0.43.3 accelerate==0.34.2
 
 # =============================================================================
 # CONFIGURATION
@@ -77,14 +92,19 @@ INPUT_JSONL = "data/sprint_4_2025-10-15/annotated/touse_annotated_scie_hist_psy_
 INPUT_ACTIVATIONS = "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
 MLP_PROBES_DIR = "results/probe_training/mlp"
 
+# Parallelization Config (Sharding)
+# CHANGE THIS FOR EACH NOTEBOOK: 0, 1, or 2
+SHARD_ID = 0  
+NUM_SHARDS = 3
+
 # Output files
 if IN_COLAB:
-    OUTPUT_FILE = f"/content/drive/MyDrive/steered_val_gradient_{TODAY}.jsonl"
-    SUMMARY_FILE = f"/content/drive/MyDrive/summary_gradient_{TODAY}.json"
+    OUTPUT_FILE = f"/content/drive/MyDrive/steered_val_gradient_{TODAY}_shard_{SHARD_ID}.jsonl"
+    SUMMARY_FILE = f"/content/drive/MyDrive/summary_gradient_{TODAY}_shard_{SHARD_ID}.json"
 else:
     os.makedirs("results/steered_gradient", exist_ok=True)
-    OUTPUT_FILE = f"results/steered_gradient/steered_val_gradient_{TODAY}.jsonl"
-    SUMMARY_FILE = f"results/steered_gradient/summary_gradient_{TODAY}.json"
+    OUTPUT_FILE = f"results/steered_gradient/steered_val_gradient_{TODAY}_shard_{SHARD_ID}.jsonl"
+    SUMMARY_FILE = f"results/steered_gradient/summary_gradient_{TODAY}_shard_{SHARD_ID}.json"
 
 # Model configuration
 MODEL_ID = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
@@ -108,6 +128,7 @@ print(f"Model: {MODEL_ID}")
 print(f"Layers: {LAYERS_TO_TEST}")
 print(f"Target Values (t): {TARGET_VALUES}")
 print(f"Directions: {DIRECTIONS}")
+print(f"Running Shard {SHARD_ID + 1}/{NUM_SHARDS}")
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -131,7 +152,29 @@ def load_prompts_and_activations(jsonl_path, pkl_path):
 def load_mlp_probes(probes_dir, layers):
     """Load trained MLP probes."""
     print(f"\n--- Loading MLP Probes ---")
+    
+    # Check if probes exist locally; if not, try to copy from Drive
+    if IN_COLAB and (not os.path.exists(probes_dir) or not os.listdir(probes_dir)):
+        drive_probes_path = "/content/drive/MyDrive/results/probe_training/mlp"
+        print(f"Probes not found in {probes_dir}. Attempting to copy from Drive: {drive_probes_path}")
+        
+        if os.path.exists(drive_probes_path):
+            os.makedirs(probes_dir, exist_ok=True)
+            # Copy only the needed layers
+            for layer in layers:
+                src = f"{drive_probes_path}/layer_{layer}.pth"
+                dst = f"{probes_dir}/layer_{layer}.pth"
+                if os.path.exists(src):
+                    shutil.copy(src, dst)
+                    print(f"  Copied layer_{layer}.pth from Drive")
+                else:
+                    print(f"  Warning: layer_{layer}.pth not found in Drive")
+        else:
+            print(f"  Drive path {drive_probes_path} does not exist")
+
     probes = {}
+    missing_layers = []
+    
     for layer_idx in layers:
         probe_path = f"{probes_dir}/layer_{layer_idx}.pth"
         try:
@@ -145,7 +188,16 @@ def load_mlp_probes(probes_dir, layers):
             probes[layer_idx] = mlp
             print(f"  Loaded MLP for layer {layer_idx}")
         except FileNotFoundError:
-            print(f"  Warning: MLP probe for layer {layer_idx} not found")
+            print(f"  ERROR: MLP probe for layer {layer_idx} not found at {probe_path}")
+            missing_layers.append(layer_idx)
+            
+    if missing_layers:
+        raise FileNotFoundError(
+            f"Could not find MLP probes for layers: {missing_layers}. "
+            "Please ensure trained probes are in 'results/probe_training/mlp' "
+            "or uploaded to Google Drive at '/content/drive/MyDrive/results/probe_training/mlp'."
+        )
+            
     return probes
 
 def generate_with_gradient_steering(
@@ -171,7 +223,8 @@ def generate_with_gradient_steering(
         return ["ERROR: No Probe"] * len(prompts)
 
     responses = []
-    mlp = mlp_probes[layer_idx].to(model.device)
+    # Ensure MLP is on correct device and in float32 for stable optimization
+    mlp = mlp_probes[layer_idx].to(model.device).float()
     
     # Pre-compute steering vectors
     print("Computing per-prompt steering vectors...")
@@ -193,7 +246,8 @@ def generate_with_gradient_steering(
             steering_vectors_map[idx] = None
             continue
         
-        mean_activation = activation_tensor.mean(dim=0).to(model.device)
+        # Average over tokens, move to device, and CAST TO FLOAT32
+        mean_activation = activation_tensor.mean(dim=0).to(model.device).float()
         
         # Compute vector using updated logic
         steering_vec = compute_steering_vector_gradient(
@@ -204,6 +258,9 @@ def generate_with_gradient_steering(
             learning_rate=OPTIMIZATION_LR,
             num_steps=OPTIMIZATION_STEPS
         )
+        
+        # Cast back to model's dtype (likely float16/bfloat16) for generation
+        steering_vec = steering_vec.to(model.dtype)
         
         steering_vectors_map[idx] = steering_vec
     
@@ -244,13 +301,28 @@ def main():
     print("\n=== CELL 1: Load Data ===")
     prompts, activations = load_prompts_and_activations(INPUT_JSONL, INPUT_ACTIVATIONS)
     
+    # Filter for validation split
     val_prompts = []
     val_indices = []
     for idx, prompt_dict in enumerate(prompts):
         if prompt_dict.get('split') == 'val':
             val_prompts.append(prompt_dict)
             val_indices.append(idx)
-    print(f"Filtered {len(val_prompts)} validation prompts")
+    
+    total_val = len(val_prompts)
+    print(f"Total Validation Prompts: {total_val}")
+    
+    # --- SHARDING LOGIC ---
+    shard_size = math.ceil(total_val / NUM_SHARDS)
+    start_idx = SHARD_ID * shard_size
+    end_idx = min(start_idx + shard_size, total_val)
+    
+    val_prompts = val_prompts[start_idx:end_idx]
+    val_indices = val_indices[start_idx:end_idx]
+    
+    print(f"Processing Shard {SHARD_ID + 1}/{NUM_SHARDS}")
+    print(f"Prompts {start_idx} to {end_idx} (Count: {len(val_prompts)})")
+    # ----------------------
     
     print("\n=== CELL 2: Load Model and Probes ===")
     model, tokenizer = load_model(MODEL_ID)
@@ -308,7 +380,8 @@ def main():
                 'original_faithfulness': val_prompt.get('faithfulness_classification'),
                 'split': 'val',
                 'date': TODAY,
-                'model': MODEL_ID
+                'model': MODEL_ID,
+                'shard_id': SHARD_ID
             }
             output_data.append(record)
     
@@ -323,6 +396,8 @@ def main():
             'layers_tested': LAYERS_TO_TEST,
             'target_values': TARGET_VALUES,
             'directions': DIRECTIONS,
+            'shard_id': SHARD_ID,
+            'num_shards': NUM_SHARDS,
             'processing_time_seconds': time.time() - start_time
         },
         'configurations': {
@@ -336,6 +411,31 @@ def main():
     
     print(f"\n=== COMPLETE ===")
     print(f"Results saved to {OUTPUT_FILE}")
+    
+    # CELL 6: Verify Results Saved to Google Drive
+    print("\n=== CELL 6: Verify Results Saved to Google Drive ===")
+    
+    # Check if files exist in Drive
+    if os.path.exists(OUTPUT_FILE):
+        print(f"Output file saved to Drive: {OUTPUT_FILE}")
+        print(f"  Size: {os.path.getsize(OUTPUT_FILE) / 1024:.2f} KB")
+    else:
+        print(f"Warning: Output file not found at {OUTPUT_FILE}")
+    
+    if os.path.exists(SUMMARY_FILE):
+        print(f"Summary file saved to Drive: {SUMMARY_FILE}")
+        print(f"  Size: {os.path.getsize(SUMMARY_FILE) / 1024:.2f} KB")
+    else:
+        print(f"Warning: Summary file not found at {SUMMARY_FILE}")
+    
+    print(f"\n=== EXPERIMENT COMPLETE ===")
+    print(f"Results are saved in your Google Drive (MyDrive root):")
+    print(f"  - {os.path.basename(OUTPUT_FILE)}")
+    print(f"  - {os.path.basename(SUMMARY_FILE)}")
+    print(f"\nNext steps:")
+    print(f"  1. Access files from your Google Drive on any device")
+    print(f"  2. Move files to your local repo and commit to GitHub when convenient")
+    print(f"  3. Run eval_faithfulness.py to evaluate faithfulness of steered outputs")
 
 if __name__ == "__main__":
     main()
