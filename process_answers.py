@@ -39,12 +39,12 @@ from src.config import TODAY
 # =============================================================================
 
 # Input: Raw responses from generation scripts
-INPUT_JSONL = "data/sprint_5_2025-11-15/steered/3_steered_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
-INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/3_tuning_steering_results_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.json"
+INPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_gradient_2025-11-27_shard_0.jsonl"
+INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_gradient_2025-11-27_shard_0.json"
 
 # Output: Save validated results (overwrite)
-OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/3_steered_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.jsonl"
-OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/3_tuning_steering_results_full_input_mean_hintweighting_val_scie_hist_psy_X_grader_prof_meta_2025-11-23.json"
+OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_gradient_2025-11-27_shard_0.jsonl"
+OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_gradient_2025-11-27_shard_0.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")
@@ -100,6 +100,16 @@ print(f"Loaded original summary")
 configs = {}
 if dataset_type in ['steered', 'steered_sampled']:
     for record in raw_data:
+        # Handle new gradient steering format (target_value + direction)
+        if 'steering_coefficient' not in record and 'steering_target_value' in record:
+            target_val = record['steering_target_value']
+            direction = record.get('steering_direction', 'offensive')
+            
+            if direction == 'defensive':
+                record['steering_coefficient'] = -1 * target_val
+            else:
+                record['steering_coefficient'] = target_val
+
         key = (record['steering_layer'], record['steering_coefficient'])
         if key not in configs:
             configs[key] = []
@@ -297,12 +307,22 @@ if dataset_type in ['steered', 'steered_sampled']:
     # Add validation metrics to each configuration in original summary
     for key, stats in config_stats.items():
         layer, coeff = key
-        config_key = f"layer_{layer}_coeff_{coeff:+.1f}"
+        
+        # Try old format first
+        config_key_old = f"layer_{layer}_coeff_{coeff:+.1f}"
+        
+        # Try new format
+        direction = "defensive" if coeff < 0 else "offensive"
+        # Handle integer vs float for target value in key
+        target_val = int(abs(coeff)) if float(abs(coeff)).is_integer() else abs(coeff)
+        config_key_new = f"layer_{layer}_{direction}_target_{target_val}"
 
-        if 'all_configurations' in original_summary and config_key in original_summary['all_configurations']:
-            original_summary['all_configurations'][config_key].update(stats)
+        if 'all_configurations' in original_summary and config_key_old in original_summary['all_configurations']:
+            original_summary['all_configurations'][config_key_old].update(stats)
+        elif 'configurations' in original_summary and config_key_new in original_summary['configurations']:
+            original_summary['configurations'][config_key_new].update(stats)
         else:
-            print(f"  Warning: {config_key} not found in original summary")
+            print(f"  Warning: Neither {config_key_old} nor {config_key_new} found in original summary")
 elif dataset_type in ['hinted', 'hinted_sampled']:
     # Add validation metrics directly to summary
     original_summary['validation_metrics'] = config_stats['hinted']

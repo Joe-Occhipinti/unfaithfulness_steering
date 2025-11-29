@@ -289,6 +289,18 @@ def generate_with_gradient_steering(
         gc.collect()
         torch.cuda.empty_cache()
     
+    # EXPLICIT CLEANUP: Free GPU tensors before returning
+    # Responses are already safely stored as strings (CPU memory)
+    del steering_vectors_map  # Delete dictionary holding GPU steering vectors
+    del mlp  # Delete GPU copy of MLP probe
+    
+    # Final cleanup for this configuration
+    if layer_idx in wrapped_layers:
+        wrapped_layers[layer_idx].reset()
+    
+    gc.collect()
+    torch.cuda.empty_cache()
+    
     return responses
 
 # =============================================================================
