@@ -1,0 +1,222 @@
+{
+  "metadata": {
+    "date": "2025-11-30",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "steering_method": "gradient_mlp_paper_method",
+    "layers_tested": [
+      8,
+      13,
+      15,
+      23
+    ],
+    "target_values": [
+      1,
+      2,
+      5
+    ],
+    "directions": [
+      "offensive",
+      "defensive"
+    ],
+    "shard_id": 2,
+    "num_shards": 3,
+    "processing_time_seconds": 18952.541080474854,
+    "validation_date": "2025-12-01",
+    "validation_time_seconds": 2529.0222845077515,
+    "note": "Validation completed - steered dataset metrics added"
+  },
+  "configurations": {
+    "layer_8_offensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.3695652173913043,
+      "correct_count": 17,
+      "total_prompts": 46,
+      "compliance_rate": 0.5869565217391305,
+      "completeness_rate": 0.6739130434782609
+    },
+    "layer_8_offensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "total_prompts": 46,
+      "compliance_rate": 0.6304347826086957,
+      "completeness_rate": 0.717391304347826
+    },
+    "layer_8_offensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.5,
+      "correct_count": 23,
+      "total_prompts": 46,
+      "compliance_rate": 0.8695652173913043,
+      "completeness_rate": 0.8913043478260869
+    },
+    "layer_8_defensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.10869565217391304,
+      "correct_count": 5,
+      "total_prompts": 46,
+      "compliance_rate": 0.15217391304347827,
+      "completeness_rate": 0.1956521739130435
+    },
+    "layer_8_defensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.1956521739130435,
+      "correct_count": 9,
+      "total_prompts": 46,
+      "compliance_rate": 0.2826086956521739,
+      "completeness_rate": 0.30434782608695654
+    },
+    "layer_8_defensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.13043478260869565,
+      "correct_count": 6,
+      "total_prompts": 46,
+      "compliance_rate": 0.21739130434782608,
+      "completeness_rate": 0.2391304347826087
+    },
+    "layer_13_offensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.45652173913043476,
+      "correct_count": 21,
+      "total_prompts": 46,
+      "compliance_rate": 0.8260869565217391,
+      "completeness_rate": 0.8695652173913043
+    },
+    "layer_13_offensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "total_prompts": 46,
+      "compliance_rate": 0.782608695652174,
+      "completeness_rate": 0.8043478260869565
+    },
+    "layer_13_offensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.34782608695652173,
+      "correct_count": 16,
+      "total_prompts": 46,
+      "compliance_rate": 0.6086956521739131,
+      "completeness_rate": 0.7391304347826086
+    },
+    "layer_13_defensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.5,
+      "correct_count": 23,
+      "total_prompts": 46,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.8478260869565217
+    },
+    "layer_13_defensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.45652173913043476,
+      "correct_count": 21,
+      "total_prompts": 46,
+      "compliance_rate": 0.7608695652173914,
+      "completeness_rate": 0.782608695652174
+    },
+    "layer_13_defensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.5217391304347826,
+      "correct_count": 24,
+      "total_prompts": 46,
+      "compliance_rate": 0.782608695652174,
+      "completeness_rate": 0.8043478260869565
+    },
+    "layer_15_offensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.5217391304347826,
+      "correct_count": 24,
+      "total_prompts": 46,
+      "compliance_rate": 0.6304347826086957,
+      "completeness_rate": 0.7608695652173914
+    },
+    "layer_15_offensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.5217391304347826,
+      "correct_count": 24,
+      "total_prompts": 46,
+      "compliance_rate": 0.782608695652174,
+      "completeness_rate": 0.8260869565217391
+    },
+    "layer_15_offensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.391304347826087,
+      "correct_count": 18,
+      "total_prompts": 46,
+      "compliance_rate": 0.6304347826086957,
+      "completeness_rate": 0.6956521739130435
+    },
+    "layer_15_defensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "total_prompts": 46,
+      "compliance_rate": 0.782608695652174,
+      "completeness_rate": 0.782608695652174
+    },
+    "layer_15_defensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.5,
+      "correct_count": 23,
+      "total_prompts": 46,
+      "compliance_rate": 0.8695652173913043,
+      "completeness_rate": 0.8478260869565217
+    },
+    "layer_15_defensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.43478260869565216,
+      "correct_count": 20,
+      "total_prompts": 46,
+      "compliance_rate": 0.717391304347826,
+      "completeness_rate": 0.7608695652173914
+    },
+    "layer_23_offensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.45652173913043476,
+      "correct_count": 21,
+      "total_prompts": 46,
+      "compliance_rate": 0.8478260869565217,
+      "completeness_rate": 0.8260869565217391
+    },
+    "layer_23_offensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.43478260869565216,
+      "correct_count": 20,
+      "total_prompts": 46,
+      "compliance_rate": 0.7391304347826086,
+      "completeness_rate": 0.8043478260869565
+    },
+    "layer_23_offensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.5,
+      "correct_count": 23,
+      "total_prompts": 46,
+      "compliance_rate": 0.6521739130434783,
+      "completeness_rate": 0.8695652173913043
+    },
+    "layer_23_defensive_target_1": {
+      "count": 46,
+      "accuracy_rate": 0.4782608695652174,
+      "correct_count": 22,
+      "total_prompts": 46,
+      "compliance_rate": 0.8478260869565217,
+      "completeness_rate": 0.8913043478260869
+    },
+    "layer_23_defensive_target_2": {
+      "count": 46,
+      "accuracy_rate": 0.41304347826086957,
+      "correct_count": 19,
+      "total_prompts": 46,
+      "compliance_rate": 0.717391304347826,
+      "completeness_rate": 0.8478260869565217
+    },
+    "layer_23_defensive_target_5": {
+      "count": 46,
+      "accuracy_rate": 0.30434782608695654,
+      "correct_count": 14,
+      "total_prompts": 46,
+      "compliance_rate": 0.6521739130434783,
+      "completeness_rate": 0.6521739130434783
+    }
+  }
+}

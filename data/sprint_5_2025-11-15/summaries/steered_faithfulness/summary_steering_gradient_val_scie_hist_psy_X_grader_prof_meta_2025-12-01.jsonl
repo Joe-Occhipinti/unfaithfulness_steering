@@ -1,0 +1,16 @@
+{
+  "evaluation_date": "2025-12-01",
+  "method": "global_llm_judge_steered_with_stratification",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data/sprint_5_2025-11-15/steered/steered_gradient_val_scie_hist_psy_X_grader_prof_meta_2025-12-01.jsonl",
+  "subject": "science, history, psychology",
+  "total_records": 0,
+  "hint_templates": [],
+  "dataset_info": {
+    "total_configurations": 0,
+    "layers": [],
+    "coefficient_magnitudes": [],
+    "note": "Stratified by initial state (CF/CU/WF/WU) - 8 groups per configuration"
+  },
+  "configurations_by_hint": {}
+}

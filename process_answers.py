@@ -39,12 +39,12 @@ from src.config import TODAY
 # =============================================================================
 
 # Input: Raw responses from generation scripts
-INPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_gradient_2025-11-27_shard_0.jsonl"
-INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_gradient_2025-11-27_shard_0.json"
+INPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_gradient_2025-12-01_shard_1.jsonl"
+INPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_gradient_2025-12-01_shard_1.json"
 
 # Output: Save validated results (overwrite)
-OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_gradient_2025-11-27_shard_0.jsonl"
-OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_gradient_2025-11-27_shard_0.json"
+OUTPUT_JSONL = "data/sprint_5_2025-11-15/steered/steered_val_gradient_2025-12-01_shard_1.jsonl"
+OUTPUT_SUMMARY = "data/sprint_5_2025-11-15/steered/summary_gradient_2025-12-01_shard_1.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")
@@ -101,16 +101,14 @@ configs = {}
 if dataset_type in ['steered', 'steered_sampled']:
     for record in raw_data:
         # Handle new gradient steering format (target_value + direction)
-        if 'steering_coefficient' not in record and 'steering_target_value' in record:
+        if 'steering_target_value' in record:
             target_val = record['steering_target_value']
             direction = record.get('steering_direction', 'offensive')
+            key = (record['steering_layer'], target_val, direction)
+        else:
+            # Legacy coefficient format
+            key = (record['steering_layer'], record.get('steering_coefficient', 0))
             
-            if direction == 'defensive':
-                record['steering_coefficient'] = -1 * target_val
-            else:
-                record['steering_coefficient'] = target_val
-
-        key = (record['steering_layer'], record['steering_coefficient'])
         if key not in configs:
             configs[key] = []
         configs[key].append(record)
@@ -133,9 +131,16 @@ validated_data = []
 config_stats = {}
 
 for config_key, records in tqdm(configs.items(), desc="Validating configurations"):
-    if dataset_type == 'steered':
+    # Unpack key based on length (legacy vs new gradient)
+    if len(config_key) == 3:
+        layer_idx, target_val, direction = config_key
+        coeff_display = f"target {target_val}, {direction}"
+    else:
         layer_idx, coeff = config_key
-        print(f"\nValidating layer {layer_idx}, coefficient {coeff:+.1f}")
+        coeff_display = f"coeff {coeff:+.1f}"
+
+    if dataset_type == 'steered':
+        print(f"\nValidating layer {layer_idx}, {coeff_display}")
         print(f"  {len(records)} responses to validate")
         # Extract steered responses
         responses_to_validate = [r['steered_response'] for r in records]
@@ -143,8 +148,7 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
         answer_field = 'steered_answer_letter'
         accuracy_field = 'steered_accuracy'
     elif dataset_type == 'steered_sampled':
-        layer_idx, coeff = config_key
-        print(f"\nValidating layer {layer_idx}, coefficient {coeff:+.1f} (SAMPLED)")
+        print(f"\nValidating layer {layer_idx}, {coeff_display} (SAMPLED)")
         print(f"  {len(records)} sampled responses to validate")
         # Extract steered sampled responses
         responses_to_validate = [r['steered_sampled_generated_text'] for r in records]
@@ -254,7 +258,7 @@ for config_key, records in tqdm(configs.items(), desc="Validating configurations
 
     # Store stats for summary
     if dataset_type in ['steered', 'steered_sampled']:
-        config_stats[(layer_idx, coeff)] = {
+        config_stats[config_key] = {
             'accuracy_rate': accuracy_rate,
             'correct_count': correct_count,
             'total_prompts': len(records),
@@ -306,23 +310,34 @@ end_time = time.time()
 if dataset_type in ['steered', 'steered_sampled']:
     # Add validation metrics to each configuration in original summary
     for key, stats in config_stats.items():
-        layer, coeff = key
         
-        # Try old format first
-        config_key_old = f"layer_{layer}_coeff_{coeff:+.1f}"
-        
-        # Try new format
-        direction = "defensive" if coeff < 0 else "offensive"
-        # Handle integer vs float for target value in key
-        target_val = int(abs(coeff)) if float(abs(coeff)).is_integer() else abs(coeff)
-        config_key_new = f"layer_{layer}_{direction}_target_{target_val}"
-
-        if 'all_configurations' in original_summary and config_key_old in original_summary['all_configurations']:
-            original_summary['all_configurations'][config_key_old].update(stats)
-        elif 'configurations' in original_summary and config_key_new in original_summary['configurations']:
-            original_summary['configurations'][config_key_new].update(stats)
+        if len(key) == 3:
+            # New gradient format: (layer, target, direction)
+            layer, target_val, direction = key
+            config_key_new = f"layer_{layer}_{direction}_target_{target_val}"
+            
+            # Update summary if key exists
+            if 'configurations' in original_summary and config_key_new in original_summary['configurations']:
+                original_summary['configurations'][config_key_new].update(stats)
+            else:
+                print(f"  Warning: {config_key_new} not found in original summary")
+                
         else:
-            print(f"  Warning: Neither {config_key_old} nor {config_key_new} found in original summary")
+            # Legacy format: (layer, coeff)
+            layer, coeff = key
+            config_key_old = f"layer_{layer}_coeff_{coeff:+.1f}"
+            
+            # Try to map to new format just in case
+            direction = "defensive" if coeff < 0 else "offensive"
+            target_val = int(abs(coeff)) if float(abs(coeff)).is_integer() else abs(coeff)
+            config_key_new = f"layer_{layer}_{direction}_target_{target_val}"
+
+            if 'all_configurations' in original_summary and config_key_old in original_summary['all_configurations']:
+                original_summary['all_configurations'][config_key_old].update(stats)
+            elif 'configurations' in original_summary and config_key_new in original_summary['configurations']:
+                original_summary['configurations'][config_key_new].update(stats)
+            else:
+                print(f"  Warning: Neither {config_key_old} nor {config_key_new} found in original summary")
 elif dataset_type in ['hinted', 'hinted_sampled']:
     # Add validation metrics directly to summary
     original_summary['validation_metrics'] = config_stats['hinted']
