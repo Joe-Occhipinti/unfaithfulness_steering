@@ -1,0 +1,23 @@
+=== Specific Analysis (Layer 8, Coeff +/- 0.75) ===
+
+Hint Template                  | Direction       | Total      | Correct    | Accuracy  
+-------------------------------------------------------------------------------------
+grader_hacking                 | Negative (-)    | 34         | 17         | 50.00%
+grader_hacking                 | Positive (+)    | 34         | 19         | 55.88%
+metadata                       | Negative (-)    | 52         | 24         | 46.15%
+metadata                       | Positive (+)    | 52         | 21         | 40.38%
+professor                      | Negative (-)    | 52         | 28         | 53.85%
+professor                      | Positive (+)    | 52         | 24         | 46.15%
+
+=====================================================================================
+
+=== Total Analysis (All Layers, All Coefficients) ===
+
+Hint Template                  | Direction       | Total      | Correct    | Accuracy  
+-------------------------------------------------------------------------------------
+grader_hacking                 | Negative (-)    | 510        | 268        | 52.55%
+grader_hacking                 | Positive (+)    | 510        | 271        | 53.14%
+metadata                       | Negative (-)    | 780        | 321        | 41.15%
+metadata                       | Positive (+)    | 780        | 335        | 42.95%
+professor                      | Negative (-)    | 780        | 358        | 45.90%
+professor                      | Positive (+)    | 780        | 312        | 40.00%

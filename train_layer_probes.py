@@ -34,7 +34,7 @@ from src.probe import (
 DATASET_PATH = "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
 
 # Output directories
-OUTPUT_DIR = "results/probe_training"
+OUTPUT_DIR = "data/sprint_6_2025-12-15/probe_training_25_hidden"
 LOGREG_DIR = os.path.join(OUTPUT_DIR, "logreg")
 MLP_DIR = os.path.join(OUTPUT_DIR, "mlp")
 PLOTS_DIR = os.path.join(OUTPUT_DIR, "plots")
@@ -85,7 +85,7 @@ def save_mlp_model(model, metrics: dict, layer_idx: int):
         'model_state_dict': model.state_dict(),
         'config': {
             'input_dim': 4096,
-            'hidden_dim': 8,
+            'hidden_dim': 25,
         },
         'metrics': metrics,
         'layer_idx': layer_idx,
@@ -114,7 +114,7 @@ def plot_layer_performance(all_results: dict):
     fig, ax = plt.subplots(figsize=(12, 6))
     
     ax.plot(layers, logreg_val_accs, marker='o', label='Logistic Regression', linewidth=2)
-    ax.plot(layers, mlp_val_accs, marker='s', label='MLP (8 neurons)', linewidth=2)
+    ax.plot(layers, mlp_val_accs, marker='s', label='MLP (25 neurons)', linewidth=2)
     
     ax.axhline(y=0.5, color='red', linestyle='--', alpha=0.5, label='Random Baseline')
     
@@ -324,7 +324,7 @@ def main():
         mlp_checkpoint = torch.load(os.path.join(MLP_DIR, f"layer_{layer}.pth"))
         mlp_model = torch.nn.Module()  # Placeholder
         from src.probe import MLPProbe
-        mlp_model = MLPProbe(4096, 8)
+        mlp_model = MLPProbe(4096, 25)
         mlp_model.load_state_dict(mlp_checkpoint['model_state_dict'])
         mlp_model.eval()
         

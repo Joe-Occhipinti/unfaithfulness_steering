@@ -237,7 +237,7 @@ class MLPProbe(nn.Module):
         Input (4096) -> Linear -> ReLU -> Linear -> Output (1)
     """
     
-    def __init__(self, input_dim: int = 4096, hidden_dim: int = 8):
+    def __init__(self, input_dim: int = 4096, hidden_dim: int = 25):
         super().__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim)
         self.relu = nn.ReLU()
@@ -354,7 +354,7 @@ def train_mlp_probe(
     """
     # Initialize model
     input_dim = train_X.shape[1]
-    model = MLPProbe(input_dim=input_dim, hidden_dim=8)
+    model = MLPProbe(input_dim=input_dim, hidden_dim=25)
     
     optimizer = torch.optim.Adam(
         model.parameters(),
