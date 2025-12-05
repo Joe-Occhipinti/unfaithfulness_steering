@@ -1,0 +1,90 @@
+(venv) PS C:\Users\occhi\Desktop\unfaithfulness_steering> ssh-keygen -t ed25519
+Generating public/private ed25519 key pair.
+Enter file in which to save the key (C:\Users\occhi/.ssh/id_ed25519): 
+(venv) PS C:\Users\occhi\Desktop\unfaithfulness_steering> ssh-keygen -t ed25519
+Generating public/private ed25519 key pair.
+Enter file in which to save the key (C:\Users\occhi/.ssh/id_ed25519): 
+C:\Users\occhi/.ssh/id_ed25519 already exists.
+Overwrite (y/n)? y
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in C:\Users\occhi/.ssh/id_ed25519
+Your public key has been saved in C:\Users\occhi/.ssh/id_ed25519.pub
+The key fingerprint is:
+SHA256:Q6EZ16HWYhs7aZGurMro90Qr4DEpae5VKIu3sj9ByNU occhi@MM
+The key's randomart image is:
++--[ED25519 256]--+
+|    . . o...     |
+|   . E = =.      |
+|...   o X .      |
+|.oo .  = B       |
+|oO . o  S        |
+|* B o..o o       |
+|.+.+ oo          |
+|o+ooo.           |
+|+**oo.           |
++----[SHA256]-----+
+(venv) PS C:\Users\occhi\Desktop\unfaithfulness_steering> cat -/.ssh/id_ed25519.pub
+cat : Impossibile trovare il percorso 'C:\Users\occhi\Desktop\unfaithfulness_steering\-\.ssh\id_ed25519.pub' perché non esiste.
+In riga:1 car:1
++ cat -/.ssh/id_ed25519.pub
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\occhi\...\id_ed25519.pub:String) [Get-Content], ItemNotFoundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetContentCommand
+
+(venv) PS C:\Users\occhi\Desktop\unfaithfulness_steering> cat ~/.ssh/id_ed25519.pub
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHHmL4QVSn03HZG980PHk4QWR/Eum6F+laY0jz9TSm7a occhi@MM
+(venv) PS C:\Users\occhi\Desktop\unfaithfulness_steering> ssh p9o9ni37uhuxtq-64410ebe@ssh.runpod.io -i ~/.ssh/id_ed25519
+
+-- RUNPOD.IO --
+Enjoy your Pod #p9o9ni37uhuxtq ^_^
+
+ _____                             _ 
+|  __ \                           | |
+| |__) |   _ _ __  _ __   ___   __| |
+|  _  / | | | '_ \| '_ \ / _ \ / _` |
+| | \ \ |_| | | | | |_) | (_) | (_| |
+|_|  \_\__,_|_| |_| .__/ \___/ \__,_|
+                  | |
+                  |_|
+For detailed documentation and guides, please visit:
+https://docs.runpod.io/ and https://blog.runpod.io/
+
+
+root@2b070e7bf587:/# nvidia-smi
+Fri Dec  5 19:50:44 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.133.20             Driver Version: 570.133.20     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 PCIe               On  |   00000000:58:00.0 Off |                    0 |
+| N/A   25C    P0             43W /  310W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+root@2b070e7bf587:/# ls
+NGC-DL-CONTAINER-LICENSE  bin.usr-is-merged  dev  home  lib.usr-is-merged  media  opt   root  sbin                srv       sys  usr  workspace       
+bin                       boot               etc  lib   lib64              mnt    proc  run   sbin.usr-is-merged  start.sh  tmp  var
+root@2b070e7bf587:/# cd workspace
+root@2b070e7bf587:/workspace# git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering
+Cloning into 'unfaithfulness_steering'...
+remote: Enumerating objects: 5457, done.
+remote: Counting objects: 100% (17/17), done.
+remote: Compressing objects: 100% (14/14), done.
+remote: Total 5457 (delta 2), reused 10 (delta 2), pack-reused 5440 (from 2)
+Receiving objects: 100% (5457/5457), 674.89 MiB | 7.93 MiB/s, done.
+root@2b070e7bf587:/# ls
+NGC-DL-CONTAINER-LICENSE  bin.usr-is-merged  dev  home  lib.usr-is-merged  media  opt   root  sbin                srv       sys  usr  workspace       
+bin                       boot               etc  lib   lib64              mnt    proc  run   sbin.usr-is-merged  start.sh  tmp  var
+root@2b070e7bf587:/# cd workspace
+root@2b070e7bf587:/workspace# git clone https://github.com/Joe-Occhipinti/unfaithfulness_steering

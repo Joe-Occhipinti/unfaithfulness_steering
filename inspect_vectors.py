@@ -1,37 +1,31 @@
-"""
-Quick script to inspect the structure of vector pickle files
-"""
 import pickle
+import torch
 
-files = [
-    "data/sprint_5_2025-11-15/vectors/vectors_hints-weighting_cie_hist_psy_X_grader_prof_meta_2025-11-15.pkl",
-    "data/sprint_5_2025-11-15/vectors/vectors_domains-weighting_cie_hist_psy_X_grader_prof_meta_2025-11-15.pkl"
-]
-
-for file_path in files:
-    print(f"\n{'='*80}")
-    print(f"FILE: {file_path}")
-    print('='*80)
-
+def inspect_vectors(pkl_path):
+    print(f"Loading {pkl_path}...")
     try:
-        with open(file_path, 'rb') as f:
+        with open(pkl_path, 'rb') as f:
             data = pickle.load(f)
+    except FileNotFoundError:
+        print("File not found!")
+        return
 
-        print(f"Top-level keys: {list(data.keys())}")
+    print(f"Keys: {list(data.keys())}")
+    
+    vectors = data.get('steering_vectors', {})
+    print(f"Number of vectors: {len(vectors)}")
+    
+    if vectors:
+        first_layer = list(vectors.keys())[0]
+        vec = vectors[first_layer]
+        print(f"Layer {first_layer} vector shape: {vec.shape}")
+        print(f"Layer {first_layer} vector norm: {vec.norm().item():.4f}")
+        
+    stats = data.get('computation_stats', {})
+    print(f"Stats keys: {list(stats.keys())}")
+    
+    metadata = data.get('metadata', {})
+    print(f"Metadata: {metadata}")
 
-        if 'steering_vectors' in data:
-            sv = data['steering_vectors']
-            print(f"steering_vectors type: {type(sv)}")
-            print(f"steering_vectors length: {len(sv) if hasattr(sv, '__len__') else 'N/A'}")
-            if hasattr(sv, 'keys'):
-                print(f"steering_vectors keys: {list(sv.keys())[:10]}")  # First 10
-
-        if 'computation_stats' in data:
-            cs = data['computation_stats']
-            print(f"\ncomputation_stats keys: {list(cs.keys())}")
-            print(f"  config_fields: {cs.get('config_fields')}")
-            print(f"  total_configs: {cs.get('total_configs')}")
-            print(f"  layers_computed: {cs.get('layers_computed', [])[:10]}")  # First 10
-
-    except Exception as e:
-        print(f"ERROR loading file: {e}")
+if __name__ == "__main__":
+    inspect_vectors("results/activations_run2/steering_vectors.pkl")
