@@ -41,27 +41,6 @@ from src.model import load_model
 from src.probe import MLPProbe
 from src.config import TODAY
 from src.per_prompt_steering import apply_per_prompt_steering_to_model
-from src.gradient_steering import compute_steering_vector_gradient
-
-# =============================================================================
-# COMMAND-LINE ARGUMENTS
-# =============================================================================
-
-parser = argparse.ArgumentParser(description='Gradient Steering Evaluation (RunPod)')
-parser.add_argument('--shard', type=int, required=True, choices=[0, 1, 2],
-                    help='Shard ID to process (0, 1, or 2)')
-args = parser.parse_args()
-
-SHARD_ID = args.shard
-NUM_SHARDS = 3
-
-print(f"=== GRADIENT-BASED STEERING EVALUATION (RunPod) ===")
-print(f"Running Shard {SHARD_ID + 1}/{NUM_SHARDS}")
-
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
-
 # Input files
 INPUT_JSONL = "data/sprint_4_2025-10-15/annotated/touse_annotated_scie_hist_psy_X_grader_prof_meta_2025-10-25.jsonl"
 INPUT_ACTIVATIONS = "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
@@ -270,30 +249,6 @@ def main():
             gt = prompt_dict.get('ground_truth_letter')
             hint = prompt_dict.get('hint_letter')
             
-            # Only include if both exist and are different (biased hint)
-            if gt and hint and gt != hint:
-                val_prompts.append(prompt_dict)
-                val_indices.append(idx)
-    
-    total_val = len(val_prompts)
-    print(f"Total Validation Prompts (Biased Only): {total_val}")
-    
-    # --- SHARDING LOGIC ---
-    shard_size = math.ceil(total_val / NUM_SHARDS)
-    start_idx = SHARD_ID * shard_size
-    end_idx = min(start_idx + shard_size, total_val)
-    
-    val_prompts = val_prompts[start_idx:end_idx]
-    val_indices = val_indices[start_idx:end_idx]
-    
-    print(f"Processing Shard {SHARD_ID + 1}/{NUM_SHARDS}")
-    print(f"Prompts {start_idx} to {end_idx} (Count: {len(val_prompts)})")
-    # ----------------------
-    
-    print("\n=== STEP 2: Load Model and Probes ===")
-    model, tokenizer = load_model(MODEL_ID)
-    mlp_probes = load_mlp_probes(MLP_PROBES_DIR, LAYERS_TO_TEST)
-    
     print("Applying steering wrappers...")
     wrapped_layers = apply_per_prompt_steering_to_model(model, LAYERS_TO_TEST)
     

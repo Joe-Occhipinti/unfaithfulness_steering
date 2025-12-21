@@ -2,16 +2,16 @@ import json
 from pathlib import Path
 
 # Define input files
-base_dir = Path(r"C:\Users\occhi\Desktop\unfaithfulness_steering\data\sprint_5_2025-11-15\steered")
+base_dir = Path(r"C:\Users\occhi\Desktop\unfaithfulness_steering\data\sprint_6_2025-12-15")
 
 input_files = [
-    base_dir / "steered_val_gradient_2025-11-28_shard_0.jsonl",
-    base_dir / "steered_val_gradient_2025-12-01_shard_1.jsonl",
-    base_dir / "steered_val_gradient_2025-11-30_shard_2.jsonl"
+    base_dir / "steered_val_gradient_2hidden8_2025-12-07_shard_2.jsonl",
+    base_dir / "steered_val_gradient_2hidden8_2025-12-06_shard_1.jsonl",
+    base_dir / "steered_val_gradient_2hidden8_2025-12-06_shard_0.jsonl"
 ]
 
 # Define output file
-output_file = base_dir / "steering_gradient_val_scie_hist_psy_X_grader_prof_meta_2025-12-01.jsonl"
+output_file = base_dir / "steered_val_gradient_2hidden8_2025-12-06.jsonl"
 
 # Merge files
 total_records = 0

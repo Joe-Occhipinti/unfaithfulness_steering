@@ -10,6 +10,7 @@ import json
 import os
 import time
 from typing import Dict, Any, List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 from tqdm import tqdm
 
@@ -330,40 +331,81 @@ def print_accuracy_report(metrics: Dict[str, Any]) -> None:
     for subject, stats in metrics['subject_breakdown'].items():
         print(f"  {subject}: {stats['accuracy']:.3f} ({stats['correct']}/{stats['total']})")
 
-def validate_responses(responses: List[str], client: OpenAI) -> List[Dict[str, Any]]:
+def validate_responses(responses: List[str], client: OpenAI, batch_size: int = 20) -> List[Dict[str, Any]]:
     """
-    Validate multiple responses with rate limiting and progress tracking.
+    Validate multiple responses with batch parallelization and rate limiting.
     Uses the default validation model from config.
     Reusable across all evaluation scripts.
 
     Args:
         responses: List of responses to validate
         client: OpenAI client configured for OpenRouter
+        batch_size: Number of concurrent requests per batch (default: 20)
 
     Returns:
-        List of validation results
+        List of validation results in the same order as input responses
     """
     model = ModelConfig.DEFAULT_VALIDATION_MODEL
     min_delay = ModelConfig.get_min_delay(model)
+    
+    total_responses = len(responses)
+    print(f"\n--- Validating {total_responses} responses with {model} ---")
+    print(f"Rate limit: {min_delay:.1f}s per request")
+    print(f"Batch size: {batch_size} concurrent requests")
+    
+    # Calculate number of batches
+    num_batches = (total_responses + batch_size - 1) // batch_size
+    print(f"Processing {num_batches} batches")
+    
+    # Estimate time: each batch takes roughly batch_size * min_delay seconds
+    estimated_time = num_batches * batch_size * min_delay / 60
+    print(f"Estimated time: {estimated_time:.1f} minutes")
 
-    print(f"\n--- Validating {len(responses)} responses with {model} ---")
-    print(f"Rate limit: {min_delay:.1f}s delays between requests")
-    print(f"Estimated time: {len(responses) * min_delay / 60:.1f} minutes")
-
-    validations = []
+    validations = [None] * total_responses  # Pre-allocate to maintain order
     start_time = time.time()
 
-    for i, response in enumerate(tqdm(responses, desc="Validating")):
-        # Rate limiting: ensure minimum delay between requests
-        if i > 0:
-            elapsed = time.time() - request_start_time
-            if elapsed < min_delay:
-                sleep_time = min_delay - elapsed
+    # Process in batches
+    for batch_idx in tqdm(range(num_batches), desc="Processing batches"):
+        batch_start = batch_idx * batch_size
+        batch_end = min(batch_start + batch_size, total_responses)
+        batch_responses = responses[batch_start:batch_end]
+        
+        batch_start_time = time.time()
+        
+        # Submit all requests in this batch concurrently
+        with ThreadPoolExecutor(max_workers=len(batch_responses)) as executor:
+            # Submit all validation tasks
+            future_to_idx = {
+                executor.submit(validate_response, response, client): batch_start + i
+                for i, response in enumerate(batch_responses)
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                try:
+                    validation = future.result()
+                    validations[idx] = validation
+                except Exception as e:
+                    print(f"\n✗ Validation failed for response {idx}: {e}")
+                    # Use fallback validation result
+                    validations[idx] = {
+                        "format_followed": False,
+                        "response_complete": True,
+                        "final_answer": None
+                    }
+        
+        # Rate limiting: ensure minimum delay before next batch
+        # Wait for batch_size * min_delay to respect rate limits
+        if batch_idx < num_batches - 1:  # Don't wait after the last batch
+            batch_elapsed = time.time() - batch_start_time
+            required_delay = len(batch_responses) * min_delay
+            if batch_elapsed < required_delay:
+                sleep_time = required_delay - batch_elapsed
                 time.sleep(sleep_time)
-
-        # Validate single response
-        request_start_time = time.time()
-        validation = validate_response(response, client)
-        validations.append(validation)
-
+    
+    elapsed_time = time.time() - start_time
+    print(f"\nValidation complete in {elapsed_time / 60:.1f} minutes")
+    
+    return validations
     return validations
