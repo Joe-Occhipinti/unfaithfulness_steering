@@ -19,9 +19,9 @@ def get_subjects_from_records(records):
 
 def merge_datasets():
     # Define file paths
-    path_1 = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\data\annotated\hinted\annotated_local_biased_all_subjects_no_argument.jsonl"
-    path_2 = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\data\annotated\hinted\annotated_local_biased_argument_only.jsonl"
-    output_path = r"C:\Users\l440\Desktop\unfaithfulness_steering-1\data\merged_annotated_hinted_2025-10-15.jsonl"
+    path_1 = r"C:\Users\occhi\Desktop\unfaithfulness_steering\data\off_policy_2nd_2025-12-20\steered_val_1_off_policy_2_2025-12-20.jsonl"
+    path_2 = r"C:\Users\occhi\Desktop\unfaithfulness_steering\data\off_policy_2nd_2025-12-20\merged_off_policy_2nd_2025-12-20.jsonl"
+    output_path = r"C:\Users\occhi\Desktop\unfaithfulness_steering\data\steered_val_off_policy_2nd_2025-12-20.jsonl"
     
     print("Loading datasets...")
 

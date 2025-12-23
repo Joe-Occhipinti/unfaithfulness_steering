@@ -39,12 +39,12 @@ from src.config import TODAY
 # =============================================================================
 
 # Input: Raw responses from generation scripts
-INPUT_JSONL = "data/sprint_6_2025-12-15/steered_val_gradient_2hidden8_2025-12-07_shard_2.jsonl"
-INPUT_SUMMARY = "data/sprint_6_2025-12-15/summary_gradient_2hidden8_2025-12-07_shard_2.json"
+INPUT_JSONL = "data/off_policy_2nd_2025-12-20/steered_val_off_policy_2nd_2025-12-20.jsonl"
+INPUT_SUMMARY = "data/off_policy_2nd_2025-12-20/summary_steered_val_1_off_policy_2_2025-12-20.json"
 
 # Output: Save validated results (overwrite)
-OUTPUT_JSONL = "data/sprint_6_2025-12-15/steered_val_gradient_2hidden8_2025-12-07_shard_2.jsonl"
-OUTPUT_SUMMARY = "data/sprint_6_2025-12-15/summary_gradient_2hidden8_2025-12-07_shard_2.json"
+OUTPUT_JSONL = "data/off_policy_2nd_2025-12-20/steered_val_off_policy_2nd_2025-12-20.jsonl"
+OUTPUT_SUMMARY = "data/off_policy_2nd_2025-12-20/summary_steered_val_1_off_policy_2_2025-12-20.json"
 
 print(f"=== VALIDATION SCRIPT ===")
 print(f"Input JSONL: {INPUT_JSONL}")

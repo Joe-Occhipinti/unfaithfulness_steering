@@ -41,7 +41,7 @@ from src.steered_global_faithfulness import (
 # =============================================================================
 
 # Input file - steered evaluation results
-INPUT_FILE = "data/sprint_6_2025-12-15/steered_val_gradient_2hidden8_2025-12-06.jsonl"
+INPUT_FILE = "data/off_policy_2nd_2025-12-20/steered_val_off_policy_2nd_2025-12-20.jsonl"
 
 # Subject
 SUBJECT = "science, history, psychology"
@@ -60,14 +60,14 @@ TOP_K = 5  # Number of top configs to report
 
 OUTPUT_PATHS = {
     # Single combined outputs (all hint templates)
-    'annotated': "data/sprint_6_2025-12-15/annotated_steered_val_gradient_2hidden8_2025-12-06.jsonl",
-    'summary': "data/sprint_6_2025-12-15/summary_steered_val_gradient_2hidden8_2025-12-06.jsonl",
+    'annotated': "data/off_policy_2nd_2025-12-20/annotated_steered_val_off_policy_2nd_2025-12-20.jsonl",
+    'summary': "data/off_policy_2nd_2025-12-20/summary_steered_val_off_policy_2nd_2025-12-20.jsonl",
 
     # Plot directories per hint template (files auto-generated inside)
     'plots_by_hint': {
-        'grader_hacking': "data/sprint_6_2025-12-15/plots/grader_hacking_gradient_2hidden8_2025-12-06",
-        'professor': "data/sprint_6_2025-12-15/plots/professor_gradient_2hidden8_2025-12-06",
-        'metadata': "data/sprint_6_2025-12-15/plots/metadata_gradient_2hidden8_2025-12-06"
+        'grader_hacking': "data/off_policy_2nd_2025-12-20/plots/grader_hacking_off_policy_2nd_2025-12-20",
+        'professor': "data/off_policy_2nd_2025-12-20/plots/professor_off_policy_2nd_2025-12-20",
+        'metadata': "data/off_policy_2nd_2025-12-20/plots/metadata_off_policy_2nd_2025-12-20"
     }
 }
 
