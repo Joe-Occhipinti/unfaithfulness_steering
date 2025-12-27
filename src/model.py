@@ -8,12 +8,12 @@ Reusable across baseline, hinted, and steering evaluation scripts.
 import torch
 import gc
 from typing import List, Tuple, Any
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
 def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tuple[Any, Any]:
     """
-    Load model and tokenizer with optimized settings.
+    Load model and tokenizer with BF16 precision.
     Reusable across all evaluation scripts.
 
     Args:
@@ -24,28 +24,21 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
     """
     print(f"\n--- Loading model: {model_id} ---")
 
-    # Load tokenizer (requires transformers==4.44.2 for proper char_to_token mapping)
+    # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
         print("Tokenizer pad_token set to eos_token.")
 
-    # Configure 4-bit quantization (new API)
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
-        bnb_4bit_use_double_quant=True
-    )
-
-    # Load model with optimizations
+    # Load model with BF16 precision
+    # Note: BF16 requires Ampere GPUs (e.g., A100, RTX 30-series) or newer.
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        quantization_config=bnb_config,
-        device_map="auto"
+        torch_dtype=torch.bfloat16,  # Set precision to BF16
+        device_map="auto"            # Automatically handles multi-GPU/CPU offloading
     )
 
-    print(f"Model loaded successfully")
+    print(f"Model loaded successfully in BF16")
     return model, tokenizer
 
 def batch_generate(
