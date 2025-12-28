@@ -11,6 +11,11 @@ from typing import List, Tuple, Any
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
+
+# =============================================================================
+# HuggingFace Backend (Original)
+# =============================================================================
+
 def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tuple[Any, Any]:
     """
     Load model and tokenizer with BF16 precision.
@@ -40,6 +45,7 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
 
     print(f"Model loaded successfully in BF16")
     return model, tokenizer
+
 
 def batch_generate(
     model: Any,
@@ -107,6 +113,84 @@ def batch_generate(
     print(f"Generation complete: {len(all_answers)} responses generated")
     return all_answers
 
+
+# =============================================================================
+# vLLM Backend (High-Performance)
+# =============================================================================
+
+def load_model_vllm(
+    model_id: str,
+    tensor_parallel_size: int = 1,
+    max_model_len: int = 3072
+) -> Any:
+    """
+    Load model using vLLM for high-performance inference.
+    Recommended for large models (32B+) that cause OOM with HuggingFace.
+    
+    Args:
+        model_id: HuggingFace model identifier
+        tensor_parallel_size: Number of GPUs for tensor parallelism (default: 1)
+        max_model_len: Maximum sequence length (input + output). Default 3072 = 1024 + 2048.
+        
+    Returns:
+        vLLM LLM instance
+    """
+    from vllm import LLM
+    
+    print(f"\n--- Loading model with vLLM: {model_id} ---")
+    print(f"  Tensor parallel size: {tensor_parallel_size}")
+    print(f"  Max model len: {max_model_len}")
+    
+    llm = LLM(
+        model=model_id,
+        dtype="bfloat16",
+        tensor_parallel_size=tensor_parallel_size,
+        enforce_eager=True,  # Recommended for stability
+        max_model_len=max_model_len,
+    )
+    
+    print(f"Model loaded successfully with vLLM")
+    return llm
+
+
+def batch_generate_vllm(
+    llm: Any,
+    prompts: List[str],
+    max_new_tokens: int = 2048,
+) -> List[str]:
+    """
+    Generate text using vLLM's optimized inference engine.
+    vLLM handles batching and memory management automatically via continuous batching.
+    
+    Args:
+        llm: vLLM LLM instance
+        prompts: List of input prompts
+        max_new_tokens: Maximum new tokens to generate
+        
+    Returns:
+        List of generated text responses (in same order as prompts)
+    """
+    from vllm import SamplingParams
+    
+    print(f"\n--- Starting vLLM generation for {len(prompts)} prompts ---")
+    
+    sampling_params = SamplingParams(
+        max_tokens=max_new_tokens,
+        temperature=0,  # Deterministic (greedy decoding)
+    )
+    
+    outputs = llm.generate(prompts, sampling_params)
+    
+    # Extract generated text from each output
+    all_answers = [output.outputs[0].text.strip() for output in outputs]
+    
+    print(f"Generation complete: {len(all_answers)} responses generated")
+    return all_answers
+
+
+# =============================================================================
+# Other Utilities
+# =============================================================================
 
 def load_model_for_forward_pass(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tuple[Any, Any]:
     """

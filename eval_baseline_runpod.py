@@ -28,7 +28,7 @@ from pathlib import Path
 
 # Import reusable modules
 from src.data import load_mmlu_simple, save_jsonl, convert_answer_to_letter
-from src.model import load_model, batch_generate
+from src.model import load_model, batch_generate, load_model_vllm, batch_generate_vllm
 from src.config import TODAY, ModelConfig
 from src.prompts import create_baseline_prompts
 
@@ -112,6 +112,15 @@ Example:
         help="Output directory (default: same as script)"
     )
     
+    # Backend configuration
+    parser.add_argument(
+        "--backend",
+        type=str,
+        choices=["vllm", "hf"],
+        default="vllm",
+        help="Inference backend: 'vllm' (recommended, default) or 'hf' (HuggingFace)"
+    )
+    
     return parser.parse_args()
 
 
@@ -167,9 +176,6 @@ def evaluate_single_model(
     
     model_short_name = get_model_short_name(model_id)
     
-    # Determine batch size for this model
-    batch_size = get_batch_size_for_model(model_id, args.batch_size)
-    
     # Define output files for this model
     output_file = output_dir / f"baseline_results_{model_short_name}_{TODAY}.jsonl"
     summary_file = output_dir / f"baseline_summary_{model_short_name}_{TODAY}.json"
@@ -177,30 +183,60 @@ def evaluate_single_model(
     print(f"\n{'='*60}")
     print(f"EVALUATING MODEL: {model_id}")
     print(f"{'='*60}")
+    print(f"Backend: {args.backend}")
     print(f"Output: {output_file}")
-    print(f"Batch Size: {batch_size} (auto-detected)" if args.batch_size is None else f"Batch Size: {batch_size} (override)")
     print(f"Max New Tokens: {args.max_new_tokens}")
     
     start_time = time.time()
     
     # ==========================================================================
-    # Model Loading
+    # Model Loading & Generation (backend-specific)
     # ==========================================================================
-    print("\n--- Loading model ---")
-    model, tokenizer = load_model(model_id)
     
-    # ==========================================================================
-    # Text Generation
-    # ==========================================================================
-    print("\n--- Generating responses ---")
-    all_answers = batch_generate(
-        model=model,
-        tokenizer=tokenizer,
-        prompts=baseline_prompts,
-        batch_size=batch_size,
-        max_new_tokens=args.max_new_tokens,
-        max_input_length=args.max_input_length
-    )
+    if args.backend == "vllm":
+        # vLLM path - high performance, automatic batching
+        print("\n--- Loading model with vLLM ---")
+        llm = load_model_vllm(
+            model_id=model_id,
+            tensor_parallel_size=1,
+            max_model_len=args.max_input_length + args.max_new_tokens
+        )
+        
+        print("\n--- Generating responses with vLLM ---")
+        all_answers = batch_generate_vllm(
+            llm=llm,
+            prompts=baseline_prompts,
+            max_new_tokens=args.max_new_tokens
+        )
+        
+        # vLLM cleanup
+        del llm
+        gc.collect()
+        torch.cuda.empty_cache()
+        
+    else:
+        # HuggingFace path - original implementation
+        batch_size = get_batch_size_for_model(model_id, args.batch_size)
+        print(f"Batch Size: {batch_size} (auto-detected)" if args.batch_size is None else f"Batch Size: {batch_size} (override)")
+        
+        print("\n--- Loading model with HuggingFace ---")
+        model, tokenizer = load_model(model_id)
+        
+        print("\n--- Generating responses ---")
+        all_answers = batch_generate(
+            model=model,
+            tokenizer=tokenizer,
+            prompts=baseline_prompts,
+            batch_size=batch_size,
+            max_new_tokens=args.max_new_tokens,
+            max_input_length=args.max_input_length
+        )
+        
+        # HuggingFace cleanup
+        del model
+        del tokenizer
+        gc.collect()
+        torch.cuda.empty_cache()
     
     # ==========================================================================
     # Processing Results
@@ -228,7 +264,8 @@ def evaluate_single_model(
             'baseline_generated_text': generated_answer,
             
             # Model info
-            'model_id': model_id
+            'model_id': model_id,
+            'backend': args.backend
         }
         
         results.append(result)
@@ -248,11 +285,11 @@ def evaluate_single_model(
     summary = {
         'evaluation_date': TODAY,
         'model_id': model_id,
+        'backend': args.backend,
         'mmlu_subjects': args.subjects,
         'num_samples': len(results),
         'processing_time_seconds': end_time - start_time,
         'configuration': {
-            'batch_size': batch_size,
             'max_new_tokens': args.max_new_tokens,
             'max_input_length': args.max_input_length
         }
@@ -262,15 +299,6 @@ def evaluate_single_model(
         json.dump(summary, f, indent=2, ensure_ascii=False)
     
     print(f"Summary saved to {summary_file}")
-    
-    # ==========================================================================
-    # Cleanup GPU Memory
-    # ==========================================================================
-    print("\n--- Cleaning up GPU memory ---")
-    del model
-    del tokenizer
-    torch.cuda.empty_cache()
-    gc.collect()
     print("GPU memory cleared")
     
     return results, summary
@@ -292,11 +320,13 @@ def main():
     print("=" * 60)
     print("BASELINE EVALUATION (RunPod)")
     print("=" * 60)
+    print(f"Backend: {args.backend}")
     print(f"Models to evaluate: {len(args.models)}")
     for i, model in enumerate(args.models, 1):
         print(f"  {i}. {model}")
     print(f"MMLU Subjects: {args.subjects}")
-    print(f"Batch Size: {args.batch_size}")
+    if args.backend == "hf":
+        print(f"Batch Size: {args.batch_size or 'auto'}")
     print(f"Max New Tokens: {args.max_new_tokens}")
     print(f"Max Input Length: {args.max_input_length}")
     print(f"Num Samples: {args.num_samples or 'all'}")

@@ -1,28 +1,29 @@
 # Core ML libraries
-torch==2.2.0
-transformers==4.53.3
-accelerate==1.10.0
-bitsandbytes==0.46.1
+torch==2.4.1
+transformers==4.44.2
+accelerate==0.34.2
+bitsandbytes==0.43.3
 datasets==4.0.0
-huggingface-hub==0.31.4
+huggingface-hub==0.26.0
+vllm==0.6.0
 
 # API clients
-openai==1.30.5
-google-generativeai==0.8.5
-google-api-core==2.25.1
-google-auth==2.40.3
+openai==1.42.1
+google-generativeai==0.10.0
+google-api-core==2.42.0
+google-auth==2.22.0
 requests==2.32.3
 python-dotenv==1.1.1
 
 # Data processing
-numpy==1.26.4
+numpy==1.24.4
 pandas==2.2.2
 tqdm==4.67.1
 dill==0.3.8
 pyarrow==21.0.0
 
 # Visualization
-matplotlib==3.9.2
+matplotlib==3.7.2
 seaborn==0.13.2
 
 # ML and Statistics
