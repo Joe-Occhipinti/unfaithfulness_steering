@@ -33,7 +33,7 @@ from glob import glob
 
 # Import reusable modules
 from src.data import load_jsonl, save_jsonl
-from src.model import load_model, batch_generate
+from src.model import load_model, batch_generate, load_model_vllm, batch_generate_vllm
 from src.config import TODAY, ModelConfig
 from src.prompts import create_hinted_prompts
 
@@ -126,14 +126,26 @@ Example:
         help="Filter baseline data by MMLU subjects (optional)"
     )
     
+    # Backend configuration
+    parser.add_argument(
+        "--backend",
+        type=str,
+        choices=["vllm", "hf"],
+        default="vllm",
+        help="Inference backend: 'vllm' (recommended, default) or 'hf' (HuggingFace)"
+    )
+    
     return parser.parse_args()
 
 
 def get_model_short_name(model_id: str) -> str:
     """Extract a short name from a model ID for file naming."""
-    # e.g., "Qwen/Qwen3-32B" -> "qwen32b"
-    # e.g., "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" -> "deepseek8b"
-    return model_id.split('/')[-1].lower().replace('-', '').replace('_', '').replace('.', '')
+    # Get the last part of the model path and clean it
+    # e.g., "Qwen/Qwen3-32B" -> "Qwen3-32B"
+    short_name = model_id.split("/")[-1]
+    # Replace characters that are problematic in filenames
+    short_name = short_name.replace(" ", "_")
+    return short_name
 
 
 def get_batch_size_for_model(model_id: str, override_batch_size: int = None) -> int:
@@ -171,9 +183,12 @@ def get_batch_size_for_model(model_id: str, override_batch_size: int = None) -> 
 def find_baseline_file(input_dir: Path, model_short_name: str) -> Path:
     """Find the most recent baseline results file for a given model.
     
+    Searches the entire codebase recursively for baseline files matching
+    the model short name and selects the most recent by date.
+    
     Args:
-        input_dir: Directory to search for baseline files
-        model_short_name: Short model name (e.g., "qwen32b")
+        input_dir: Root directory to start search (typically codebase root)
+        model_short_name: Short model name (e.g., "Qwen3-32B", "qwen332b")
         
     Returns:
         Path to the most recent baseline file
@@ -181,19 +196,54 @@ def find_baseline_file(input_dir: Path, model_short_name: str) -> Path:
     Raises:
         FileNotFoundError: If no baseline file found for this model
     """
-    # Look for files matching pattern: baseline_results_{model_short_name}_*.jsonl
-    pattern = str(input_dir / f"baseline_results_{model_short_name}_*.jsonl")
-    matching_files = glob(pattern)
+    # Normalize model short name for flexible matching
+    # Try both the original format and a simplified version
+    model_lower = model_short_name.lower().replace('-', '').replace('_', '').replace('.', '')
+    
+    # Search recursively from input_dir
+    # Pattern: baseline_results_*_YYYY-MM-DD.jsonl
+    all_baseline_files = list(input_dir.rglob("baseline_results_*.jsonl"))
+    
+    # Also search parent directories if input_dir might be a subdirectory
+    root_dir = Path(__file__).parent.resolve()
+    if root_dir != input_dir:
+        all_baseline_files.extend(list(root_dir.rglob("baseline_results_*.jsonl")))
+    
+    # Deduplicate
+    all_baseline_files = list(set(all_baseline_files))
+    
+    # Filter by model name (flexible matching)
+    matching_files = []
+    for f in all_baseline_files:
+        filename = f.stem.lower().replace('-', '').replace('_', '').replace('.', '')
+        # Check if model name appears in filename
+        if model_lower in filename:
+            matching_files.append(f)
+    
+    if not matching_files:
+        # Try with original short name format
+        for f in all_baseline_files:
+            if model_short_name.lower() in f.stem.lower():
+                matching_files.append(f)
     
     if not matching_files:
         raise FileNotFoundError(
             f"No baseline results file found for model '{model_short_name}' in {input_dir}\n"
-            f"Expected pattern: baseline_results_{model_short_name}_YYYY-MM-DD.jsonl"
+            f"Searched {len(all_baseline_files)} baseline files across codebase.\n"
+            f"Expected pattern: baseline_results_*{model_short_name}*_YYYY-MM-DD.jsonl"
         )
     
-    # Return the most recent file (sorted by filename, which includes date)
-    most_recent = sorted(matching_files)[-1]
-    return Path(most_recent)
+    # Sort by date in filename (YYYY-MM-DD format) and return most recent
+    # Filename format: baseline_results_{model}_{date}.jsonl
+    def extract_date(path: Path) -> str:
+        """Extract date from filename for sorting."""
+        stem = path.stem  # baseline_results_Qwen3-32B_2025-12-28
+        parts = stem.split('_')
+        # Date is typically the last part
+        return parts[-1] if parts else ""
+    
+    most_recent = sorted(matching_files, key=extract_date)[-1]
+    return most_recent
 
 
 def get_subject_to_template_mapping() -> Dict[str, int]:
@@ -246,17 +296,28 @@ def evaluate_single_model(
     print(f"\n{'='*60}")
     print(f"EVALUATING MODEL: {model_id}")
     print(f"{'='*60}")
+    print(f"Backend: {args.backend}")
     print(f"Output: {output_file}")
-    print(f"Batch Size: {batch_size} (auto-detected)" if args.batch_size is None else f"Batch Size: {batch_size} (override)")
     print(f"Max New Tokens: {args.max_new_tokens}")
     
     start_time = time.time()
     
     # ==========================================================================
-    # Model Loading
+    # Model Loading (backend-specific)
     # ==========================================================================
-    print("\n--- Loading model ---")
-    model, tokenizer = load_model(model_id)
+    
+    if args.backend == "vllm":
+        print("\n--- Loading model with vLLM ---")
+        llm = load_model_vllm(
+            model_id=model_id,
+            tensor_parallel_size=1,
+            max_model_len=args.max_input_length + args.max_new_tokens
+        )
+    else:
+        batch_size = get_batch_size_for_model(model_id, args.batch_size)
+        print(f"Batch Size: {batch_size} (auto-detected)" if args.batch_size is None else f"Batch Size: {batch_size} (override)")
+        print("\n--- Loading model with HuggingFace ---")
+        model, tokenizer = load_model(model_id)
     
     # ==========================================================================
     # Load Baseline Data
@@ -311,7 +372,7 @@ def evaluate_single_model(
             correct_baseline,
             hint_mode="wrong",
             bias_strategies=[template_name],  # Only use this one template
-            distribution_strategy=None,  # Doesn't matter since we have 1 template
+            distribution_strategy="single",   # Single template per call
             distribution_config=None,
             random_seed=42,
             return_hint_info=True
@@ -329,17 +390,33 @@ def evaluate_single_model(
     print(f"\nReady to process {len(hinted_prompts)} total hinted prompts")
     
     # ==========================================================================
-    # Text Generation
+    # Text Generation (backend-specific)
     # ==========================================================================
     print("\n--- Generating responses ---")
-    all_answers = batch_generate(
-        model=model,
-        tokenizer=tokenizer,
-        prompts=hinted_prompts,
-        batch_size=batch_size,
-        max_new_tokens=args.max_new_tokens,
-        max_input_length=args.max_input_length
-    )
+    
+    if args.backend == "vllm":
+        all_answers = batch_generate_vllm(
+            llm=llm,
+            prompts=hinted_prompts,
+            max_new_tokens=args.max_new_tokens
+        )
+        # vLLM cleanup
+        del llm
+        gc.collect()
+        torch.cuda.empty_cache()
+    else:
+        all_answers = batch_generate(
+            model=model,
+            tokenizer=tokenizer,
+            prompts=hinted_prompts,
+            batch_size=batch_size,
+            max_new_tokens=args.max_new_tokens,
+            max_input_length=args.max_input_length
+        )
+        # HuggingFace cleanup
+        del model, tokenizer
+        gc.collect()
+        torch.cuda.empty_cache()
     
     # ==========================================================================
     # Process and Store Results
@@ -377,7 +454,8 @@ def evaluate_single_model(
             # Metadata
             'subject': baseline_item['subject'],
             'date': TODAY,
-            'model': model_id
+            'model': model_id,
+            'backend': args.backend,
         }
         
         results.append(result)
@@ -397,22 +475,22 @@ def evaluate_single_model(
         'metadata': {
             'date': TODAY,
             'model': model_id,
+            'backend': args.backend,
             'baseline_file': str(baseline_file),
-            'output_file': str(output_file),
+            'hinted_file': str(output_file),
             'num_examples': len(results),
             'processing_time_seconds': end_time - start_time
         },
         'configuration': {
-            'batch_size': batch_size,
             'max_new_tokens': args.max_new_tokens,
             'max_input_length': args.max_input_length,
             'bias_strategies': args.bias_strategies,
-            'distribution_strategy': args.distribution_strategy
+            'distribution_strategy': 'all_per_prompt'  # Each prompt gets all templates via loop
         },
         'hint_distribution': {
             'total_prompts': len(results),
-            'correct_baseline_wrong_hints': len(wrong_hint_prompts),
-            'wrong_baseline_correct_hints': len(correct_hint_prompts)
+            'correct_baseline_count': len(correct_baseline),
+            'templates_per_prompt': len(args.bias_strategies)
         },
         'note': 'Validation and answer extraction done separately in process_answers.py'
     }
@@ -421,11 +499,7 @@ def evaluate_single_model(
         json.dump(summary, f, indent=2, ensure_ascii=False)
     
     print(f"Summary saved to {summary_file}")
-    
-    # Clean up GPU memory
-    del model, tokenizer
-    torch.cuda.empty_cache()
-    gc.collect()
+    print("GPU memory cleared")
     
     return results, summary
 
@@ -451,12 +525,14 @@ def main():
     print("=" * 60)
     print("HINTED EVALUATION (RunPod)")
     print("=" * 60)
+    print(f"Backend: {args.backend}")
     print(f"Models to evaluate: {len(args.models)}")
     for i, model in enumerate(args.models, 1):
         print(f"  {i}. {model}")
     print(f"Bias Strategies: {args.bias_strategies}")
     print(f"Distribution Strategy: {args.distribution_strategy}")
-    print(f"Batch Size: {args.batch_size or 'auto-detect'}")
+    if args.backend == "hf":
+        print(f"Batch Size: {args.batch_size or 'auto-detect'}")
     print(f"Max New Tokens: {args.max_new_tokens}")
     print(f"Max Input Length: {args.max_input_length}")
     print(f"Num Samples: {args.num_samples or 'all'}")
@@ -505,8 +581,8 @@ def main():
         hint_dist = summary['hint_distribution']
         print(f"\n{model_id}:")
         print(f"  Total prompts: {hint_dist['total_prompts']}")
-        print(f"  Wrong hints (correct→wrong): {hint_dist['correct_baseline_wrong_hints']}")
-        print(f"  Correct hints (wrong→correct): {hint_dist['wrong_baseline_correct_hints']}")
+        print(f"  Correct baseline count: {hint_dist['correct_baseline_count']}")
+        print(f"  Templates per prompt: {hint_dist['templates_per_prompt']}")
         print(f"  Time: {summary['metadata']['processing_time_seconds']:.1f}s")
     
     print(f"\nResults saved to: {output_dir}")

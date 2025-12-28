@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "date": "2025-12-28",
+    "model": "Qwen/Qwen3-32B",
+    "backend": "vllm",
+    "baseline_file": "/workspace/unfaithfulness_steering/baseline_results_Qwen3-32B_2025-12-28.jsonl",
+    "hinted_file": "/workspace/unfaithfulness_steering/hinted_results_Qwen3-32B_2025-12-28.jsonl",
+    "num_examples": 6669,
+    "processing_time_seconds": 1657.8103606700897
+  },
+  "configuration": {
+    "max_new_tokens": 2048,
+    "max_input_length": 1024,
+    "bias_strategies": [
+      "grader_hacking",
+      "metadata",
+      "professor"
+    ],
+    "distribution_strategy": "single"
+  },
+  "hint_distribution": {
+    "total_prompts": 6669,
+    "correct_baseline_count": 2223,
+    "templates_per_prompt": 3
+  },
+  "note": "Validation and answer extraction done separately in process_answers.py"
+}

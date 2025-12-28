@@ -1,39 +1,35 @@
-# Core ML libraries
-torch==2.4.1
-transformers==4.44.2
-accelerate==0.34.2
-bitsandbytes==0.43.3
-datasets==4.0.0
-huggingface-hub==0.26.0
+# Core ML libraries - let vLLM manage torch/cuda versions
 vllm==0.6.0
 
+# These will be installed by vLLM with compatible versions:
+# torch, transformers, accelerate are vLLM dependencies
+
+# Additional HuggingFace libraries
+datasets>=2.14.0
+huggingface-hub>=0.20.0
+
 # API clients
-openai==1.42.1
-google-generativeai==0.10.0
-google-api-core==2.42.0
-google-auth==2.22.0
-requests==2.32.3
-python-dotenv==1.1.1
+openai>=1.0.0
+google-generativeai>=0.3.0
+requests>=2.28.0
+python-dotenv>=1.0.0
 
 # Data processing
-numpy==1.24.4
-pandas==2.2.2
-tqdm==4.67.1
-dill==0.3.8
-pyarrow==21.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+tqdm>=4.65.0
+dill>=0.3.6
+pyarrow>=12.0.0
 
 # Visualization
-matplotlib==3.7.2
-seaborn==0.13.2
+matplotlib>=3.7.0
+seaborn>=0.12.0
 
 # ML and Statistics
-scikit-learn==1.5.2
-scipy==1.13.1
-joblib==1.4.2
+scikit-learn>=1.3.0
+scipy>=1.11.0
+joblib>=1.3.0
 
 # Additional utilities
-fsspec==2025.3.0
-filelock==3.18.0
-regex==2024.11.6
-typing-extensions==4.13.2
-pyyaml==6.0.2
+pyyaml>=6.0
+regex>=2023.0.0
