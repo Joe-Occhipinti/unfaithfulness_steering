@@ -77,6 +77,20 @@ class ModelConfig:
         rpm = ModelConfig.RATE_LIMITS.get(model, 10)  # Default to 10 RPM if unknown
         return 60.0 / rpm
 
+    # Short name to full ID mapping (centralized)
+    MODEL_ID_MAP = {
+        "Qwen3-32B": "Qwen/Qwen3-32B",
+        "DeepSeek-Llama-8B": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+        "Olmo-3-7B-Think": "allenai/Olmo-3-7B-Think",
+    }
+
+    @staticmethod
+    def get_model_id(model_name: str) -> str:
+        """Map short model name to full HuggingFace model ID."""
+        if model_name in ModelConfig.MODEL_ID_MAP:
+            return ModelConfig.MODEL_ID_MAP[model_name]
+        return model_name
+
 # =============================================================================
 # VALIDATION CONFIGURATION
 # =============================================================================
@@ -100,7 +114,8 @@ class ValidationConfig:
 class ActivationConfig:
     """Configuration specific to activation extraction"""
 
-    PROMPT_FIELD = "local_annotated_biased_prompt"
+    PROMPT_FIELD = "local_annotated_biased_prompt"  # Field with annotated response (with tags)
+    INPUT_PROMPT_FIELD = "biased_input_prompt"  # Field with input prompt (to prepend)
     VERBOSE = True
     TARGET_TAGS = ["U_final", "F_final", "F_body", "U_body"]
 
@@ -129,6 +144,7 @@ class ActivationConfig:
         """Configure extraction parameters (excluding file paths)"""
         return {
             'prompt_field': ActivationConfig.PROMPT_FIELD,
+            'input_prompt_field': ActivationConfig.INPUT_PROMPT_FIELD,
             'target_tags': ActivationConfig.TARGET_TAGS,
             'layers_to_extract': ActivationConfig.get_layers_to_extract(model_id),
             'verbose': ActivationConfig.VERBOSE

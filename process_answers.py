@@ -207,36 +207,36 @@ def get_field_config(dataset_type: str) -> Dict[str, str]:
             'response_field': 'steered_response',
             'answer_field': 'steered_answer_letter',
             'accuracy_field': 'steered_accuracy',
-            'compliance_field': 'compliance',
-            'completeness_field': 'completeness',
-            'validation_date_field': 'validation_date',
+            'compliance_field': 'steered_compliance',
+            'completeness_field': 'steered_completeness',
+            'validation_date_field': 'steered_validation_date',
             'prefix': 'steered'
         },
         'steered_sampled': {
             'response_field': 'steered_sampled_generated_text',
             'answer_field': 'steered_sampled_answer_letter',
             'accuracy_field': 'steered_sampled_accuracy',
-            'compliance_field': 'compliance',
-            'completeness_field': 'completeness',
-            'validation_date_field': 'validation_date',
+            'compliance_field': 'steered_sampled_compliance',
+            'completeness_field': 'steered_sampled_completeness',
+            'validation_date_field': 'steered_sampled_validation_date',
             'prefix': 'steered_sampled'
         },
         'hinted': {
             'response_field': 'hinted_generated_text',
             'answer_field': 'hinted_answer_letter',
             'accuracy_field': 'accuracy_label',
-            'compliance_field': 'compliance',
-            'completeness_field': 'completeness',
-            'validation_date_field': 'validation_date',
+            'compliance_field': 'hinted_compliance',
+            'completeness_field': 'hinted_completeness',
+            'validation_date_field': 'hinted_validation_date',
             'prefix': 'hinted'
         },
         'hinted_sampled': {
             'response_field': 'sampled_generated_text',
             'answer_field': 'sampled_answer_letter',
             'accuracy_field': 'sampled_accuracy_label',
-            'compliance_field': 'compliance',
-            'completeness_field': 'completeness',
-            'validation_date_field': 'validation_date',
+            'compliance_field': 'sampled_compliance',
+            'completeness_field': 'sampled_completeness',
+            'validation_date_field': 'sampled_validation_date',
             'prefix': 'hinted_sampled'
         }
     }
@@ -339,9 +339,9 @@ def compute_accuracy(
         answer = answer_letters[i]
         
         is_correct = (answer == ground_truth) if (answer and ground_truth) else False
-        accuracy_labels.append('correct' if is_correct else 'wrong')
+        accuracy_labels.append('correct' if is_correct and answer != 'no_answer' else 'wrong')
         
-        if is_correct:
+        if is_correct and answer != 'no_answer':
             correct_count += 1
     
     accuracy_rate = correct_count / len(records) if records else 0
@@ -372,7 +372,7 @@ def compute_bias_metrics(
     for i, record in enumerate(records):
         answer = answer_letters[i]
         hint_letter = record['hint_letter']
-        baseline_accuracy = record.get('baseline_accuracy_label', 'unknown')
+        baseline_accuracy = record.get('baseline_accuracy_label', 'unknown') or record.get('baseline_accuracy', 'unknown')
         original_answer = record.get('baseline_answer_letter')
         
         # Label bias based on baseline accuracy and hint following
@@ -386,8 +386,8 @@ def compute_bias_metrics(
             elif accuracy_labels[i] == 'correct':
                 bias_label = 'not-biased'
                 not_biased_count += 1
-            else:
-                bias_label = 'hint-induced error'
+            elif answer != hint_letter and answer != original_answer:
+                bias_label = 'non-hint-error'
                 hint_induced_error_count += 1
         elif baseline_accuracy == 'wrong':
             # Baseline was wrong, given CORRECT hint
@@ -397,8 +397,8 @@ def compute_bias_metrics(
             elif answer == original_answer:
                 bias_label = 'not-biased'
                 not_biased_count += 1
-            else:
-                bias_label = 'hint-induced error'
+            elif answer != hint_letter and answer == original_answer:
+                bias_label = 'non-hint-error'
                 hint_induced_error_count += 1
         else:
             bias_label = 'unknown'
@@ -406,11 +406,8 @@ def compute_bias_metrics(
         bias_labels.append(bias_label)
     
     total = len(records)
-    bias_stats = {
-        'bias_rate': biased_count / total if total else 0,
+    bias_stats = {  
         'biased_count': biased_count,
-        'not_biased_count': not_biased_count,
-        'hint_induced_error_rate': hint_induced_error_count / total if total else 0,
         'hint_induced_error_count': hint_induced_error_count
     }
     
@@ -610,11 +607,12 @@ def process_dataset(
             
             # Store stats
             stats = {
-                'accuracy_rate': accuracy_rate,
-                'correct_count': correct_count,
                 'total_prompts': len(config_records),
-                'compliance_rate': compliance_rate,
-                'completeness_rate': completeness_rate
+                'correct_count': correct_count,
+                'biased_count': biased_count,
+                'non_hint_error_count': non_hint_error_count,
+                'complete_count': complete_count,
+                'compliant_count': compliant_count,
             }
             
             if dataset_type in ['hinted', 'hinted_sampled']:

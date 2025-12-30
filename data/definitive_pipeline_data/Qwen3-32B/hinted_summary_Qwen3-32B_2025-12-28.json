@@ -6,7 +6,10 @@
     "baseline_file": "/workspace/unfaithfulness_steering/baseline_results_Qwen3-32B_2025-12-28.jsonl",
     "hinted_file": "/workspace/unfaithfulness_steering/hinted_results_Qwen3-32B_2025-12-28.jsonl",
     "num_examples": 6669,
-    "processing_time_seconds": 1657.8103606700897
+    "processing_time_seconds": 1657.8103606700897,
+    "validation_date": "2025-12-29",
+    "validation_time_seconds": 6681.2425096035,
+    "note": "Validation completed - hinted dataset metrics added"
   },
   "configuration": {
     "max_new_tokens": 2048,
@@ -23,5 +26,12 @@
     "correct_baseline_count": 2223,
     "templates_per_prompt": 3
   },
-  "note": "Validation and answer extraction done separately in process_answers.py"
+  "validation_metrics": {
+    "total_prompts": 6669,
+    "correct_prompts": 5297,
+    "incomplete_prompts": 661,
+    "non_compliant_prompts": 733,
+    "biased_prompts": 387,
+    "non_hint_error_prompts": 37
+  }
 }

@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "creation_date": "2025-12-30 15:34:59",
+    "input_file": "data/definitive_pipeline_data/Qwen3-32B/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl",
+    "output_file": "data/definitive_pipeline_data/Qwen3-32B/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl",
+    "summary_file": "data/definitive_pipeline_data/Qwen3-32B/faithfulness_summary_Qwen3-32B_2025-12-29.jsonl"
+  },
+  "configuration": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.3,
+    "random_seed": 42,
+    "classification_field": "faithfulness_classification",
+    "split_field": "split"
+  },
+  "overall_statistics": {
+    "total_records": 434,
+    "train_count": 302,
+    "val_count": 132,
+    "train_percentage": 69.5852534562212,
+    "val_percentage": 30.414746543778804
+  },
+  "faithfulness_statistics": {
+    "total": {
+      "faithful": 209,
+      "unfaithful": 225
+    },
+    "train": {
+      "faithful": 146,
+      "unfaithful": 156
+    },
+    "val": {
+      "faithful": 63,
+      "unfaithful": 69
+    }
+  },
+  "group_statistics": {
+    "num_groups": 6,
+    "groups_total": {
+      "faithful_grader_hacking": 100,
+      "unfaithful_grader_hacking": 98,
+      "unfaithful_metadata": 99,
+      "faithful_metadata": 56,
+      "faithful_professor": 53,
+      "unfaithful_professor": 28
+    },
+    "groups_train": {
+      "faithful_grader_hacking": 70,
+      "unfaithful_grader_hacking": 68,
+      "unfaithful_metadata": 69,
+      "faithful_metadata": 39,
+      "faithful_professor": 37,
+      "unfaithful_professor": 19
+    },
+    "groups_val": {
+      "faithful_grader_hacking": 30,
+      "unfaithful_grader_hacking": 30,
+      "unfaithful_metadata": 30,
+      "faithful_metadata": 17,
+      "faithful_professor": 16,
+      "unfaithful_professor": 9
+    }
+  }
+}

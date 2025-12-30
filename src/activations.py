@@ -116,33 +116,57 @@ def extract_activations_from_annotated_prompts(
     model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
     target_tags: List[str] = None,
     layers_to_extract: List[int] = None,
+    input_prompt_field: str = None,
     verbose: bool = True
-) -> None:
+) -> Dict[str, Any]:
     """
     Main function to extract activations from annotated prompts.
+    Model-agnostic: infers num_layers and hidden_dim from the loaded model.
 
     Args:
         jsonl_filename: Path to JSONL file with annotated prompts
-        prompt_field: Field in JSONL containing annotated text
+        prompt_field: Field in JSONL containing annotated response text (with tags)
         output_dir: Directory to save activation files
         model_id: Hugging Face model ID
         target_tags: Tags to extract activations for
-        layers_to_extract: Layer indices to extract from
+        layers_to_extract: Layer indices to extract from (if None, extracts from all layers)
+        input_prompt_field: Optional field containing input prompt to prepend to annotated response.
+                           If provided, full text = input_prompt + annotated_response
         verbose: Print debug information
+    
+    Returns:
+        Dict with model_info containing num_layers, hidden_dim, and extraction metadata
     """
-    # Default parameters from legacy code
+    # Default tags
     if target_tags is None:
         target_tags = ["F", "F_wk", "U", "E", "N", "H", "Q", "A", "Fact", "F_final", "U_final"]
-    if layers_to_extract is None:
-        layers_to_extract = list(range(32))  # Full sweep for DeepSeek
 
     # Setup
     os.makedirs(output_dir, exist_ok=True)
-    if verbose:
-        print(f"--- Configuration ---\nModel: {model_id}\nInput File: {jsonl_filename}\nPrompt Field: {prompt_field}\nOutput Directory: {output_dir}\nTarget Tags: {target_tags}\nLayers: All {len(layers_to_extract)}\n---------------------")
 
     # Load model and tokenizer using reusable function
     model, tokenizer = load_model_for_forward_pass(model_id)
+    
+    # Infer model parameters dynamically (model-agnostic)
+    num_layers = len(model.model.layers)
+    hidden_dim = model.config.hidden_size
+    
+    # If layers_to_extract not specified, extract from all layers
+    if layers_to_extract is None:
+        layers_to_extract = list(range(num_layers))
+    
+    if verbose:
+        print(f"--- Configuration ---")
+        print(f"Model: {model_id}")
+        print(f"Inferred num_layers: {num_layers}")
+        print(f"Inferred hidden_dim: {hidden_dim}")
+        print(f"Input File: {jsonl_filename}")
+        print(f"Input Prompt Field: {input_prompt_field or 'None (not prepending)'}")
+        print(f"Annotated Response Field: {prompt_field}")
+        print(f"Output Directory: {output_dir}")
+        print(f"Target Tags: {target_tags}")
+        print(f"Layers to extract: {len(layers_to_extract)} (0-{max(layers_to_extract)})")
+        print(f"---------------------")
 
     # Wrap layers for activation extraction
     model = wrap_model_layers(model)
@@ -157,9 +181,17 @@ def extract_activations_from_annotated_prompts(
 
     # Main extraction loop
     for i, data_item in enumerate(tqdm(prompts_data, desc="Extracting Activations")):
-        annotated_text = data_item.get(prompt_field)
-        if not annotated_text:
+        annotated_response = data_item.get(prompt_field)
+        if not annotated_response:
             continue
+        
+        # Concatenate input prompt with annotated response if input_prompt_field is provided
+        if input_prompt_field:
+            input_prompt = data_item.get(input_prompt_field, "")
+            # Combine: input prompt + annotated response (with tags)
+            annotated_text = input_prompt + annotated_response
+        else:
+            annotated_text = annotated_response
 
         # 1. Generate clean text and get target character indices.
         clean_text, period_char_indices = get_clean_text_and_char_indices(annotated_text, target_tags)
@@ -284,6 +316,16 @@ def extract_activations_from_annotated_prompts(
         torch.cuda.empty_cache()
 
     print("\n--- Activation extraction complete! ---")
+    
+    # Return model info for downstream use (e.g., build_activation_dataset)
+    return {
+        "model_id": model_id,
+        "num_layers": num_layers,
+        "hidden_dim": hidden_dim,
+        "layers_extracted": layers_to_extract,
+        "target_tags": target_tags,
+        "output_dir": output_dir
+    }
 
 
 def get_activation_statistics(output_dir: str) -> Dict[str, Any]:
@@ -620,3 +662,210 @@ def print_dataset_summary(dataset: Dict[str, Any]) -> None:
     print(f"  dataset['data'][prompt_idx]['metadata'] = {{field: value, ...}}")
     print(f"  dataset['data'][prompt_idx]['layers'][layer_idx][tag] = tensor([num_activations, {info['hidden_dim']}])")
     print(f"\n--- Dataset building complete! ---")
+
+
+# =============================================================================
+# OFF-POLICY ACTIVATION EXTRACTION (Last Token Only)
+# =============================================================================
+
+def extract_off_policy_activations(
+    jsonl_filename: str,
+    output_dir: str,
+    model_id: str,
+    verbose: bool = True
+) -> Dict[str, Any]:
+    """
+    Extract last-token activations from off-policy responses.
+    
+    This is a simpler extraction that only captures the final token activation,
+    without parsing annotation tags.
+    
+    Args:
+        jsonl_filename: Path to JSONL file with off-policy responses
+        output_dir: Directory to save activation files
+        model_id: HuggingFace model ID
+        verbose: Whether to print progress
+        
+    Returns:
+        Dictionary with model info (num_layers, hidden_dim)
+    """
+    from .model import load_model_for_forward_pass
+    
+    # Load model and tokenizer
+    model, tokenizer, device = load_model_for_forward_pass(model_id)
+    
+    # Infer model dimensions
+    num_layers = len(model.model.layers)
+    hidden_dim = model.config.hidden_size
+    
+    if verbose:
+        print(f"\n=== OFF-POLICY ACTIVATION EXTRACTION ===")
+        print(f"Model: {model_id}")
+        print(f"Layers: {num_layers}")
+        print(f"Hidden Dimension: {hidden_dim}")
+        print(f"Input File: {jsonl_filename}")
+        print(f"Output Directory: {output_dir}")
+    
+    # Load data
+    prompts_data = []
+    with open(jsonl_filename, 'r', encoding='utf-8') as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+                biased_prompt = record.get('biased_input_prompt', '')
+                response = record.get('off_policy_response', '')
+                
+                if not biased_prompt or not response:
+                    continue
+                
+                # Concatenate with newline
+                full_text = f"{biased_prompt}\n{response}"
+                
+                prompts_data.append({
+                    'text': full_text,
+                    'label': record.get('label', 'unknown')
+                })
+            except json.JSONDecodeError:
+                continue
+    
+    if verbose:
+        print(f"Loaded {len(prompts_data)} prompts to process.")
+    
+    # Create output directory
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Main extraction loop
+    for i, item in enumerate(tqdm(prompts_data, desc="Extracting Last-Token Activations")):
+        text = item['text']
+        
+        # Tokenize
+        inputs = tokenizer(text, return_tensors="pt").to(device)
+        
+        # Forward pass
+        with torch.no_grad():
+            outputs = model(**inputs, output_hidden_states=True)
+        
+        # Extract last token activation from each layer
+        prompt_activations = {}
+        for layer_idx, layer_tensor in enumerate(outputs.hidden_states):
+            # Last token: [batch=0, seq_pos=-1, hidden_dim]
+            last_token_activation = layer_tensor[0, -1, :].cpu()
+            prompt_activations[layer_idx] = {
+                "last_token": last_token_activation
+            }
+        
+        # Save individual file
+        save_path = os.path.join(output_dir, f"prompt_{i}_activations.pt")
+        torch.save(prompt_activations, save_path)
+        
+        # Clear CUDA cache periodically
+        if i % 50 == 0 and i > 0:
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+    
+    if verbose:
+        print(f"\n=== Extraction complete! ===")
+        print(f"Saved {len(prompts_data)} activation files to {output_dir}")
+    
+    return {
+        'num_layers': num_layers,
+        'hidden_dim': hidden_dim,
+        'num_prompts': len(prompts_data)
+    }
+
+
+def build_off_policy_dataset(
+    activations_dir: str,
+    source_jsonl: str,
+    num_layers: int,
+    hidden_dim: int
+) -> Dict[str, Any]:
+    """
+    Build a consolidated dataset from off-policy activation files.
+    
+    Uses simpler per-prompt structure with only 'label' metadata.
+    
+    Args:
+        activations_dir: Directory containing .pt activation files
+        source_jsonl: Original JSONL file (for metadata)
+        num_layers: Number of model layers
+        hidden_dim: Hidden dimension size
+        
+    Returns:
+        Dataset dictionary with 'data' and 'info' keys
+    """
+    print(f"\n=== BUILDING OFF-POLICY DATASET ===")
+    
+    # Load original data for metadata
+    original_data = []
+    with open(source_jsonl, 'r', encoding='utf-8') as f:
+        for line in f:
+            try:
+                record = json.loads(line)
+                if record.get('biased_input_prompt') and record.get('off_policy_response'):
+                    original_data.append({'label': record.get('label', 'unknown')})
+            except json.JSONDecodeError:
+                continue
+    
+    # Initialize dataset
+    dataset = {
+        "data": {},
+        "info": {
+            "source_file": source_jsonl,
+            "activations_dir": activations_dir,
+            "num_layers": num_layers,
+            "hidden_dim": hidden_dim,
+            "tags": ["last_token"],
+            "mode": "off-policy"
+        }
+    }
+    
+    # Find all activation files
+    activation_files = [f for f in os.listdir(activations_dir) if f.endswith('_activations.pt')]
+    
+    count = 0
+    for filename in tqdm(activation_files, desc="Consolidating"):
+        try:
+            # Parse index from filename "prompt_{i}_activations.pt"
+            parts = filename.split('_')
+            if len(parts) >= 2 and parts[1].isdigit():
+                idx = int(parts[1])
+            else:
+                continue
+            
+            # Load activations
+            file_path = os.path.join(activations_dir, filename)
+            activations = torch.load(file_path, map_location='cpu')
+            
+            # Get metadata
+            if 0 <= idx < len(original_data):
+                metadata = original_data[idx]
+            else:
+                metadata = {'label': 'unknown'}
+            
+            # Add to dataset (per-prompt structure)
+            dataset["data"][idx] = {
+                "metadata": metadata,
+                "layers": activations
+            }
+            count += 1
+            
+        except Exception as e:
+            print(f"Error processing {filename}: {e}")
+    
+    dataset["info"]["total_prompts"] = count
+    
+    print(f"\n=== Dataset built! ===")
+    print(f"Total prompts: {count}")
+    print(f"Structure: dataset['data'][prompt_idx]['layers'][layer_idx]['last_token']")
+    
+    return dataset
+
+
+def save_off_policy_dataset(dataset: Dict[str, Any], output_path: str):
+    """Save off-policy dataset to pickle file."""
+    import pickle
+    with open(output_path, 'wb') as f:
+        pickle.dump(dataset, f)
+    print(f"Saved off-policy dataset to {output_path}")

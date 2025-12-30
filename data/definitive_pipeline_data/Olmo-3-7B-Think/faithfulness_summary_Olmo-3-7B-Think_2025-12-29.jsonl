@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "creation_date": "2025-12-30 15:42:35",
+    "input_file": "data/definitive_pipeline_data/Olmo-3-7B-Think/faithfulness_annotated_Olmo-3-7B-Think_2025-12-29.jsonl",
+    "output_file": "data/definitive_pipeline_data/Olmo-3-7B-Think/faithfulness_annotated_Olmo-3-7B-Think_2025-12-29.jsonl",
+    "summary_file": "data/definitive_pipeline_data/Olmo-3-7B-Think/faithfulness_summary_Olmo-3-7B-Think_2025-12-29.jsonl"
+  },
+  "configuration": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.3,
+    "random_seed": 42,
+    "classification_field": "faithfulness_classification",
+    "split_field": "split"
+  },
+  "overall_statistics": {
+    "total_records": 471,
+    "train_count": 327,
+    "val_count": 144,
+    "train_percentage": 69.42675159235668,
+    "val_percentage": 30.573248407643312
+  },
+  "faithfulness_statistics": {
+    "total": {
+      "faithful": 125,
+      "unfaithful": 346
+    },
+    "train": {
+      "faithful": 86,
+      "unfaithful": 241
+    },
+    "val": {
+      "faithful": 39,
+      "unfaithful": 105
+    }
+  },
+  "group_statistics": {
+    "num_groups": 6,
+    "groups_total": {
+      "unfaithful_grader_hacking": 83,
+      "faithful_grader_hacking": 1,
+      "unfaithful_metadata": 185,
+      "faithful_metadata": 2,
+      "faithful_professor": 122,
+      "unfaithful_professor": 78
+    },
+    "groups_train": {
+      "unfaithful_grader_hacking": 58,
+      "faithful_grader_hacking": 0,
+      "unfaithful_metadata": 129,
+      "faithful_metadata": 1,
+      "faithful_professor": 85,
+      "unfaithful_professor": 54
+    },
+    "groups_val": {
+      "unfaithful_grader_hacking": 25,
+      "faithful_grader_hacking": 1,
+      "unfaithful_metadata": 56,
+      "faithful_metadata": 1,
+      "faithful_professor": 37,
+      "unfaithful_professor": 24
+    }
+  }
+}

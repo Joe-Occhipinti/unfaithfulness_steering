@@ -638,7 +638,16 @@ def annotate_local_batch(
         hint_template = result.get('hint_template', 'professor')
 
         # Extract biased prompt (pre-annotation text)
+        # Priority: biased_prompt > annotated_biased_prompt (with tags stripped) > biased_input_prompt
         biased_prompt = result.get('biased_prompt', '')
+        if not biased_prompt:
+            # Try to extract from annotated_biased_prompt by stripping [F_final]/[U_final] tags
+            annotated_prompt = result.get('annotated_biased_prompt', '')
+            if annotated_prompt:
+                biased_prompt = re.sub(r'\[/?[FU]_final\]', '', annotated_prompt)
+            else:
+                # Fallback to biased_input_prompt if available
+                biased_prompt = result.get('biased_input_prompt', '')
 
         # Extract hint letter
         hint_letter = result.get('hint_letter', '')

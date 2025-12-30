@@ -10,6 +10,7 @@ import gc
 from typing import List, Tuple, Any
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
+from .config import ModelConfig
 
 
 # =============================================================================
@@ -28,6 +29,10 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
         Tuple of (model, tokenizer)
     """
     print(f"\n--- Loading model: {model_id} ---")
+
+    # Resolve model ID if short name provided
+    model_id = ModelConfig.get_model_id(model_id)
+    print(f"Resolved ID: {model_id}")
 
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -138,6 +143,10 @@ def load_model_vllm(
     from vllm import LLM
     
     print(f"\n--- Loading model with vLLM: {model_id} ---")
+    
+    # Resolve model ID if short name provided
+    model_id = ModelConfig.get_model_id(model_id)
+    print(f"Resolved ID: {model_id}")
     print(f"  Tensor parallel size: {tensor_parallel_size}")
     print(f"  Max model len: {max_model_len}")
     

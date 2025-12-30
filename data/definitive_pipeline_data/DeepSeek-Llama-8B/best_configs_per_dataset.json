@@ -1,0 +1,346 @@
+{
+  "annotated_steered_val_off_policy_2nd_2025-12-20": {
+    "grader_hacking": {
+      "layer": 13,
+      "strength": 0.6,
+      "score": 1.0,
+      "unfaithful_pos_correct_mentioning": 4.3478260869565215,
+      "unfaithful_neg_correct_mentioning": 4.3478260869565215,
+      "unfaithful_pos_correct": 60.869565217391305,
+      "unfaithful_neg_correct": 60.869565217391305,
+      "sample_size_unfaithful_pos": 23,
+      "sample_size_unfaithful_neg": 23,
+      "top_3": [
+        {
+          "layer": 13,
+          "strength": 0.6,
+          "score": 1.0
+        },
+        {
+          "layer": 28,
+          "strength": 0.75,
+          "score": 0.5
+        },
+        {
+          "layer": 28,
+          "strength": 1,
+          "score": 0.5
+        }
+      ]
+    },
+    "metadata": {
+      "layer": 8,
+      "strength": 0.75,
+      "score": 0.2941,
+      "unfaithful_pos_correct_mentioning": 12.820512820512821,
+      "unfaithful_neg_correct_mentioning": 17.94871794871795,
+      "unfaithful_pos_correct": 64.1025641025641,
+      "unfaithful_neg_correct": 38.46153846153846,
+      "sample_size_unfaithful_pos": 39,
+      "sample_size_unfaithful_neg": 39,
+      "top_3": [
+        {
+          "layer": 8,
+          "strength": 0.75,
+          "score": 0.2941
+        },
+        {
+          "layer": 13,
+          "strength": 1,
+          "score": 0.2917
+        },
+        {
+          "layer": 15,
+          "strength": 0.6,
+          "score": 0.2778
+        }
+      ]
+    },
+    "professor": {
+      "layer": 23,
+      "strength": 0.75,
+      "score": 1.0,
+      "unfaithful_pos_correct_mentioning": 21.428571428571427,
+      "unfaithful_neg_correct_mentioning": 14.285714285714286,
+      "unfaithful_pos_correct": 64.28571428571429,
+      "unfaithful_neg_correct": 50.0,
+      "sample_size_unfaithful_pos": 28,
+      "sample_size_unfaithful_neg": 28,
+      "top_3": [
+        {
+          "layer": 23,
+          "strength": 0.75,
+          "score": 1.0
+        },
+        {
+          "layer": 8,
+          "strength": 0.6,
+          "score": 0.75
+        },
+        {
+          "layer": 28,
+          "strength": 1,
+          "score": 0.7143
+        }
+      ]
+    }
+  },
+  "annotated_steered_off_policy_val_scie_hist_psy_X_grader_prof_meta_2025-12-5": {
+    "grader_hacking": {
+      "layer": 18,
+      "strength": 0.6,
+      "score": 2.0,
+      "unfaithful_pos_correct_mentioning": 8.695652173913043,
+      "unfaithful_neg_correct_mentioning": 0.0,
+      "unfaithful_pos_correct": 78.26086956521739,
+      "unfaithful_neg_correct": 60.869565217391305,
+      "sample_size_unfaithful_pos": 23,
+      "sample_size_unfaithful_neg": 23,
+      "top_3": [
+        {
+          "layer": 18,
+          "strength": 0.6,
+          "score": 2.0
+        },
+        {
+          "layer": 15,
+          "strength": 0.6,
+          "score": 0.6667
+        },
+        {
+          "layer": 28,
+          "strength": 0.75,
+          "score": 0.6
+        }
+      ]
+    },
+    "metadata": {
+      "layer": 13,
+      "strength": 0.75,
+      "score": 0.3333,
+      "unfaithful_pos_correct_mentioning": 12.820512820512821,
+      "unfaithful_neg_correct_mentioning": 12.820512820512821,
+      "unfaithful_pos_correct": 48.717948717948715,
+      "unfaithful_neg_correct": 38.46153846153846,
+      "sample_size_unfaithful_pos": 39,
+      "sample_size_unfaithful_neg": 39,
+      "top_3": [
+        {
+          "layer": 13,
+          "strength": 0.75,
+          "score": 0.3333
+        },
+        {
+          "layer": 18,
+          "strength": 1,
+          "score": 0.2759
+        },
+        {
+          "layer": 18,
+          "strength": 0.6,
+          "score": 0.2727
+        }
+      ]
+    },
+    "professor": {
+      "layer": 18,
+      "strength": 0.6,
+      "score": 1.0,
+      "unfaithful_pos_correct_mentioning": 7.142857142857143,
+      "unfaithful_neg_correct_mentioning": 0.0,
+      "unfaithful_pos_correct": 60.714285714285715,
+      "unfaithful_neg_correct": 42.857142857142854,
+      "sample_size_unfaithful_pos": 28,
+      "sample_size_unfaithful_neg": 28,
+      "top_3": [
+        {
+          "layer": 18,
+          "strength": 0.6,
+          "score": 1.0
+        },
+        {
+          "layer": 13,
+          "strength": 0.6,
+          "score": 0.8333
+        },
+        {
+          "layer": 23,
+          "strength": 0.6,
+          "score": 0.75
+        }
+      ]
+    }
+  },
+  "annotated_steered_val_gradient_2hidden8_2025-12-06": {
+    "grader_hacking": {
+      "layer": 15,
+      "strength": 1.0,
+      "score": 1.0,
+      "unfaithful_pos_correct_mentioning": 4.3478260869565215,
+      "unfaithful_neg_correct_mentioning": 0.0,
+      "unfaithful_pos_correct": 65.21739130434783,
+      "unfaithful_neg_correct": 60.869565217391305,
+      "sample_size_unfaithful_pos": 23,
+      "sample_size_unfaithful_neg": 23,
+      "top_3": [
+        {
+          "layer": 15,
+          "strength": 1.0,
+          "score": 1.0
+        },
+        {
+          "layer": 13,
+          "strength": 1.0,
+          "score": 0.3333
+        },
+        {
+          "layer": 23,
+          "strength": 2.0,
+          "score": 0.3333
+        }
+      ]
+    },
+    "metadata": {
+      "layer": 13,
+      "strength": 1.0,
+      "score": 0.75,
+      "unfaithful_pos_correct_mentioning": 15.384615384615385,
+      "unfaithful_neg_correct_mentioning": 7.6923076923076925,
+      "unfaithful_pos_correct": 58.97435897435897,
+      "unfaithful_neg_correct": 53.84615384615385,
+      "sample_size_unfaithful_pos": 39,
+      "sample_size_unfaithful_neg": 39,
+      "top_3": [
+        {
+          "layer": 13,
+          "strength": 1.0,
+          "score": 0.75
+        },
+        {
+          "layer": 15,
+          "strength": 5.0,
+          "score": 0.5
+        },
+        {
+          "layer": 23,
+          "strength": 1.0,
+          "score": 0.4
+        }
+      ]
+    },
+    "professor": {
+      "layer": 15,
+      "strength": 2.0,
+      "score": 1.0,
+      "unfaithful_pos_correct_mentioning": 14.285714285714286,
+      "unfaithful_neg_correct_mentioning": 3.5714285714285716,
+      "unfaithful_pos_correct": 50.0,
+      "unfaithful_neg_correct": 39.285714285714285,
+      "sample_size_unfaithful_pos": 28,
+      "sample_size_unfaithful_neg": 28,
+      "top_3": [
+        {
+          "layer": 15,
+          "strength": 2.0,
+          "score": 1.0
+        },
+        {
+          "layer": 13,
+          "strength": 2.0,
+          "score": 0.6667
+        },
+        {
+          "layer": 23,
+          "strength": 1.0,
+          "score": 0.5
+        }
+      ]
+    }
+  },
+  "annotated_steered_val_hintweighting_scie_hist_psy_X_grader_prof_meta_2025-10-25": {
+    "grader_hacking": {
+      "layer": 28,
+      "strength": 0.75,
+      "score": 0.5,
+      "unfaithful_pos_correct_mentioning": 8.695652173913043,
+      "unfaithful_neg_correct_mentioning": 4.3478260869565215,
+      "unfaithful_pos_correct": 69.56521739130434,
+      "unfaithful_neg_correct": 69.56521739130434,
+      "sample_size_unfaithful_pos": 23,
+      "sample_size_unfaithful_neg": 23,
+      "top_3": [
+        {
+          "layer": 28,
+          "strength": 0.75,
+          "score": 0.5
+        },
+        {
+          "layer": 18,
+          "strength": 0.75,
+          "score": 0.3333
+        },
+        {
+          "layer": 28,
+          "strength": 0.6,
+          "score": 0.3333
+        }
+      ]
+    },
+    "metadata": {
+      "layer": 8,
+      "strength": 0.6,
+      "score": 0.4,
+      "unfaithful_pos_correct_mentioning": 15.384615384615385,
+      "unfaithful_neg_correct_mentioning": 12.820512820512821,
+      "unfaithful_pos_correct": 48.717948717948715,
+      "unfaithful_neg_correct": 41.02564102564103,
+      "sample_size_unfaithful_pos": 39,
+      "sample_size_unfaithful_neg": 39,
+      "top_3": [
+        {
+          "layer": 8,
+          "strength": 0.6,
+          "score": 0.4
+        },
+        {
+          "layer": 23,
+          "strength": 0.75,
+          "score": 0.35
+        },
+        {
+          "layer": 23,
+          "strength": 0.6,
+          "score": 0.3125
+        }
+      ]
+    },
+    "professor": {
+      "layer": 28,
+      "strength": 0.6,
+      "score": 0.4286,
+      "unfaithful_pos_correct_mentioning": 10.714285714285714,
+      "unfaithful_neg_correct_mentioning": 10.714285714285714,
+      "unfaithful_pos_correct": 50.0,
+      "unfaithful_neg_correct": 50.0,
+      "sample_size_unfaithful_pos": 28,
+      "sample_size_unfaithful_neg": 28,
+      "top_3": [
+        {
+          "layer": 28,
+          "strength": 0.6,
+          "score": 0.4286
+        },
+        {
+          "layer": 8,
+          "strength": 0.75,
+          "score": 0.375
+        },
+        {
+          "layer": 8,
+          "strength": 0.6,
+          "score": 0.3333
+        }
+      ]
+    }
+  }
+}
