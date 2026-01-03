@@ -33,6 +33,22 @@ class BlockOutputWrapper(torch.nn.Module):
     def reset(self):
         self.last_hidden_state = None
 
+    def __getattr__(self, name):
+        """Forward attribute access to wrapped block for model compatibility (e.g., Qwen3)."""
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            # Use object.__getattribute__ to avoid recursion when accessing self.block
+            # This handles the case where super().__getattr__ fails but we want to forward
+            # to the wrapped block (e.g. attention_type)
+            try:
+                block = object.__getattribute__(self, '_modules')['block']
+                return getattr(block, name)
+            except (KeyError, AttributeError):
+                # If block is not in _modules or block doesn't have the attribute,
+                # re-raise the original AttributeError to avoid confusing error messages
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
 
 def wrap_model_layers(model):
     """
@@ -692,7 +708,8 @@ def extract_off_policy_activations(
     from .model import load_model_for_forward_pass
     
     # Load model and tokenizer
-    model, tokenizer, device = load_model_for_forward_pass(model_id)
+    model, tokenizer = load_model_for_forward_pass(model_id)
+    device = next(model.parameters()).device
     
     # Infer model dimensions
     num_layers = len(model.model.layers)
@@ -803,8 +820,14 @@ def build_off_policy_dataset(
         for line in f:
             try:
                 record = json.loads(line)
+                # Alternating labels: Unfaithful, Faithful, Unfaithful, ...
+                # Index 0 -> Unfaithful
+                # Index 1 -> Faithful
+                current_idx = len(original_data)
+                label = 'unfaithful' if current_idx % 2 == 0 else 'faithful'
+                
                 if record.get('biased_input_prompt') and record.get('off_policy_response'):
-                    original_data.append({'label': record.get('label', 'unknown')})
+                    original_data.append({'label': label})
             except json.JSONDecodeError:
                 continue
     

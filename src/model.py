@@ -162,6 +162,49 @@ def load_model_vllm(
     return llm
 
 
+def load_model_easysteer(
+    model_id: str,
+    tensor_parallel_size: int = 1,
+    max_model_len: int = 3072
+) -> Any:
+    """
+    Load model using vLLM with EasySteer steering vector support.
+    
+    This enables applying steering vectors during inference via SteerVectorRequest.
+    
+    Args:
+        model_id: HuggingFace model identifier
+        tensor_parallel_size: Number of GPUs for tensor parallelism (default: 1)
+        max_model_len: Maximum sequence length (input + output). Default 3072 = 1024 + 2048.
+        
+    Returns:
+        vLLM LLM instance with steering vector support enabled
+    """
+    from vllm import LLM
+    
+    print(f"\n--- Loading model with EasySteer + vLLM: {model_id} ---")
+    
+    # Resolve model ID if short name provided
+    model_id = ModelConfig.get_model_id(model_id)
+    print(f"Resolved ID: {model_id}")
+    print(f"  Tensor parallel size: {tensor_parallel_size}")
+    print(f"  Max model len: {max_model_len}")
+    print(f"  Steering vectors: ENABLED")
+    
+    llm = LLM(
+        model=model_id,
+        dtype="bfloat16",
+        tensor_parallel_size=tensor_parallel_size,
+        enable_steer_vector=True,      # EasySteer key flag
+        enforce_eager=True,             # Required for reliable steering
+        enable_chunked_prefill=False,   # Required for steering compatibility
+        max_model_len=max_model_len,
+    )
+    
+    print(f"Model loaded successfully with EasySteer steering support")
+    return llm
+
+
 def batch_generate_vllm(
     llm: Any,
     prompts: List[str],

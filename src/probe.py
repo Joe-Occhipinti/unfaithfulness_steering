@@ -231,27 +231,38 @@ def load_balanced_data_for_layer(
 
 class MLPProbe(nn.Module):
     """
-    Simple MLP probe with 1 hidden layer.
+    MLP probe with configurable architecture.
     
     Architecture:
-        Input (4096) -> Linear -> ReLU -> Linear -> Output (1)
+        Input (input_dim) -> [Linear -> ReLU] × num_hidden_layers -> Linear -> Output (1)
     """
     
-    def __init__(self, input_dim: int = 4096, hidden_dim: int = 8):
+    def __init__(self, input_dim: int = 4096, hidden_dim: int = 8, num_hidden_layers: int = 2):
         super().__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc3 = nn.Linear(hidden_dim, 1)
+        
+        layers = []
+        # First hidden layer
+        layers.append(nn.Linear(input_dim, hidden_dim))
+        layers.append(nn.ReLU())
+        
+        # Additional hidden layers
+        for _ in range(num_hidden_layers - 1):
+            layers.append(nn.Linear(hidden_dim, hidden_dim))
+            layers.append(nn.ReLU())
+        
+        # Output layer (binary classification)
+        layers.append(nn.Linear(hidden_dim, 1))
+        
+        self.network = nn.Sequential(*layers)
+        
+        # Store config for serialization
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.num_hidden_layers = num_hidden_layers
     
     def forward(self, x):
         """Forward pass. Returns logits (no sigmoid)."""
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        x = self.relu(x)
-        x = self.fc3(x)
-        return x
+        return self.network(x)
 
 
 # =============================================================================
@@ -327,12 +338,15 @@ def train_mlp_probe(
     train_y: torch.Tensor,
     val_X: torch.Tensor,
     val_y: torch.Tensor,
+    hidden_dim: int = 8,
+    num_hidden_layers: int = 2,
     learning_rate: float = 0.001,
     batch_size: int = 32,
     max_epochs: int = 200,
     weight_decay: float = 0.01,
     patience: int = 20,
     min_delta: float = 0.0001,
+    random_seed: int = 42,
     verbose: bool = False
 ) -> Tuple[MLPProbe, Dict]:
     """
@@ -343,21 +357,29 @@ def train_mlp_probe(
         train_y: Training labels
         val_X: Validation activations
         val_y: Validation labels
+        hidden_dim: Neurons per hidden layer
+        num_hidden_layers: Number of hidden layers
         learning_rate: Adam learning rate
         batch_size: Batch size for training
         max_epochs: Maximum training epochs
         weight_decay: L2 regularization strength
         patience: Early stopping patience
         min_delta: Minimum improvement for early stopping
+        random_seed: Random seed for reproducibility
         verbose: Print training progress
     
     Returns:
         model: Trained MLPProbe
         metrics: Dictionary of performance metrics and training history
     """
+    # Set random seeds for reproducibility
+    torch.manual_seed(random_seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(random_seed)
+    
     # Initialize model
     input_dim = train_X.shape[1]
-    model = MLPProbe(input_dim=input_dim, hidden_dim=8)
+    model = MLPProbe(input_dim=input_dim, hidden_dim=hidden_dim, num_hidden_layers=num_hidden_layers)
     
     optimizer = torch.optim.Adam(
         model.parameters(),

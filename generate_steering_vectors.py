@@ -227,7 +227,12 @@ def compute_off_policy_vectors(dataset: Dict[str, Any]) -> tuple:
     layer_stats = {}
     
     sorted_layers = sorted(layer_activations.keys())
-    print(f"Computing vectors for {len(sorted_layers)} layers...")
+    
+    # Check for Layer 0 (Embeddings)
+    if 0 in sorted_layers:
+        print(f"Found {len(sorted_layers)} layers. Skipping Layer 0 (Embeddings) to compute vectors for {len(sorted_layers)-1} hidden layers.")
+    else:
+        print(f"Computing vectors for {len(sorted_layers)} layers...")
     
     for layer_idx in sorted_layers:
         faithful_list = layer_activations[layer_idx]['faithful']
@@ -299,8 +304,12 @@ def main():
     output_dir = os.path.join("data", args.model_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    output_file = os.path.join(output_dir, f"vectors_{args.model_name}.pkl")
-    summary_file = os.path.join(output_dir, f"summary_vectors_{args.model_name}.json")
+    if args.mode == "off-policy":
+        output_file = os.path.join(output_dir, f"vectors_{args.model_name}_off_policy.pkl")
+        summary_file = os.path.join(output_dir, f"summary_vectors_{args.model_name}_off_policy.json")
+    else:
+        output_file = os.path.join(output_dir, f"vectors_{args.model_name}.pkl")
+        summary_file = os.path.join(output_dir, f"summary_vectors_{args.model_name}.json")
 
     start_time = time.time()
 

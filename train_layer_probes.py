@@ -1,17 +1,22 @@
 """
 train_layer_probes.py
 
-Train linear and non-linear probes for all 32 layers to detect faithfulness vs unfaithfulness
+Train linear and non-linear probes for all layers to detect faithfulness vs unfaithfulness
 in LLM activations. Saves trained models and generates performance analysis.
 
 Usage:
-    python train_layer_probes.py
+    python train_layer_probes.py --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+    python train_layer_probes.py --model "Qwen/Qwen3-32B" --input-activations path/to/activations.pkl
 """
 
 import os
+import re
 import json
 import pickle
+import argparse
 from datetime import datetime
+from pathlib import Path
+from typing import Optional
 
 import torch
 import matplotlib.pyplot as plt
@@ -25,67 +30,156 @@ from src.probe import (
     compute_per_template_performance,
     print_layer_results
 )
+from src.config import TODAY
+
 
 # =============================================================================
-# CONFIGURATION
+# FILE DISCOVERY UTILITIES
 # =============================================================================
 
-# Dataset
-DATASET_PATH = "data/sprint_4_2025-10-15/datasets/new_scie_hist_psy_X_grader_prof_meta_2025-10-25.pkl"
+def get_model_short_name(model_id: str) -> str:
+    """Extract a short name from a model ID for file matching."""
+    short_name = model_id.split("/")[-1]
+    short_name = short_name.replace("-Instruct", "").replace("-instruct", "")
+    return short_name
 
-# Output directories
-OUTPUT_DIR = "data/sprint_6_2025-12-15/probe_training_2_layers_8_hidden"
-LOGREG_DIR = os.path.join(OUTPUT_DIR, "logreg")
-MLP_DIR = os.path.join(OUTPUT_DIR, "mlp")
-PLOTS_DIR = os.path.join(OUTPUT_DIR, "plots")
 
-# Layer range
-LAYER_RANGE = range(32)  # Train all 32 layers
+def extract_date_from_filename(filename: str) -> Optional[str]:
+    """Extract YYYY-MM-DD date from filename."""
+    match = re.search(r'(\d{4}-\d{2}-\d{2})', filename)
+    return match.group(1) if match else None
 
-# Random seed
-RANDOM_SEED = 42
 
-# Logistic Regression config
-LOGREG_CONFIG = {
-    'C': 1.0,
-    'max_iter': 1000,
-    'random_state': RANDOM_SEED
-}
+def find_activations_file(model_id: str, base_dir: Path) -> Path:
+    """Search for activations PKL file matching model name."""
+    model_short = get_model_short_name(model_id)
+    model_lower = model_short.lower().replace("-", "").replace("_", "")
+    
+    print(f"Searching for activations file...")
+    print(f"  Model: {model_short}")
+    
+    all_pkl = list(base_dir.rglob("*activations*.pkl"))
+    model_matches = [f for f in all_pkl 
+                     if model_lower in str(f).lower().replace("-", "").replace("_", "")]
+    
+    print(f"  Found {len(model_matches)} activations files matching model")
+    
+    if not model_matches:
+        raise FileNotFoundError(f"No activations PKL found for model '{model_short}'")
+    
+    def get_date_key(path: Path) -> str:
+        date = extract_date_from_filename(path.stem)
+        return date if date else "0000-00-00"
+    
+    model_matches.sort(key=get_date_key, reverse=True)
+    selected = model_matches[0]
+    print(f"  Selected: {selected}")
+    return selected
 
-# MLP config
-MLP_CONFIG = {
-    'learning_rate': 0.001,
-    'batch_size': 32,
-    'max_epochs': 200,
-    'weight_decay': 0.01,
-    'patience': 20,
-    'min_delta': 0.0001,
-    'verbose': False  # Set to True for detailed training output
-}
+
+# =============================================================================
+# CLI ARGUMENTS
+# =============================================================================
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Train layer-wise probes for faithfulness detection",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    python train_layer_probes.py --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+    python train_layer_probes.py --model "Qwen/Qwen3-32B" --layers 8 13 15 20
+        """
+    )
+    
+    # Model configuration
+    parser.add_argument(
+        "--model", 
+        type=str, 
+        required=True,
+        help="Model ID (e.g., 'deepseek-ai/DeepSeek-R1-Distill-Llama-8B')"
+    )
+    
+    # File paths
+    parser.add_argument(
+        "--input-activations", 
+        type=str, 
+        default=None,
+        help="Path to activations PKL (default: auto-discover based on model name)"
+    )
+    parser.add_argument(
+        "--output-dir", 
+        type=str, 
+        default=None,
+        help="Output directory (default: same directory as input activations)"
+    )
+    
+    # Training configuration
+    parser.add_argument(
+        "--layers",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Layers to train (default: inferred from activations dataset)"
+    )
+    parser.add_argument(
+        "--hyper",
+        type=int,
+        nargs=2,
+        default=[2, 8],
+        metavar=("NUM_LAYERS", "NEURONS"),
+        help="MLP architecture: (num_hidden_layers, neurons_per_layer). Default: 2 8"
+    )
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility (default: 42)"
+    )
+    
+    # Skip options
+    parser.add_argument(
+        "--skip-logreg",
+        action="store_true",
+        help="Skip logistic regression training (train only MLP)"
+    )
+    parser.add_argument(
+        "--skip-plots",
+        action="store_true",
+        help="Skip generating plots"
+    )
+    
+    return parser.parse_args()
+
 
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
 
-def save_logreg_model(model, layer_idx: int):
+def save_logreg_model(model, layer_idx: int, output_dir: Path):
     """Save logistic regression model to pickle file."""
-    os.makedirs(LOGREG_DIR, exist_ok=True)
-    path = os.path.join(LOGREG_DIR, f"layer_{layer_idx}.pkl")
+    logreg_dir = output_dir / "logreg"
+    logreg_dir.mkdir(parents=True, exist_ok=True)
+    path = logreg_dir / f"layer_{layer_idx}.pkl"
     with open(path, 'wb') as f:
         pickle.dump(model, f)
     return path
 
 
-def save_mlp_model(model, metrics: dict, layer_idx: int):
+def save_mlp_model(model, metrics: dict, layer_idx: int, output_dir: Path, 
+                   hidden_dim: int, num_hidden_layers: int, input_dim: int = 4096):
     """Save MLP model checkpoint with config and metrics."""
-    os.makedirs(MLP_DIR, exist_ok=True)
-    path = os.path.join(MLP_DIR, f"layer_{layer_idx}.pth")
+    mlp_dir = output_dir / "mlp"
+    mlp_dir.mkdir(parents=True, exist_ok=True)
+    path = mlp_dir / f"layer_{layer_idx}.pth"
     
     checkpoint = {
         'model_state_dict': model.state_dict(),
         'config': {
-            'input_dim': 4096,
-            'hidden_dim': 8,
+            'input_dim': input_dim,
+            'hidden_dim': hidden_dim,
+            'num_hidden_layers': num_hidden_layers,
         },
         'metrics': metrics,
         'layer_idx': layer_idx,
@@ -95,27 +189,26 @@ def save_mlp_model(model, metrics: dict, layer_idx: int):
     return path
 
 
-def plot_layer_performance(all_results: dict):
-    """
-    Plot performance comparison across all layers.
+def plot_layer_performance(all_results: dict, output_dir: Path):
+    """Plot performance comparison across all layers."""
+    plots_dir = output_dir / "plots"
+    plots_dir.mkdir(parents=True, exist_ok=True)
     
-    Creates two plots:
-    1. Val accuracy vs layer for both models
-    2. MLP vs LogReg comparison
-    """
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+    layers = sorted(all_results['mlp'].keys())
     
-    layers = sorted(all_results['logreg'].keys())
+    # Check if we have logreg results
+    has_logreg = len(all_results.get('logreg', {})) > 0
     
-    logreg_val_accs = [all_results['logreg'][l]['val_accuracy'] for l in layers]
     mlp_val_accs = [all_results['mlp'][l]['val_accuracy'] for l in layers]
     
     # Plot 1: Performance across layers
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    ax.plot(layers, logreg_val_accs, marker='o', label='Logistic Regression', linewidth=2)
-    ax.plot(layers, mlp_val_accs, marker='s', label='MLP (8 neurons)', linewidth=2)
+    if has_logreg:
+        logreg_val_accs = [all_results['logreg'][l]['val_accuracy'] for l in layers]
+        ax.plot(layers, logreg_val_accs, marker='o', label='Logistic Regression', linewidth=2)
     
+    ax.plot(layers, mlp_val_accs, marker='s', label='MLP', linewidth=2)
     ax.axhline(y=0.5, color='red', linestyle='--', alpha=0.5, label='Random Baseline')
     
     ax.set_xlabel('Layer Index', fontsize=12)
@@ -125,88 +218,57 @@ def plot_layer_performance(all_results: dict):
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig(os.path.join(PLOTS_DIR, 'layer_performance.png'), dpi=150)
+    plt.savefig(plots_dir / 'layer_performance.png', dpi=150)
     plt.close()
     
-    # Plot 2: MLP vs LogReg scatter
-    fig, ax = plt.subplots(figsize=(8, 8))
-    
-    ax.scatter(logreg_val_accs, mlp_val_accs, s=100, alpha=0.6, edgecolors='black')
-    
-    # Add diagonal line (equal performance)
-    min_val = min(min(logreg_val_accs), min(mlp_val_accs))
-    max_val = max(max(logreg_val_accs), max(mlp_val_accs))
-    ax.plot([min_val, max_val], [min_val, max_val], 'k--', alpha=0.3, label='Equal Performance')
-    
-    ax.set_xlabel('Logistic Regression Val Accuracy', fontsize=12)
-    ax.set_ylabel('MLP Val Accuracy', fontsize=12)
-    ax.set_title('MLP vs Logistic Regression Performance', fontsize=14, fontweight='bold')
-    ax.legend(fontsize=10)
-    ax.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(PLOTS_DIR, 'mlp_vs_logreg.png'), dpi=150)
-    plt.close()
-    
-    print(f"\nPlots saved to: {PLOTS_DIR}/")
+    print(f"\nPlots saved to: {plots_dir}/")
 
 
-def save_results_summary(all_results: dict):
+def save_results_summary(all_results: dict, output_dir: Path, args):
     """Save comprehensive results summary to JSON."""
-    summary_path = os.path.join(OUTPUT_DIR, 'results_summary.json')
+    summary_path = output_dir / 'results_summary.json'
     
     # Convert numpy arrays to lists for JSON serialization
     serializable_results = {'logreg': {}, 'mlp': {}}
     
     for model_type in ['logreg', 'mlp']:
-        for layer_idx, metrics in all_results[model_type].items():
-            # Create serializable copy
+        for layer_idx, metrics in all_results.get(model_type, {}).items():
             serializable_metrics = {}
             for key, value in metrics.items():
-                # Skip predictions (too large for JSON)
                 if key in ['train_predictions', 'val_predictions']:
                     continue
                 
-                # Handle different value types
                 if isinstance(value, (int, float, str, bool)):
                     serializable_metrics[key] = value
                 elif isinstance(value, (list, tuple)):
-                    # Already serializable or needs conversion
-                    if len(value) > 0:
-                        try:
-                            # Try to convert first element
-                            if hasattr(value[0], 'item'):
-                                serializable_metrics[key] = [float(v.item()) if hasattr(v, 'item') else float(v) for v in value]
-                            else:
-                                serializable_metrics[key] = list(value)
-                        except:
+                    try:
+                        if len(value) > 0 and hasattr(value[0], 'item'):
+                            serializable_metrics[key] = [float(v.item()) if hasattr(v, 'item') else float(v) for v in value]
+                        else:
                             serializable_metrics[key] = list(value)
-                    else:
+                    except:
                         serializable_metrics[key] = list(value)
                 elif hasattr(value, 'item'):
-                    # Numpy scalar - single element
                     try:
                         serializable_metrics[key] = float(value.item())
                     except:
-                        # Skip if can't convert
                         continue
                 else:
-                    # Try direct conversion
                     try:
                         serializable_metrics[key] = float(value)
                     except:
-                        # Skip if can't convert
                         continue
             
             serializable_results[model_type][str(layer_idx)] = serializable_metrics
     
     summary = {
         'timestamp': datetime.now().isoformat(),
-        'dataset': DATASET_PATH,
+        'model': args.model,
         'config': {
-            'random_seed': RANDOM_SEED,
-            'logreg': LOGREG_CONFIG,
-            'mlp': MLP_CONFIG,
+            'random_seed': args.random_seed,
+            'num_hidden_layers': args.hyper[0],
+            'hidden_dim': args.hyper[1],
+            'layers_trained': args.layers,
         },
         'results': serializable_results,
     }
@@ -222,24 +284,91 @@ def save_results_summary(all_results: dict):
 # =============================================================================
 
 def main():
+    args = parse_args()
+    
+    # Determine base directory
+    base_dir = Path(__file__).parent.resolve()
+    
     print("="*80)
     print("LAYER-WISE PROBE TRAINING")
-    print("Faithfulness Detection via Linear and Non-linear Probes")
     print("="*80)
-    print(f"\nDataset: {DATASET_PATH}")
-    print(f"Output directory: {OUTPUT_DIR}")
-    print(f"Training {len(LAYER_RANGE)} layers (0-{max(LAYER_RANGE)})")
-    print(f"Random seed: {RANDOM_SEED}\n")
+    print(f"Model: {args.model}")
     
-    # Create output directories
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    os.makedirs(LOGREG_DIR, exist_ok=True)
-    os.makedirs(MLP_DIR, exist_ok=True)
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+    # Find activations file
+    if args.input_activations:
+        activations_file = Path(args.input_activations)
+        if not activations_file.exists():
+            raise FileNotFoundError(f"Activations file not found: {activations_file}")
+    else:
+        activations_file = find_activations_file(args.model, base_dir)
     
-    # Load dataset once
-    print("Loading dataset...")
-    dataset = load_dataset(DATASET_PATH)
+    # Determine output directory
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+    else:
+        # Save in same directory as activations, in a probes subfolder
+        model_short = get_model_short_name(args.model)
+        output_dir = activations_file.parent / f"probes_{model_short}_{TODAY}"
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Load dataset to infer layers and dimensions
+    print("\nLoading dataset...")
+    dataset = load_dataset(str(activations_file))
+    
+    # Infer available layers from dataset
+    sample_data = list(dataset['data'].values())[0]
+    available_layers = sorted(sample_data['layers'].keys())
+    
+    # Infer input dimension from first layer
+    first_layer = available_layers[0]
+    sample_tensor = sample_data['layers'][first_layer].get('F_body') or sample_data['layers'][first_layer].get('U_body')
+    if sample_tensor is not None:
+        input_dim = sample_tensor.shape[-1]
+    else:
+        input_dim = 4096
+    
+    # Determine layers to train
+    if args.layers is None:
+        layer_range = available_layers
+    else:
+        # Filter to only layers that exist in dataset
+        layer_range = [l for l in args.layers if l in available_layers]
+        if len(layer_range) != len(args.layers):
+            missing = set(args.layers) - set(layer_range)
+            print(f"Warning: Layers {missing} not found in dataset, skipping")
+    
+    # Extract hyper params
+    num_hidden_layers, hidden_dim = args.hyper
+    
+    print(f"Activations: {activations_file}")
+    print(f"Output directory: {output_dir}")
+    print(f"Training {len(layer_range)} layers: {layer_range}")
+    print(f"Input dimension: {input_dim}")
+    print(f"Architecture: {num_hidden_layers} hidden layers × {hidden_dim} neurons")
+    print(f"Random seed: {args.random_seed}")
+    print(f"Skip LogReg: {args.skip_logreg}")
+    
+    # Training configs
+    logreg_config = {
+        'C': 1.0,
+        'max_iter': 1000,
+        'random_state': args.random_seed
+    }
+    
+    mlp_config = {
+        'hidden_dim': hidden_dim,
+        'num_hidden_layers': num_hidden_layers,
+        'learning_rate': 0.001,
+        'batch_size': 32,
+        'max_epochs': 200,
+        'weight_decay': 0.01,
+        'patience': 20,
+        'min_delta': 0.0001,
+        'random_seed': args.random_seed,
+        'verbose': False
+    }
+
     
     # Storage for all results
     all_results = {
@@ -248,7 +377,7 @@ def main():
     }
     
     # Train probes for each layer
-    for layer_idx in LAYER_RANGE:
+    for layer_idx in layer_range:
         print(f"\n{'='*80}")
         print(f"LAYER {layer_idx}")
         print(f"{'='*80}")
@@ -256,34 +385,35 @@ def main():
         # Load and balance data for this layer
         print("Loading and balancing data...")
         train_X, train_y, val_X, val_y, train_metadata, val_metadata = load_balanced_data_for_layer(
-            dataset, layer_idx, RANDOM_SEED
+            dataset, layer_idx, args.random_seed
         )
         
         print(f"Train: {train_X.shape[0]} samples ({(train_y == 0).sum().item()} F, {(train_y == 1).sum().item()} U)")
         print(f"Val:   {val_X.shape[0]} samples ({(val_y == 0).sum().item()} F, {(val_y == 1).sum().item()} U)")
         
-        # Train Logistic Regression
-        print("\nTraining Logistic Regression...")
-        logreg_model, logreg_metrics = train_logistic_probe(
-            train_X, train_y, val_X, val_y, **LOGREG_CONFIG
-        )
-        
-        # Save LogReg model
-        logreg_path = save_logreg_model(logreg_model, layer_idx)
-        print(f"  Saved to: {logreg_path}")
+        # Train Logistic Regression (if not skipped)
+        if not args.skip_logreg:
+            print("\nTraining Logistic Regression...")
+            logreg_model, logreg_metrics = train_logistic_probe(
+                train_X, train_y, val_X, val_y, **logreg_config
+            )
+            logreg_path = save_logreg_model(logreg_model, layer_idx, output_dir)
+            print(f"  Saved to: {logreg_path}")
+            all_results['logreg'][layer_idx] = logreg_metrics
+        else:
+            logreg_metrics = None
         
         # Train MLP
         print("\nTraining MLP Probe...")
         mlp_model, mlp_metrics = train_mlp_probe(
-            train_X, train_y, val_X, val_y, **MLP_CONFIG
+            train_X, train_y, val_X, val_y, 
+            **mlp_config
         )
         
-        # Save MLP model
-        mlp_path = save_mlp_model(mlp_model, mlp_metrics, layer_idx)
+        mlp_path = save_mlp_model(mlp_model, mlp_metrics, layer_idx, output_dir, 
+                                  hidden_dim, num_hidden_layers, input_dim)
         print(f"  Saved to: {mlp_path}")
         
-        # Store results
-        all_results['logreg'][layer_idx] = logreg_metrics
         all_results['mlp'][layer_idx] = mlp_metrics
         
         # Print results
@@ -303,74 +433,34 @@ def main():
     
     print(f"\nTop 5 Layers (by MLP validation accuracy):")
     for i, (layer, acc) in enumerate(top_5_layers, 1):
-        logreg_acc = all_results['logreg'][layer]['val_accuracy']
-        print(f"  {i}. Layer {layer:2d}: MLP={acc:.4f}, LogReg={logreg_acc:.4f}")
+        logreg_acc = all_results['logreg'].get(layer, {}).get('val_accuracy', 'N/A')
+        if isinstance(logreg_acc, float):
+            print(f"  {i}. Layer {layer:2d}: MLP={acc:.4f}, LogReg={logreg_acc:.4f}")
+        else:
+            print(f"  {i}. Layer {layer:2d}: MLP={acc:.4f}")
     
-    # Per-template analysis for top 5 layers
-    print(f"\n{'='*80}")
-    print("PER-TEMPLATE ANALYSIS (Top 5 Layers)")
-    print(f"{'='*80}")
-    
-    for layer, _ in top_5_layers:
-        print(f"\n--- Layer {layer} ---")
-        
-        # Reload data for this layer
-        train_X, train_y, val_X, val_y, train_metadata, val_metadata = load_balanced_data_for_layer(
-            dataset, layer, RANDOM_SEED
-        )
-        
-        # Load models
-        logreg_model = pickle.load(open(os.path.join(LOGREG_DIR, f"layer_{layer}.pkl"), 'rb'))
-        mlp_checkpoint = torch.load(os.path.join(MLP_DIR, f"layer_{layer}.pth"))
-        mlp_model = torch.nn.Module()  # Placeholder
-        from src.probe import MLPProbe
-        mlp_model = MLPProbe(4096, 8)
-        mlp_model.load_state_dict(mlp_checkpoint['model_state_dict'])
-        mlp_model.eval()
-        
-        # Compute per-template performance
-        logreg_template_results = compute_per_template_performance(
-            logreg_model, val_X, val_y, val_metadata, model_type='logreg'
-        )
-        mlp_template_results = compute_per_template_performance(
-            mlp_model, val_X, val_y, val_metadata, model_type='mlp'
-        )
-        
-        print("\nLogistic Regression (per-template val accuracy):")
-        for template in sorted(logreg_template_results.keys()):
-            acc = logreg_template_results[template]['accuracy']
-            total = logreg_template_results[template]['total']
-            print(f"  {template:20s}: {acc:.4f} ({total} samples)")
-        
-        print("\nMLP Probe (per-template val accuracy):")
-        for template in sorted(mlp_template_results.keys()):
-            acc = mlp_template_results[template]['accuracy']
-            total = mlp_template_results[template]['total']
-            print(f"  {template:20s}: {acc:.4f} ({total} samples)")
-    
-    # Generate plots
-    print(f"\n{'='*80}")
-    print("GENERATING VISUALIZATIONS")
-    print(f"{'='*80}")
-    plot_layer_performance(all_results)
+    # Generate plots (if not skipped) - save in activations directory
+    if not args.skip_plots:
+        print(f"\n{'='*80}")
+        print("GENERATING VISUALIZATIONS")
+        print(f"{'='*80}")
+        plot_layer_performance(all_results, activations_file.parent)
     
     # Save results summary
     print(f"\n{'='*80}")
     print("SAVING RESULTS SUMMARY")
     print(f"{'='*80}")
-    save_results_summary(all_results)
+    args.layers = layer_range  # Store actual layers trained
+    save_results_summary(all_results, output_dir, args)
     
     # Final summary
     print(f"\n{'='*80}")
     print("TRAINING COMPLETE")
     print(f"{'='*80}")
-    print(f"\nModels saved:")
-    print(f"  - Logistic Regression: {LOGREG_DIR}/ (32 .pkl files)")
-    print(f"  - MLP: {MLP_DIR}/ (32 .pth files)")
-    print(f"\nResults:")
-    print(f"  - Plots: {PLOTS_DIR}/")
-    print(f"  - Summary: {OUTPUT_DIR}/results_summary.json")
-    
+    print(f"\nModels saved to: {output_dir}/")
+    if not args.skip_logreg:
+        print(f"  - Logistic Regression: logreg/ ({len(layer_range)} .pkl files)")
+    print(f"  - MLP: mlp/ ({len(layer_range)} .pth files)")
     print(f"\n{'='*80}\n")
 
 
