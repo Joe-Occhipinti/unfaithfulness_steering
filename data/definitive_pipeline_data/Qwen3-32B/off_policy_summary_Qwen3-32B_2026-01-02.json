@@ -1,0 +1,24 @@
+{
+  "date": "2026-01-02",
+  "mode": "off-policy",
+  "model_id": "Qwen/Qwen3-32B",
+  "model_short_name": "Qwen3-32B",
+  "input_file": "/workspace/data/off_policy_responses_filtered.jsonl",
+  "output_dir": "/workspace/data/off_policy_activations_Qwen3-32B_2026-01-02",
+  "dataset_file": "/workspace/data/off_policy_dataset_Qwen3-32B_2026-01-02.pkl",
+  "num_layers": 64,
+  "hidden_dim": 5120,
+  "num_prompts": 324,
+  "processing_time_seconds": 56.66241002082825,
+  "dataset_info": {
+    "source_file": "/workspace/data/off_policy_responses_filtered.jsonl",
+    "activations_dir": "/workspace/data/off_policy_activations_Qwen3-32B_2026-01-02",
+    "num_layers": 64,
+    "hidden_dim": 5120,
+    "tags": [
+      "last_token"
+    ],
+    "mode": "off-policy",
+    "total_prompts": 324
+  }
+}

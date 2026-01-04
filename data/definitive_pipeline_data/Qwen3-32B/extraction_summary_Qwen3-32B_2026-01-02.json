@@ -1,0 +1,576 @@
+{
+  "date": "2026-01-02",
+  "mode": "on-policy",
+  "model_id": "Qwen/Qwen3-32B",
+  "model_short_name": "Qwen3-32B",
+  "input_file": "/workspace/data/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl",
+  "output_dir": "/workspace/data/activations_Qwen3-32B_2026-01-02",
+  "dataset_file": "/workspace/data/activations_dataset_Qwen3-32B_2026-01-02.pkl",
+  "prompt_field": "local_annotated_biased_prompt",
+  "input_prompt_field": "biased_input_prompt",
+  "target_tags": [
+    "U_final",
+    "F_final",
+    "F_body",
+    "U_body"
+  ],
+  "layers_extracted": 64,
+  "hidden_dim": 5120,
+  "processing_time_seconds": 180.96173429489136,
+  "activation_statistics": {
+    "total_prompts": 406,
+    "tags_found": [
+      "F_body",
+      "U_body"
+    ],
+    "layers_found": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "activations_per_tag": {
+      "U_body": 95552,
+      "F_body": 57472
+    },
+    "activations_per_layer": {
+      "0": 2391,
+      "1": 2391,
+      "2": 2391,
+      "3": 2391,
+      "4": 2391,
+      "5": 2391,
+      "6": 2391,
+      "7": 2391,
+      "8": 2391,
+      "9": 2391,
+      "10": 2391,
+      "11": 2391,
+      "12": 2391,
+      "13": 2391,
+      "14": 2391,
+      "15": 2391,
+      "16": 2391,
+      "17": 2391,
+      "18": 2391,
+      "19": 2391,
+      "20": 2391,
+      "21": 2391,
+      "22": 2391,
+      "23": 2391,
+      "24": 2391,
+      "25": 2391,
+      "26": 2391,
+      "27": 2391,
+      "28": 2391,
+      "29": 2391,
+      "30": 2391,
+      "31": 2391,
+      "32": 2391,
+      "33": 2391,
+      "34": 2391,
+      "35": 2391,
+      "36": 2391,
+      "37": 2391,
+      "38": 2391,
+      "39": 2391,
+      "40": 2391,
+      "41": 2391,
+      "42": 2391,
+      "43": 2391,
+      "44": 2391,
+      "45": 2391,
+      "46": 2391,
+      "47": 2391,
+      "48": 2391,
+      "49": 2391,
+      "50": 2391,
+      "51": 2391,
+      "52": 2391,
+      "53": 2391,
+      "54": 2391,
+      "55": 2391,
+      "56": 2391,
+      "57": 2391,
+      "58": 2391,
+      "59": 2391,
+      "60": 2391,
+      "61": 2391,
+      "62": 2391,
+      "63": 2391
+    }
+  },
+  "dataset_info": {
+    "tags": [
+      "U_final",
+      "F_final",
+      "F_body",
+      "U_body"
+    ],
+    "num_layers": 64,
+    "num_prompts": 406,
+    "hidden_dim": 5120,
+    "total_files": 406,
+    "files_with_data": 406,
+    "total_stats": {
+      "U_final": 0,
+      "F_final": 0,
+      "F_body": 57472,
+      "U_body": 95552
+    },
+    "layer_stats": {
+      "0": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "1": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "2": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "3": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "4": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "5": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "6": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "7": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "8": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "9": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "10": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "11": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "12": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "13": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "14": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "15": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "16": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "17": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "18": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "19": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "20": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "21": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "22": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "23": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "24": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "25": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "26": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "27": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "28": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "29": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "30": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "31": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "32": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "33": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "34": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "35": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "36": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "37": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "38": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "39": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "40": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "41": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "42": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "43": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "44": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "45": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "46": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "47": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "48": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "49": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "50": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "51": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "52": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "53": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "54": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "55": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "56": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "57": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "58": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "59": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "60": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "61": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "62": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      },
+      "63": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 898,
+        "U_body": 1493
+      }
+    },
+    "metadata_fields": [
+      "hint_template",
+      "faithfulness_classification",
+      "split",
+      "subject",
+      "correct_hint"
+    ],
+    "source_jsonl": "/workspace/data/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl"
+  }
+}

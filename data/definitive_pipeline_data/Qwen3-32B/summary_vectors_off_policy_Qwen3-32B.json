@@ -1,0 +1,13 @@
+{
+  "computation_date": "2026-01-02",
+  "model_name": "Qwen3-32B",
+  "mode": "off-policy",
+  "dataset_file": "/workspace/data/off_policy_dataset_Qwen3-32B_2026-01-02.pkl",
+  "results_summary": {
+    "vectors_computed": 64,
+    "total_items": 324,
+    "faithful_count": 162,
+    "unfaithful_count": 162,
+    "processing_time_seconds": 1.5661368370056152
+  }
+}
