@@ -354,7 +354,7 @@ def run_linear_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
     print(f"Will test {len(layers_to_test)} layers: {layers_to_test}")
     
     # Steering sweep
-    sampling_params = SamplingParams(max_tokens=args.max_new_tokens, temperature=0)
+    sampling_params = SamplingParams(max_tokens=args.max_new_tokens, temperature=0, repetition_penalty=1.1)
     evaluation_results = {}
     config_count = 0
     total_configs = len(layers_to_test) * len(args.coefficients)
@@ -474,7 +474,7 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
     temp_gguf_path = temp_dir / "temp_steering.gguf"
     
     # Sampling params
-    sampling_params = SamplingParams(max_tokens=args.max_new_tokens, temperature=0)
+    sampling_params = SamplingParams(max_tokens=args.max_new_tokens, temperature=0, repetition_penalty=1.1)
     
     # Results storage
     evaluation_results = {}
