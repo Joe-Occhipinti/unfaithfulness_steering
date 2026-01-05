@@ -361,21 +361,50 @@ def print_configs_summary(all_configs, hint_template: str):
 
 def main():
     """Main entry point for steered global faithfulness evaluation."""
-    print(f"=== STEERED GLOBAL FAITHFULNESS EVALUATION - {TODAY} ===")
-    print(f"Subject: {SUBJECT}")
+    args = parse_args()
+    
+    print(f"\n{'=' * 80}")
+    print("STEP 1: Initialization")
+    print(f"{'=' * 80}")
+    
+    # Determine input file
+    if args.input_file:
+        input_path = Path(args.input_file)
+        if not input_path.exists():
+            print(f"Error: Input file not found: {input_path}")
+            return
+        print(f"✓ Using provided input file: {input_path}")
+        subject = args.model  # Best guess if provided
+    else:
+        try:
+            input_path = find_steered_file(args.model, args.steering_mode)
+            print(f"✓ Auto-discovered input file: {input_path}")
+            subject = args.model
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            return
 
-    # Check if input file exists
-    if not os.path.exists(INPUT_FILE):
-        print(f"\nError: Input file not found: {INPUT_FILE}")
-        return
+    # Determine output paths
+    if args.output_dir:
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        output_dir = None
+        
+    output_paths = get_output_paths(input_path, output_dir)
+    print(f"  Annotated output: {output_paths['annotated']}")
+    print(f"  Summary output: {output_paths['summary']}")
+
+    print(f"=== STEERED GLOBAL FAITHFULNESS EVALUATION - {TODAY} ===")
+    print(f"Subject: {subject}")
 
     # 1. Load data
     print(f"\n{'=' * 80}")
     print("STEP 1: Loading Data")
     print(f"{'=' * 80}")
-    print(f"Loading steered dataset from: {INPUT_FILE}")
+    print(f"Loading steered dataset from: {input_path}")
 
-    all_records = load_jsonl(INPUT_FILE)
+    all_records = load_jsonl(input_path)
     print(f"✓ Loaded {len(all_records)} records")
 
     # Detect hint templates in dataset
@@ -456,9 +485,9 @@ def main():
 
     # 4a. Save combined annotated dataset
     print(f"\nSaving combined annotated dataset...")
-    os.makedirs(os.path.dirname(OUTPUT_PATHS['annotated']), exist_ok=True)
-    save_jsonl(all_annotated_records, OUTPUT_PATHS['annotated'])
-    print(f"✓ Saved {len(all_annotated_records)} annotated records: {OUTPUT_PATHS['annotated']}")
+    os.makedirs(os.path.dirname(output_paths['annotated']), exist_ok=True)
+    save_jsonl(all_annotated_records, output_paths['annotated'])
+    print(f"✓ Saved {len(all_annotated_records)} annotated records: {output_paths['annotated']}")
 
     # 4b. Save combined summary
     print(f"\nSaving combined summary...")
@@ -466,8 +495,8 @@ def main():
         'evaluation_date': TODAY,
         'method': 'global_llm_judge_steered_with_stratification',
         'judge_model': JUDGE_MODEL,
-        'source_file': INPUT_FILE,
-        'subject': SUBJECT,
+        'source_file': str(input_path),
+        'subject': subject,
         'total_records': len(all_annotated_records),
         'hint_templates': hint_templates_in_grouped,
 
@@ -485,10 +514,10 @@ def main():
         }
     }
 
-    os.makedirs(os.path.dirname(OUTPUT_PATHS['summary']), exist_ok=True)
-    with open(OUTPUT_PATHS['summary'], 'w', encoding='utf-8') as f:
+    os.makedirs(os.path.dirname(output_paths['summary']), exist_ok=True)
+    with open(output_paths['summary'], 'w', encoding='utf-8') as f:
         json.dump(combined_summary, f, indent=2, ensure_ascii=False)
-    print(f"✓ Saved combined summary: {OUTPUT_PATHS['summary']}")
+    print(f"✓ Saved combined summary: {output_paths['summary']}")
 
     # Final summary
     print(f"\n{'=' * 80}")
@@ -498,8 +527,8 @@ def main():
     print(f"✓ Processed {len(hint_templates_in_grouped)} hint template(s): {hint_templates_in_grouped}")
 
     print(f"\n=== OUTPUT FILES ===")
-    print(f"  - Annotated dataset: {OUTPUT_PATHS['annotated']} ({len(all_annotated_records)} records)")
-    print(f"  - Summary JSON: {OUTPUT_PATHS['summary']}")
+    print(f"  - Annotated dataset: {output_paths['annotated']} ({len(all_annotated_records)} records)")
+    print(f"  - Summary JSON: {output_paths['summary']}")
 
     print(f"\n=== RESULTS BY HINT TEMPLATE ===")
     for hint_template, outputs in all_outputs.items():

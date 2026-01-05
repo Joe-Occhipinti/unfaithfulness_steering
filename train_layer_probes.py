@@ -322,7 +322,17 @@ def main():
     
     # Infer input dimension from first layer
     first_layer = available_layers[0]
-    sample_tensor = sample_data['layers'][first_layer].get('F_body') or sample_data['layers'][first_layer].get('U_body')
+    f_body = sample_data['layers'][first_layer].get('F_body')
+    u_body = sample_data['layers'][first_layer].get('U_body')
+    
+    # Check tensors properly - can't use `or` with tensors
+    if f_body is not None and f_body.numel() > 0:
+        sample_tensor = f_body
+    elif u_body is not None and u_body.numel() > 0:
+        sample_tensor = u_body
+    else:
+        sample_tensor = None
+    
     if sample_tensor is not None:
         input_dim = sample_tensor.shape[-1]
     else:

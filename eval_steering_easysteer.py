@@ -471,7 +471,7 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
     for layer_idx in args.layers:
         probe_path = probes_dir / f"layer_{layer_idx}.pth"
         if probe_path.exists():
-            checkpoint = torch.load(probe_path, map_location='cpu')
+            checkpoint = torch.load(probe_path, map_location='cpu', weights_only=False)
             mlp = MLPProbe(
                 input_dim=checkpoint['config']['input_dim'],
                 hidden_dim=checkpoint['config']['hidden_dim'],
