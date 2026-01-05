@@ -17,7 +17,7 @@ from .config import ModelConfig
 # HuggingFace Backend (Original)
 # =============================================================================
 
-def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tuple[Any, Any]:
+def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B", attn_implementation: str = "eager") -> Tuple[Any, Any]:
     """
     Load model and tokenizer with BF16 precision.
     Reusable across all evaluation scripts.
@@ -45,7 +45,9 @@ def load_model(model_id: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B") -> Tu
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         torch_dtype=torch.bfloat16,  # Set precision to BF16
-        device_map="auto"            # Automatically handles multi-GPU/CPU offloading
+        torch_dtype=torch.bfloat16,  # Set precision to BF16
+        device_map="auto",           # Automatically handles multi-GPU/CPU offloading
+        attn_implementation=attn_implementation
     )
 
     print(f"Model loaded successfully in BF16")

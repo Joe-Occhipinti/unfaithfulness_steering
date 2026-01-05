@@ -65,7 +65,7 @@ Example:
         "--dataset-type",
         type=str,
         required=True,
-        choices=["baseline", "steered", "steered_sampled", "hinted", "hinted_sampled"],
+        choices=["baseline", "steered", "steered_sampled", "hinted", "hinted_sampled", "steered_linear", "steered_off_policy", "steered_mlp"],
         help="Type of dataset to process"
     )
     
@@ -112,7 +112,10 @@ def resolve_file_paths(
         'hinted': 'hinted',
         'hinted_sampled': 'hinted_sampled',
         'steered': 'steered',
-        'steered_sampled': 'steered_sampled'
+        'steered_sampled': 'steered_sampled',
+        'steered_linear': 'steered_linear',
+        'steered_off_policy': 'steered_off_policy',
+        'steered_mlp': 'steered_mlp'
     }
     prefix = prefix_map[dataset_type]
     
@@ -122,10 +125,25 @@ def resolve_file_paths(
     if not model_dir.exists():
         raise FileNotFoundError(f"Model directory not found: {model_dir}")
     
+    # Determine filename pattern based on dataset type
+    # New steered types don't use '_results_' in the filename
+    if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp']:
+        file_pattern_template = "{prefix}_{model}_{date_pattern}.jsonl"
+    else:
+        file_pattern_template = "{prefix}_results_{model}_{date_pattern}.jsonl"
+
     if date:
         # Use specific date
-        jsonl_path = model_dir / f"{prefix}_results_{model}_{date}.jsonl"
-        summary_path = model_dir / f"{prefix}_summary_{model}_{date}.json"
+        filename = file_pattern_template.format(prefix=prefix, model=model, date_pattern=date)
+        jsonl_path = model_dir / filename
+        
+        # Summary path logic
+        if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp']:
+             summary_filename = filename.replace('steered_', 'summary_').replace('.jsonl', '.json')
+        else:
+             summary_filename = filename.replace('_results_', '_summary_').replace('.jsonl', '.json')
+             
+        summary_path = model_dir / summary_filename
         
         if not jsonl_path.exists():
             raise FileNotFoundError(f"JSONL file not found: {jsonl_path}")
@@ -133,20 +151,25 @@ def resolve_file_paths(
             raise FileNotFoundError(f"Summary file not found: {summary_path}")
     else:
         # Find most recent file matching pattern
-        pattern = str(model_dir / f"{prefix}_results_{model}_*.jsonl")
+        pattern_str = file_pattern_template.format(prefix=prefix, model=model, date_pattern="*")
+        pattern = str(model_dir / pattern_str)
         matching_files = glob(pattern)
         
         if not matching_files:
             raise FileNotFoundError(
                 f"No {prefix} results file found for model '{model}' in {model_dir}\n"
-                f"Expected pattern: {prefix}_results_{model}_YYYY-MM-DD.jsonl"
+                f"Expected pattern: {pattern}"
             )
         
         # Get most recent (sorted by filename which includes date)
         jsonl_path = Path(sorted(matching_files)[-1])
         
         # Derive summary path from jsonl path
-        summary_filename = jsonl_path.name.replace('_results_', '_summary_').replace('.jsonl', '.json')
+        if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp']:
+            summary_filename = jsonl_path.name.replace('steered_', 'summary_').replace('.jsonl', '.json')
+        else:
+            summary_filename = jsonl_path.name.replace('_results_', '_summary_').replace('.jsonl', '.json')
+            
         summary_path = jsonl_path.parent / summary_filename
         
         if not summary_path.exists():
@@ -238,6 +261,33 @@ def get_field_config(dataset_type: str) -> Dict[str, str]:
             'completeness_field': 'sampled_completeness',
             'validation_date_field': 'sampled_validation_date',
             'prefix': 'hinted_sampled'
+        },
+        'steered_linear': {
+            'response_field': 'steered_prompt',
+            'answer_field': 'steered_answer_letter',
+            'accuracy_field': 'steered_accuracy',
+            'compliance_field': 'steered_compliance',
+            'completeness_field': 'steered_completeness',
+            'validation_date_field': 'steered_validation_date',
+            'prefix': 'steered_linear'
+        },
+        'steered_off_policy': {
+            'response_field': 'steered_prompt',
+            'answer_field': 'steered_answer_letter',
+            'accuracy_field': 'steered_accuracy',
+            'compliance_field': 'steered_compliance',
+            'completeness_field': 'steered_completeness',
+            'validation_date_field': 'steered_validation_date',
+            'prefix': 'steered_off_policy'
+        },
+        'steered_mlp': {
+            'response_field': 'steered_prompt',
+            'answer_field': 'steered_answer_letter',
+            'accuracy_field': 'steered_accuracy',
+            'compliance_field': 'steered_compliance',
+            'completeness_field': 'steered_completeness',
+            'validation_date_field': 'steered_validation_date',
+            'prefix': 'steered_mlp'
         }
     }
     
@@ -256,7 +306,7 @@ def group_by_configuration(records: List[Dict], dataset_type: str) -> Dict[Any, 
     """
     configs = {}
     
-    if dataset_type in ['steered', 'steered_sampled']:
+    if dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp']:
         for record in records:
             # Handle new gradient steering format (target_value + direction)
             if 'steering_target_value' in record:
@@ -480,7 +530,7 @@ def update_summary(
         # Add validation metrics directly to summary
         summary['validation_metrics'] = config_stats['all']
         
-    elif dataset_type in ['steered', 'steered_sampled']:
+    elif dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp']:
         # Add validation metrics to each configuration
         for key, stats in config_stats.items():
             if key == 'all':
@@ -609,10 +659,9 @@ def process_dataset(
             stats = {
                 'total_prompts': len(config_records),
                 'correct_count': correct_count,
-                'biased_count': biased_count,
-                'non_hint_error_count': non_hint_error_count,
-                'complete_count': complete_count,
-                'compliant_count': compliant_count,
+                'accuracy_rate': accuracy_rate,
+                'compliance_rate': compliance_rate,
+                'completeness_rate': completeness_rate
             }
             
             if dataset_type in ['hinted', 'hinted_sampled']:
@@ -624,7 +673,7 @@ def process_dataset(
             print(f"  Accuracy: {accuracy_rate:.1%} ({correct_count}/{len(config_records)})")
             print(f"  Compliance: {compliance_rate:.1%}, Completeness: {completeness_rate:.1%}")
             if dataset_type in ['hinted', 'hinted_sampled']:
-                print(f"  Bias Rate: {bias_stats['bias_rate']:.1%}")
+                print(f"  Bias Rate: {bias_stats['biased_count'] / len(config_records):.1%}")
             
             # Enrich records
             enriched = enrich_records(
@@ -636,6 +685,8 @@ def process_dataset(
         except Exception as e:
             print(f"  Error during validation: {e}")
             print(f"  Skipping this configuration")
+            import traceback
+            traceback.print_exc()
             continue
     
     # Step 6: Save validated output
@@ -665,7 +716,7 @@ def process_dataset(
     if dataset_type == 'baseline':
         print(f"\nNext steps:")
         print(f"  - Run hinted evaluation: eval_hinted_runpod.py")
-    elif dataset_type in ['steered', 'steered_sampled']:
+    elif dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp']:
         print(f"\nNext steps:")
         print(f"  - Analyze validated results to select best steering configuration")
         print(f"  - Run faithfulness evaluation on best configuration")

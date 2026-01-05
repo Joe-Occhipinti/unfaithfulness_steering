@@ -1,0 +1,17 @@
+Analyzing C:\Users\occhi\Desktop\unfaithfulness_steering\data\definitive_pipeline_data\Qwen3-32B\faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl
+Target field: local_annotated_biased_prompt
+
+Results:
+Total records: 434
+
+Breakdown:
+Under 512 tokens: 73 (16.8%)
+Under 1024 tokens (cumulative): 201 (46.3%)
+Over 1024 tokens: 233 (53.7%)
+
+Detailed Bins:
+0 - 512:    73
+512 - 1024: 128
+1024+:      233
+
+Note: Token counts are estimated using characters / 4.

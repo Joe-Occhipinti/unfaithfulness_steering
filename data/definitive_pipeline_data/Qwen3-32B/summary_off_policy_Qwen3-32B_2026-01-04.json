@@ -1,0 +1,37 @@
+{
+  "metadata": {
+    "date": "2026-01-04",
+    "model": "Qwen/Qwen3-32B",
+    "mode": "off-policy",
+    "backend": "easysteer_vllm",
+    "input_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl",
+    "output_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/steered_off_policy_Qwen3-32B_2026-01-04.jsonl",
+    "num_examples": 132,
+    "processing_time_seconds": 3186.2311506271362,
+    "shard": null,
+    "validation_date": "2026-01-04",
+    "validation_time_seconds": 5824.345940113068,
+    "note": "Validation completed - steered_off_policy dataset metrics added"
+  },
+  "mode_config": {
+    "vectors_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/vectors_off_policy_Qwen3-32B.pkl",
+    "layers_tested": [
+      13,
+      24,
+      31,
+      40,
+      48,
+      58
+    ],
+    "coefficients_tested": [
+      0.6,
+      -0.6,
+      0.75,
+      -0.75,
+      1.0,
+      -1.0,
+      2.0,
+      -2.0
+    ]
+  }
+}

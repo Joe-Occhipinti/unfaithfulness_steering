@@ -1,75 +1,191 @@
 """
 eval_steered_global_faithfulness.py
 
-Steered global faithfulness evaluation script.
+Steered global faithfulness evaluation script with unified async classification.
 
 This script:
-1. Loads steered evaluation dataset
-2. Groups records by (subject, hint_template, layer, coefficient)
-3. For each configuration:w
-   a. Rule-based classification (complete, correct, hint-error, needs-judge)
-   b. LLM judge for ambiguous cases
-   c. Compute transition rates
-   d. Statistical significance tests
-4. Find best configurations (maximize success - side_effects)
-5. Save annotated dataset + summary + plots
+1. Auto-discovers steered evaluation dataset based on model and steering mode
+2. Groups records by (hint_template, layer, coefficient)
+3. For each configuration:
+   a. Rule-based classification (stable, changed, incomplete)
+   b. Phase A: Faithfulness judgment for stable answers
+   c. Phase B: Hint mention detection for changed/incomplete
+   d. Compute transition rates
+4. Save annotated dataset + summary
+5. Print detailed metrics
+
+Usage:
+    python eval_steered_global_faithfulness.py --model Qwen3-32B --steering-mode linear
+    python eval_steered_global_faithfulness.py --model Qwen3-8B --steering-mode off_policy
 """
 
+import argparse
 import json
 import os
+import re
+from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Import existing modules
+# Import modules
 from src.data import load_jsonl, save_jsonl
-from src.global_faithfulness import setup_openrouter_client
-from src.config import TODAY
+from src.config import TODAY, ModelConfig
 
-# Import new modules
+# Import core classification functions
 from src.steered_global_faithfulness import (
     group_records_by_config,
     compute_config_metrics
 )
-# Plotting functions removed - need updating for new stratification
-# from src.steered_plots import (...)
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-# Input file - steered evaluation results
-INPUT_FILE = "data/off_policy_2nd_2025-12-20/steered_val_off_policy_2nd_2025-12-20.jsonl"
-
-# Subject
-SUBJECT = "science, history, psychology"
+# Data directory structure
+DATA_DIR = Path("data/definitive_pipeline_data")
 
 # Model configuration
-JUDGE_MODEL = "google/gemini-2.5-flash"  # OpenRouter model name
-MAX_RETRIES = 3
-TOP_K = 5  # Number of top configs to report
+JUDGE_MODEL = ModelConfig.ANNOTATION_MODELS.get("gemini-2.5-flash", "google/gemini-2.5-flash")
+
 
 # =============================================================================
-# OUTPUT PATHS CONFIGURATION
+# ARGUMENT PARSING
 # =============================================================================
-# Set output file paths.
-# - annotated and summary: single combined files (all hint templates together)
-# - plots_by_hint: one directory per hint template (plotting functions auto-name files)
 
-OUTPUT_PATHS = {
-    # Single combined outputs (all hint templates)
-    'annotated': "data/off_policy_2nd_2025-12-20/annotated_steered_val_off_policy_2nd_2025-12-20.jsonl",
-    'summary': "data/off_policy_2nd_2025-12-20/summary_steered_val_off_policy_2nd_2025-12-20.jsonl",
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Evaluate faithfulness and hint mentions for steered model outputs",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    python eval_steered_global_faithfulness.py --model Qwen3-32B --steering-mode linear
+    python eval_steered_global_faithfulness.py --model Qwen3-8B --steering-mode off_policy
+    python eval_steered_global_faithfulness.py --input-file path/to/custom.jsonl
+        """
+    )
+    
+    # Model configuration
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="Qwen3-32B",
+        help="Model name (e.g., Qwen3-32B, Qwen3-8B). Used for file discovery."
+    )
+    
+    # Steering mode / dataset type
+    parser.add_argument(
+        "--steering-mode",
+        type=str,
+        default="linear",
+        choices=["linear", "off_policy", "mlp"],
+        help="Type of steering to evaluate: linear, off_policy, or mlp (default: linear)"
+    )
+    
+    # Direct input file (overrides auto-discovery)
+    parser.add_argument(
+        "--input-file",
+        type=str,
+        default=None,
+        help="Direct path to input JSONL file (overrides --model and --steering-mode)"
+    )
+    
+    # Output directory (optional override)
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Output directory (default: same as input file directory)"
+    )
+    
+    return parser.parse_args()
 
-    # Plot directories per hint template (files auto-generated inside)
-    'plots_by_hint': {
-        'grader_hacking': "data/off_policy_2nd_2025-12-20/plots/grader_hacking_off_policy_2nd_2025-12-20",
-        'professor': "data/off_policy_2nd_2025-12-20/plots/professor_off_policy_2nd_2025-12-20",
-        'metadata': "data/off_policy_2nd_2025-12-20/plots/metadata_off_policy_2nd_2025-12-20"
+
+# =============================================================================
+# FILE DISCOVERY
+# =============================================================================
+
+def find_steered_file(model_name: str, steering_mode: str) -> Path:
+    """
+    Find the most recent steered results file for a given model and mode.
+    
+    Searches in data/definitive_pipeline_data/{model_name}/ for files matching:
+    steered_{mode}_{model}_{date}.jsonl
+    
+    Args:
+        model_name: Model name (e.g., "Qwen3-32B")
+        steering_mode: Steering type ("linear", "off_policy", "mlp")
+    
+    Returns:
+        Path to the most recent matching file
+    
+    Raises:
+        FileNotFoundError: If no matching file found
+    """
+    model_dir = DATA_DIR / model_name
+    
+    if not model_dir.exists():
+        raise FileNotFoundError(
+            f"Model directory not found: {model_dir}\n"
+            f"Available models: {[d.name for d in DATA_DIR.iterdir() if d.is_dir()]}"
+        )
+    
+    # Pattern: steered_{mode}_{model}_{date}.jsonl
+    pattern = f"steered_{steering_mode}_{model_name}_*.jsonl"
+    matching_files = list(model_dir.glob(pattern))
+    
+    if not matching_files:
+        # List available files for helpful error message
+        all_steered = list(model_dir.glob("steered_*.jsonl"))
+        available_modes = set()
+        for f in all_steered:
+            parts = f.stem.split('_')
+            if len(parts) >= 2:
+                available_modes.add(parts[1])
+        
+        raise FileNotFoundError(
+            f"No steered files found for mode '{steering_mode}' in {model_dir}\n"
+            f"Pattern searched: {pattern}\n"
+            f"Available modes: {available_modes if available_modes else 'None'}\n"
+            f"Steered files found: {[f.name for f in all_steered]}"
+        )
+    
+    # Sort by date (YYYY-MM-DD format at end of filename) and return most recent
+    def extract_date(path: Path) -> str:
+        """Extract date from filename for sorting."""
+        stem = path.stem  # steered_linear_Qwen3-32B_2026-01-04
+        # Date is the last part after underscore
+        match = re.search(r'(\d{4}-\d{2}-\d{2})$', stem)
+        return match.group(1) if match else ""
+    
+    most_recent = sorted(matching_files, key=extract_date)[-1]
+    return most_recent
+
+
+def get_output_paths(input_file: Path, output_dir: Path = None) -> dict:
+    """
+    Generate output file paths based on input file.
+    
+    Args:
+        input_file: Path to input file
+        output_dir: Optional output directory override
+    
+    Returns:
+        Dictionary with 'annotated' and 'summary' paths
+    """
+    if output_dir is None:
+        output_dir = input_file.parent
+    
+    # Generate output names based on input
+    stem = input_file.stem  # e.g., steered_linear_Qwen3-32B_2026-01-04
+    
+    return {
+        'annotated': output_dir / f"annotated_{stem}.jsonl",
+        'summary': output_dir / f"summary_{stem}.json"
     }
-}
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -84,9 +200,9 @@ def create_annotated_records(all_configs, original_records):
         original_records: Original steered records
 
     Returns:
-        List of annotated records with global faithfulness classifications
+        List of annotated records with classification fields
     """
-    # Build classification lookup: (question_id, layer, coeff) -> classification
+    # Build classification lookup: (question_id, layer, coeff) -> classification dict
     classification_lookup = {}
 
     for config in all_configs:
@@ -97,7 +213,7 @@ def create_annotated_records(all_configs, original_records):
             if group_name in ['positive_on_CF', 'positive_on_CU', 'positive_on_WF', 'positive_on_WU',
                             'negative_on_CF', 'negative_on_CU', 'negative_on_WF', 'negative_on_WU']:
                 classifications = group_data.get('classifications', {})
-                for qid, classification in classifications.items():
+                for qid, class_data in classifications.items():
                     # Determine coefficient sign from group name
                     if 'positive' in group_name:
                         coeff = coeff_mag
@@ -105,30 +221,31 @@ def create_annotated_records(all_configs, original_records):
                         coeff = -coeff_mag
 
                     key = (qid, layer, coeff)
-                    classification_lookup[key] = classification
+                    classification_lookup[key] = class_data
 
     # Annotate original records
     annotated = []
     for record in original_records:
-        qid = record.get('question_id', record.get('prompt_index'))
+        qid = record.get('question_id', record.get('prompt_index', record.get('hinted_id')))
         layer = record['steering_layer']
-        coeff = record['steering_coefficient']
+        coeff = record.get('steering_coefficient', 0)
 
         key = (qid, layer, coeff)
-        classification = classification_lookup.get(key, 'error')
+        class_data = classification_lookup.get(key, {})
 
         # Create annotated record
         annotated_record = record.copy()
-        annotated_record['steered_global_faithfulness_classification'] = classification
-
-        # Add tagged prompt for potential future use
-        steered_prompt = record.get('steered_prompt', '')
-        if classification == 'faithful':
-            annotated_record['annotated_steered_prompt'] = f"[F_final]{steered_prompt}[/F_final]"
-        elif classification == 'unfaithful':
-            annotated_record['annotated_steered_prompt'] = f"[U_final]{steered_prompt}[/U_final]"
+        
+        # Add new classification fields
+        if isinstance(class_data, dict):
+            annotated_record['rule_classification'] = class_data.get('rule', 'error')
+            annotated_record['faithfulness'] = class_data.get('faithfulness')
+            annotated_record['hint_mentioned'] = class_data.get('hint_mentioned')
         else:
-            annotated_record['annotated_steered_prompt'] = steered_prompt
+            # Legacy format fallback
+            annotated_record['rule_classification'] = class_data if isinstance(class_data, str) else 'error'
+            annotated_record['faithfulness'] = None
+            annotated_record['hint_mentioned'] = None
 
         annotated.append(annotated_record)
 
@@ -182,22 +299,60 @@ def create_summary(all_configs, subject, hint_template, input_file):
     return summary
 
 
-def print_configs_summary(all_configs):
+def print_configs_summary(all_configs, hint_template: str):
     """
-    Print summary of all configurations with their transition metrics.
+    Print detailed summary of all configurations with their transition metrics.
 
     Args:
         all_configs: List of all configuration results
+        hint_template: The hint template being summarized
     """
     print("\n" + "=" * 80)
-    print("CONFIGURATIONS SUMMARY")
+    print(f"CONFIGURATIONS SUMMARY - {hint_template.upper()}")
     print("=" * 80)
     print(f"Total configurations processed: {len(all_configs)}")
     print(f"Initial states tracked: CF, CU, WF, WU")
     print(f"Steering directions: positive (+), negative (-)")
-    print(f"\nAll transition metrics saved to summary JSON file")
-    print(f"Manual analysis required to select appropriate configurations")
-    print("=" * 80)
+    print()
+
+    # Print each configuration's metrics
+    for config in all_configs:
+        layer = config['layer']
+        coeff_mag = config['coefficient_magnitude']
+        print(f"\n  Layer {layer}, Coeff ±{coeff_mag}:")
+        print(f"  {'-' * 60}")
+
+        # Print positive steering results
+        print(f"    POSITIVE STEERING (+{coeff_mag}):")
+        for initial_state in ['CF', 'CU', 'WF', 'WU']:
+            group_name = f'positive_on_{initial_state}'
+            group_data = config.get(group_name, {})
+            n = group_data.get('n', 0)
+            if n > 0:
+                t = group_data.get('transitions', {})
+                f_rate = t.get('stable_faithful', {}).get('rate', 0)
+                u_rate = t.get('stable_unfaithful', {}).get('rate', 0)
+                w2c_rate = t.get('wrong_to_correct', {}).get('rate', 0)
+                err_rate = t.get('hint_error', {}).get('rate', 0)
+                inc_rate = t.get('incomplete', {}).get('rate', 0)
+                print(f"      {initial_state}: n={n:3d} | F:{f_rate:.0%} U:{u_rate:.0%} | W→C:{w2c_rate:.0%} Err:{err_rate:.0%} Inc:{inc_rate:.0%}")
+
+        # Print negative steering results
+        print(f"    NEGATIVE STEERING (-{coeff_mag}):")
+        for initial_state in ['CF', 'CU', 'WF', 'WU']:
+            group_name = f'negative_on_{initial_state}'
+            group_data = config.get(group_name, {})
+            n = group_data.get('n', 0)
+            if n > 0:
+                t = group_data.get('transitions', {})
+                f_rate = t.get('stable_faithful', {}).get('rate', 0)
+                u_rate = t.get('stable_unfaithful', {}).get('rate', 0)
+                w2c_rate = t.get('wrong_to_correct', {}).get('rate', 0)
+                err_rate = t.get('hint_error', {}).get('rate', 0)
+                inc_rate = t.get('incomplete', {}).get('rate', 0)
+                print(f"      {initial_state}: n={n:3d} | F:{f_rate:.0%} U:{u_rate:.0%} | W→C:{w2c_rate:.0%} Err:{err_rate:.0%} Inc:{inc_rate:.0%}")
+
+    print("\n" + "=" * 80)
 
 
 # =============================================================================
@@ -227,23 +382,9 @@ def main():
     hint_templates = sorted(set(r.get('hint_template', 'unknown') for r in all_records))
     print(f"✓ Detected hint templates: {hint_templates}")
 
-    # 2. Setup API client
+    # 2. Group records
     print(f"\n{'=' * 80}")
-    print("STEP 2: Setting Up API Client")
-    print(f"{'=' * 80}")
-
-    try:
-        client = setup_openrouter_client()
-        print(f"✓ OpenRouter client initialized")
-        print(f"  Judge Model: {JUDGE_MODEL}")
-    except ValueError as e:
-        print(f"Error: {e}")
-        print("Please ensure OPENROUTER_API_KEY environment variable is set.")
-        return
-
-    # 3. Group records
-    print(f"\n{'=' * 80}")
-    print("STEP 3: Grouping Records by Configuration")
+    print("STEP 2: Grouping Records by Configuration")
     print(f"{'=' * 80}")
 
     grouped = group_records_by_config(all_records)
@@ -257,10 +398,11 @@ def main():
     print(f"  Layers: {layers}")
     print(f"  Coefficient magnitudes: {coeffs}")
 
-    # 4. Process each hint template separately
+    # 3. Process each hint template separately
     print(f"\n{'=' * 80}")
-    print("STEP 4: Processing Each Hint Template")
+    print("STEP 3: Processing Each Hint Template")
     print(f"{'=' * 80}")
+    print(f"Model: {JUDGE_MODEL}")
 
     all_outputs = {}  # Store outputs per hint template
     all_annotated_records = []  # Collect all annotated records across hints
@@ -283,7 +425,6 @@ def main():
                 hint_template=ht,
                 layer=layer,
                 coeff_mag=coeff_mag,
-                client=client,
                 model=JUDGE_MODEL,
                 verbose=True
             )
@@ -292,7 +433,7 @@ def main():
         print(f"\n✓ Processed all {len(all_configs)} configurations for '{hint_template}'")
 
         # 5. Print configuration summary
-        print_configs_summary(all_configs)
+        print_configs_summary(all_configs, hint_template)
 
         # 6. Collect annotated records (don't save yet - will combine all hints)
         print(f"\n  Collecting annotated records for '{hint_template}'...")
@@ -302,125 +443,24 @@ def main():
         all_configs_combined.extend(all_configs)
         print(f"  ✓ Collected {len(annotated_records)} annotated records")
 
-        # 7. Create plots for this hint template
-        print(f"\n  Creating visualizations for '{hint_template}'...")
-
-        # Check if hint_template has configured plot directory
-        if hint_template not in OUTPUT_PATHS['plots_by_hint']:
-            print(f"  WARNING: No plot directory configured for hint_template '{hint_template}'")
-            print(f"  Available templates: {list(OUTPUT_PATHS['plots_by_hint'].keys())}")
-            print(f"  Skipping plots for this template...")
-        else:
-            try:
-                plot_dir = OUTPUT_PATHS['plots_by_hint'][hint_template]
-                os.makedirs(plot_dir, exist_ok=True)
-
-                # Import plotting functions
-                from src.steered_plots import (
-                    plot_steering_heatmaps,
-                    plot_transformation_rates_by_layer
-                )
-
-                # Generate 4 heatmap grids:
-                # 2 for CORRECT group (transitions + no_change)
-                # 2 for WRONG group (transitions + no_change)
-
-                print(f"\n    Generating heatmaps for CORRECT group...")
-
-                # CORRECT - TRANSITIONS
-                heatmap_path_correct_trans = os.path.join(plot_dir, f'heatmap_correct_transitions.png')
-                plot_steering_heatmaps(
-                    all_configs=all_configs,
-                    subject=SUBJECT,
-                    hint_template=hint_template,
-                    correctness_group='correct',
-                    heatmap_type='transitions',
-                    save_path=heatmap_path_correct_trans
-                )
-
-                # CORRECT - NO CHANGE
-                heatmap_path_correct_nochange = os.path.join(plot_dir, f'heatmap_correct_no_change.png')
-                plot_steering_heatmaps(
-                    all_configs=all_configs,
-                    subject=SUBJECT,
-                    hint_template=hint_template,
-                    correctness_group='correct',
-                    heatmap_type='no_change',
-                    save_path=heatmap_path_correct_nochange
-                )
-
-                print(f"\n    Generating heatmaps for WRONG group...")
-
-                # WRONG - TRANSITIONS
-                heatmap_path_wrong_trans = os.path.join(plot_dir, f'heatmap_wrong_transitions.png')
-                plot_steering_heatmaps(
-                    all_configs=all_configs,
-                    subject=SUBJECT,
-                    hint_template=hint_template,
-                    correctness_group='wrong',
-                    heatmap_type='transitions',
-                    save_path=heatmap_path_wrong_trans
-                )
-
-                # WRONG - NO CHANGE
-                heatmap_path_wrong_nochange = os.path.join(plot_dir, f'heatmap_wrong_no_change.png')
-                plot_steering_heatmaps(
-                    all_configs=all_configs,
-                    subject=SUBJECT,
-                    hint_template=hint_template,
-                    correctness_group='wrong',
-                    heatmap_type='no_change',
-                    save_path=heatmap_path_wrong_nochange
-                )
-
-                # Layer-wise line plots - one 2×2 per coefficient per correctness group
-                print(f"\n    Generating layer-wise plots...")
-
-                # CORRECT group line plots
-                plot_transformation_rates_by_layer(
-                    all_configs=all_configs,
-                    correctness_group='correct',
-                    save_dir=plot_dir,
-                    subject=SUBJECT,
-                    hint_template=hint_template
-                )
-
-                # WRONG group line plots
-                plot_transformation_rates_by_layer(
-                    all_configs=all_configs,
-                    correctness_group='wrong',
-                    save_dir=plot_dir,
-                    subject=SUBJECT,
-                    hint_template=hint_template
-                )
-
-                print(f"  ✓ Created all plots in: {plot_dir}")
-
-            except Exception as e:
-                import traceback
-                print(f"  Warning: Could not create plots: {e}")
-                print(f"  Full traceback:")
-                traceback.print_exc()
-
         # Store outputs
         all_outputs[hint_template] = {
             'configs': all_configs,
-            'n_records': len(annotated_records),
-            'plot_dir': OUTPUT_PATHS['plots_by_hint'].get(hint_template, 'N/A')
+            'n_records': len(annotated_records)
         }
 
-    # 5. Save combined outputs (all hint templates together)
+    # 4. Save combined outputs (all hint templates together)
     print(f"\n{'=' * 80}")
-    print("STEP 5: Saving Combined Outputs")
+    print("STEP 4: Saving Combined Outputs")
     print(f"{'=' * 80}")
 
-    # 5a. Save combined annotated dataset
+    # 4a. Save combined annotated dataset
     print(f"\nSaving combined annotated dataset...")
     os.makedirs(os.path.dirname(OUTPUT_PATHS['annotated']), exist_ok=True)
     save_jsonl(all_annotated_records, OUTPUT_PATHS['annotated'])
     print(f"✓ Saved {len(all_annotated_records)} annotated records: {OUTPUT_PATHS['annotated']}")
 
-    # 5b. Save combined summary
+    # 4b. Save combined summary
     print(f"\nSaving combined summary...")
     combined_summary = {
         'evaluation_date': TODAY,
@@ -435,7 +475,7 @@ def main():
             'total_configurations': len(all_configs_combined),
             'layers': sorted(set(c['layer'] for c in all_configs_combined)),
             'coefficient_magnitudes': sorted(set(c['coefficient_magnitude'] for c in all_configs_combined)),
-            'note': 'Stratified by initial state (CF/CU/WF/WU) - 8 groups per configuration'
+            'note': 'Stratified by initial state (CF/CU/WF/WU) - Two-phase classification: faithfulness for stable, hint mentions for changed'
         },
 
         # Store configs grouped by hint template
@@ -457,16 +497,15 @@ def main():
     print(f"✓ Processed {len(all_records)} steered responses")
     print(f"✓ Processed {len(hint_templates_in_grouped)} hint template(s): {hint_templates_in_grouped}")
 
-    print(f"\n=== COMBINED OUTPUTS ===")
+    print(f"\n=== OUTPUT FILES ===")
     print(f"  - Annotated dataset: {OUTPUT_PATHS['annotated']} ({len(all_annotated_records)} records)")
     print(f"  - Summary JSON: {OUTPUT_PATHS['summary']}")
 
-    print(f"\n=== PLOTS BY HINT TEMPLATE ===")
+    print(f"\n=== RESULTS BY HINT TEMPLATE ===")
     for hint_template, outputs in all_outputs.items():
         print(f"\n  [{hint_template}]")
-        print(f"    - Analyzed {len(outputs['configs'])} configurations")
-        print(f"    - Records: {outputs['n_records']}")
-        print(f"    - Plot directory: {outputs['plot_dir']}")
+        print(f"    - Configurations analyzed: {len(outputs['configs'])}")
+        print(f"    - Records processed: {outputs['n_records']}")
 
     print(f"\n{'=' * 80}\n")
 

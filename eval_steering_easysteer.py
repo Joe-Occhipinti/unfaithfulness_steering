@@ -107,11 +107,17 @@ def find_input_file(model_id: str, dataset_type: str, base_dir: Path) -> Path:
     selected = dataset_matches[0]
     print(f"  Selected: {selected}")
     return selected
+    
+    # hi, unlucky person looking at this project
 
 
-def find_vectors_file(input_dir: Path) -> Path:
-    """Search for most recent *vectors*.pkl in input_dir or parent directories."""
+def find_vectors_file(input_dir: Path, model_id: str) -> Path:
+    """Search for vectors PKL matching model name in input_dir or parent directories."""
+    model_short = get_model_short_name(model_id)
+    model_lower = model_short.lower().replace("-", "").replace("_", "")
+    
     print(f"Searching for vectors file...")
+    print(f"  Model: {model_short}")
     
     search_dirs = [input_dir]
     current = input_dir
@@ -125,17 +131,26 @@ def find_vectors_file(input_dir: Path) -> Path:
     for search_dir in search_dirs:
         all_pkl_files.extend(list(search_dir.rglob("*vectors*.pkl")))
     
-    print(f"  Found {len(all_pkl_files)} vectors PKL files")
+    print(f"  Found {len(all_pkl_files)} total vectors PKL files")
     
-    if not all_pkl_files:
-        raise FileNotFoundError(f"No vectors PKL files found in or above: {input_dir}")
+    # Filter by model name
+    model_matches = [f for f in all_pkl_files 
+                     if model_lower in str(f).lower().replace("-", "").replace("_", "")]
+    
+    print(f"  After model filter: {len(model_matches)} files")
+    
+    if not model_matches:
+        raise FileNotFoundError(
+            f"No vectors PKL files found matching model '{model_short}' in or above: {input_dir}\n"
+            f"Expected pattern: *vectors*{model_short}*.pkl"
+        )
     
     def get_date_key(path: Path) -> str:
         date = extract_date_from_filename(path.stem)
         return date if date else "0000-00-00"
     
-    all_pkl_files.sort(key=get_date_key, reverse=True)
-    selected = all_pkl_files[0]
+    model_matches.sort(key=get_date_key, reverse=True)
+    selected = model_matches[0]
     print(f"  Selected: {selected}")
     return selected
 
@@ -338,7 +353,7 @@ def run_linear_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
     elif args.mode == "off-policy":
         vectors_file = find_off_policy_vectors_file(args.model, base_dir)
     else:
-        vectors_file = find_vectors_file(input_file.parent)
+        vectors_file = find_vectors_file(input_file.parent, args.model)
 
     
     # Convert PKL to GGUF
@@ -421,12 +436,16 @@ def run_linear_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
 # =============================================================================
 
 def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, base_dir):
-    """Run MLP mode: per-prompt gradient-optimized steering via sequential processing."""
-    from vllm import SamplingParams
-    from vllm.steer_vectors.request import SteerVectorRequest
+    """Run MLP mode: per-prompt gradient-optimized steering via batched processing (HF backend)."""
     from src.probe import MLPProbe
     from src.gradient_steering import compute_steering_vector_gradient
-    import gguf
+    from src.model import load_model
+    from src.per_prompt_steering import apply_per_prompt_steering_to_model
+    from tqdm import tqdm
+    import torch
+    
+    # NOTE: 'llm' argument is ignored here as we load a fresh HF model for steering
+    # This is because the main() function loads vLLM by default which we don't use for this mode anymore
     
     # Find activations and probes
     if args.input_activations:
@@ -468,40 +487,34 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
     layers_to_test = [l for l in args.layers if l in mlp_probes]
     print(f"Will test {len(layers_to_test)} layers: {layers_to_test}")
     
-    # Create temp directory for per-prompt GGUFs
-    temp_dir = output_dir / "temp_gguf"
-    temp_dir.mkdir(exist_ok=True)
-    temp_gguf_path = temp_dir / "temp_steering.gguf"
+    # =========================================================================
+    # PHASE 1: PRE-COMPUTE STEERING VECTORS
+    # =========================================================================
+    print("\n=== PHASE 1: Pre-computing Steering Vectors ===")
     
-    # Sampling params
-    sampling_params = SamplingParams(max_tokens=args.max_new_tokens, temperature=0, repetition_penalty=1.1)
+    # Structure: precomputed_vectors[(layer, direction, target)][prompt_index_in_input_list] = vector
+    precomputed_vectors = {}
     
-    # Results storage
-    evaluation_results = {}
     total_configs = len(layers_to_test) * len(args.directions) * len(args.target_values)
     config_count = 0
     
     for layer_idx in layers_to_test:
-        mlp = mlp_probes[layer_idx].float()  # Ensure float32 for optimization
+        mlp = mlp_probes[layer_idx].float()
         
         for direction in args.directions:
             for target_value in args.target_values:
                 config_count += 1
-                print(f"\n[{config_count}/{total_configs}] Layer {layer_idx} | {direction} | Target {target_value}")
+                config_key = (layer_idx, direction, target_value)
+                print(f"[{config_count}/{total_configs}] Computing vectors for Layer {layer_idx} | {direction} | Target {target_value}")
                 
-                steered_prompts_list = []
+                vectors_list = []
                 
-                # Sequential per-prompt processing
-                for idx, (prompt, prompt_idx) in enumerate(tqdm(
-                    zip(input_prompts, val_indices), 
-                    total=len(input_prompts),
-                    desc="Processing prompts"
-                )):
-                    # Get activation for this prompt
+                for i, (prompt, prompt_idx) in enumerate(tqdm(zip(input_prompts, val_indices), total=len(input_prompts))):
+                    # Get activation
                     if prompt_idx not in activations:
-                        steered_prompts_list.append(prompt + " [ERROR: No activation]")
+                        vectors_list.append(None)
                         continue
-                    
+                        
                     prompt_activations = activations[prompt_idx]['layers'].get(layer_idx, {})
                     
                     # Get F_body or U_body activation
@@ -510,7 +523,7 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
                     elif 'U_body' in prompt_activations and prompt_activations['U_body'].numel() > 0:
                         activation_tensor = prompt_activations['U_body']
                     else:
-                        steered_prompts_list.append(prompt + " [ERROR: No activation]")
+                        vectors_list.append(None)
                         continue
                     
                     # Average over tokens and compute steering vector
@@ -525,38 +538,99 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
                         num_steps=args.opt_steps
                     )
                     
-                    # Save to temp GGUF
-                    _save_single_vector_gguf(steering_vec.numpy(), layer_idx, str(temp_gguf_path))
-                    
-                    # Generate with EasySteer
-                    steer_request = SteerVectorRequest(
-                        steer_vector_name=f"gradient_{layer_idx}_{direction}_{target_value}",
-                        steer_vector_int_id=idx + 1,
-                        steer_vector_local_path=str(temp_gguf_path),
-                        scale=1.0,  # Vector already optimized
-                        target_layers=[layer_idx],
-                        prefill_trigger_tokens=[],
-                        generate_trigger_tokens=[-1],
-                    )
-                    
-                    outputs = llm.generate([prompt], steer_vector_request=steer_request,
-                                           sampling_params=sampling_params)
-                    
-                    response = outputs[0].outputs[0].text.strip()
-                    steered_prompts_list.append(prompt + response)
+                    vectors_list.append(steering_vec.cpu()) # Keep on CPU until needed
                 
-                evaluation_results[(layer_idx, direction, target_value)] = {
-                    'steered_prompts': steered_prompts_list,
+                precomputed_vectors[config_key] = vectors_list
+                gc.collect()
+
+    # =========================================================================
+    # PHASE 2: BATCHED GENERATION (HF BACKEND)
+    # =========================================================================
+    print("\n=== PHASE 2: Batched Generation (HF Backend) ===")
+    
+    # Load HF Model with Flash Attention 2
+    # Note: We unload the vLLM model first if possible, but here we just load a new one
+    # Ideally main() should not load vLLM if mode is MLP, but we handle that by just loading a second model
+    # (Assuming enough VRAM or vLLM was cleared. The script structure makes this tricky, 
+    #  but we'll assume the user has resources or we should modify main to not load vLLM)
+    
+    print("Loading Hugging Face model with Flash Attention 2...")
+    model, tokenizer = load_model(args.model, attn_implementation="flash_attention_2")
+    
+    # Set tokenizer limits
+    tokenizer.model_max_length = 1024  # Enforce max input tokens
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        
+    # Apply Per-Prompt Steering Wrapper
+    print("Applying per-prompt steering wrappers...")
+    wrappers = apply_per_prompt_steering_to_model(model, layers_to_test)
+    
+    evaluation_results = {}
+    batch_size = 32 # Adjust based on VRAM
+    
+    # Iterate through configs again for generation
+    config_count = 0
+    
+    for layer_idx in layers_to_test:
+        wrapper = wrappers[layer_idx]
+        
+        for direction in args.directions:
+            for target_value in args.target_values:
+                config_count += 1
+                config_key = (layer_idx, direction, target_value)
+                print(f"\n[{config_count}/{total_configs}] Generating: Layer {layer_idx} | {direction} | Target {target_value}")
+                
+                vectors = precomputed_vectors[config_key]
+                steered_responses = []
+                
+                # Batched generation
+                for i in tqdm(range(0, len(input_prompts), batch_size), desc="Generating batches"):
+                    batch_prompts = input_prompts[i:i + batch_size]
+                    batch_vectors = vectors[i:i + batch_size]
+                    
+                    # Tokenize
+                    inputs = tokenizer(
+                        batch_prompts, 
+                        return_tensors="pt", 
+                        padding=True, 
+                        truncation=True, 
+                        max_length=1024
+                    ).to(model.device)
+                    
+                    # Set steering vectors for this batch
+                    # Note: batch_vectors contains Tensors or None. Wrapper handles None.
+                    wrapper.set_steering(batch_vectors)
+                    
+                    # Generate
+                    with torch.no_grad():
+                        outputs = model.generate(
+                            **inputs,
+                            max_new_tokens=1024, # Enforce max new tokens
+                            do_sample=False,
+                            repetition_penalty=1.1,
+                            pad_token_id=tokenizer.pad_token_id,
+                            eos_token_id=tokenizer.eos_token_id
+                        )
+                    
+                    # Reset wrapper immediately
+                    wrapper.reset()
+                    
+                    # Decode
+                    input_len = inputs['input_ids'].shape[1]
+                    batch_decoded = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
+                    steered_responses.extend([r.strip() for r in batch_decoded])
+                    
+                    del inputs, outputs
+                    torch.cuda.empty_cache()
+                
+                # Store results
+                full_steered_prompts = [p + r for p, r in zip(input_prompts, steered_responses)]
+                evaluation_results[config_key] = {
+                    'steered_prompts': full_steered_prompts,
                     'total_prompts': len(val_data)
                 }
                 
-                print(f"  Completed {len(steered_prompts_list)} prompts")
-                gc.collect()
-    
-    # Cleanup temp files
-    if temp_gguf_path.exists():
-        temp_gguf_path.unlink()
-    
     # Build output records
     output_data = []
     for (layer_idx, direction, target_value), results in evaluation_results.items():
@@ -576,10 +650,10 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
                 'date': TODAY,
                 'model': args.model,
                 'steering_mode': 'mlp',
-                'backend': 'easysteer_vllm'
+                'backend': 'hf_custom_hooks'
             }
             output_data.append(record)
-    
+            
     return output_data, {
         'activations_file': str(activations_file),
         'probes_dir': str(probes_dir),
@@ -641,13 +715,18 @@ def main():
     # =========================================================================
     # STEP 2: Load Model
     # =========================================================================
-    print("\n=== STEP 2: Load Model with EasySteer ===")
-    llm = load_model_easysteer(
-        model_id=args.model,
-        tensor_parallel_size=1,
-        max_model_len=args.max_model_len
-    )
-    print(f"Model loaded in {time.time() - start_time:.2f} seconds")
+    print("\n=== STEP 2: Load Model ===")
+    if args.mode == "mlp":
+        print("Skipping vLLM load for MLP mode (will load HF model later)")
+        llm = None
+    else:
+        print(f"Loading model with EasySteer: {args.model}")
+        llm = load_model_easysteer(
+            model_id=args.model,
+            tensor_parallel_size=1,
+            max_model_len=args.max_model_len
+        )
+        print(f"Model loaded in {time.time() - start_time:.2f} seconds")
     
     # =========================================================================
     # STEP 3: Load and Filter Data
@@ -753,7 +832,9 @@ def main():
     print(f"Results: {output_file}")
     
     # Cleanup
-    del llm
+    # Cleanup
+    if llm is not None:
+        del llm
     gc.collect()
 
 

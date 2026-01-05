@@ -1,0 +1,21 @@
+Analysis for split='val'
+Total records matching filter: 132
+
+Breakdown:
+Under 512 tokens: 23 (17.4%)
+Under 1024 tokens (cumulative): 63 (47.7%)
+Over 1024 tokens: 69 (52.3%)
+Between 1024 and 1200 tokens: 16
+
+Detailed Bins:
+0 - 512:    23
+512 - 1024: 40
+1024+:      69
+
+Stats for prompts > 1024 tokens:
+Count: 69
+Average Length: 2128.20
+Median Length: 1504.25
+Max Length: 36908.25
+
+Note: Token counts are estimated using characters / 4.
