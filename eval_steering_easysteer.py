@@ -331,6 +331,8 @@ Examples:
     # Generation parameters
     parser.add_argument("--max-new-tokens", type=int, default=2048)
     parser.add_argument("--max-model-len", type=int, default=3072)
+    parser.add_argument("--batch-size", type=int, default=32,
+                        help="[mlp] Batch size for generation (default: 32)")
     parser.add_argument("--num-samples", type=int, default=None,
                         help="Number of samples to process (default: all)")
     
@@ -438,7 +440,6 @@ def run_linear_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
 def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, base_dir):
     """Run MLP mode: per-prompt gradient-optimized steering via batched processing (HF backend)."""
     from src.probe import MLPProbe
-    from src.gradient_steering import compute_steering_vector_gradient
     from src.model import load_model
     from src.per_prompt_steering import apply_per_prompt_steering_to_model
     from tqdm import tqdm
@@ -488,9 +489,12 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
     print(f"Will test {len(layers_to_test)} layers: {layers_to_test}")
     
     # =========================================================================
-    # PHASE 1: PRE-COMPUTE STEERING VECTORS
+    # PHASE 1: PRE-COMPUTE STEERING VECTORS (GPU-BATCHED)
     # =========================================================================
-    print("\n=== PHASE 1: Pre-computing Steering Vectors ===")
+    print("\n=== PHASE 1: Pre-computing Steering Vectors (GPU-Batched) ===")
+    
+    # Import GPU-batched function
+    from src.gradient_steering import compute_steering_vectors_gpu_batched
     
     # Structure: precomputed_vectors[(layer, direction, target)][prompt_index_in_input_list] = vector
     precomputed_vectors = {}
@@ -499,49 +503,68 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
     config_count = 0
     
     for layer_idx in layers_to_test:
-        mlp = mlp_probes[layer_idx].float()
+        # Load probe for this layer to GPU
+        mlp = mlp_probes[layer_idx].float().cuda()
+        print(f"\n--- Layer {layer_idx}: Probe loaded to GPU ---")
         
+        # Extract all activations for this layer (stay on CPU for now)
+        layer_activations = []
+        for prompt_idx in val_indices:
+            if prompt_idx not in activations:
+                layer_activations.append(None)
+                continue
+                
+            prompt_activations = activations[prompt_idx]['layers'].get(layer_idx, {})
+            
+            # Get F_body or U_body activation
+            f_body = prompt_activations.get('F_body')
+            u_body = prompt_activations.get('U_body')
+            
+            if f_body is not None and f_body.numel() > 0:
+                activation_tensor = f_body.mean(dim=0).float()  # Average over tokens
+            elif u_body is not None and u_body.numel() > 0:
+                activation_tensor = u_body.mean(dim=0).float()
+            else:
+                layer_activations.append(None)
+                continue
+            
+            layer_activations.append(activation_tensor)
+        
+        print(f"  Extracted {sum(1 for a in layer_activations if a is not None)} valid activations")
+        
+        # Process all direction × target configs for this layer
         for direction in args.directions:
             for target_value in args.target_values:
                 config_count += 1
                 config_key = (layer_idx, direction, target_value)
-                print(f"[{config_count}/{total_configs}] Computing vectors for Layer {layer_idx} | {direction} | Target {target_value}")
+                print(f"[{config_count}/{total_configs}] Computing vectors: Layer {layer_idx} | {direction} | Target {target_value}")
                 
-                vectors_list = []
+                # GPU-batched computation
+                import time
+                start_time = time.time()
                 
-                for i, (prompt, prompt_idx) in enumerate(tqdm(zip(input_prompts, val_indices), total=len(input_prompts))):
-                    # Get activation
-                    if prompt_idx not in activations:
-                        vectors_list.append(None)
-                        continue
-                        
-                    prompt_activations = activations[prompt_idx]['layers'].get(layer_idx, {})
-                    
-                    # Get F_body or U_body activation
-                    if 'F_body' in prompt_activations and prompt_activations['F_body'].numel() > 0:
-                        activation_tensor = prompt_activations['F_body']
-                    elif 'U_body' in prompt_activations and prompt_activations['U_body'].numel() > 0:
-                        activation_tensor = prompt_activations['U_body']
-                    else:
-                        vectors_list.append(None)
-                        continue
-                    
-                    # Average over tokens and compute steering vector
-                    mean_activation = activation_tensor.mean(dim=0).float()
-                    
-                    steering_vec = compute_steering_vector_gradient(
-                        activation=mean_activation,
-                        mlp_model=mlp,
-                        target_value=target_value,
-                        direction=direction,
-                        learning_rate=args.lr,
-                        num_steps=args.opt_steps
-                    )
-                    
-                    vectors_list.append(steering_vec.cpu()) # Keep on CPU until needed
+                vectors_list = compute_steering_vectors_gpu_batched(
+                    activations_list=layer_activations,
+                    mlp_model=mlp,
+                    target_value=target_value,
+                    direction=direction,
+                    learning_rate=args.lr,
+                    num_steps=args.opt_steps,
+                    device="cuda"
+                )
+                
+                elapsed = time.time() - start_time
+                valid_count = sum(1 for v in vectors_list if v is not None)
+                print(f"  Computed {valid_count} vectors in {elapsed:.2f}s ({elapsed/max(valid_count, 1)*1000:.1f}ms/prompt)")
                 
                 precomputed_vectors[config_key] = vectors_list
-                gc.collect()
+        
+        # Cleanup: Remove probe from GPU after all configs for this layer
+        mlp.cpu()
+        del mlp
+        torch.cuda.empty_cache()
+        gc.collect()
+        print(f"--- Layer {layer_idx}: Probe unloaded from GPU ---")
 
     # =========================================================================
     # PHASE 2: BATCHED GENERATION (HF BACKEND)
@@ -554,20 +577,21 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
     # (Assuming enough VRAM or vLLM was cleared. The script structure makes this tricky, 
     #  but we'll assume the user has resources or we should modify main to not load vLLM)
     
-    print("Loading Hugging Face model with Flash Attention 2...")
-    model, tokenizer = load_model(args.model, attn_implementation="flash_attention_2")
+    print("Loading Hugging Face model with SDPA...")
+    model, tokenizer = load_model(args.model, attn_implementation="sdpa")
     
     # Set tokenizer limits
     tokenizer.model_max_length = 1024  # Enforce max input tokens
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = 'left'  # Required for decoder-only models
         
     # Apply Per-Prompt Steering Wrapper
     print("Applying per-prompt steering wrappers...")
     wrappers = apply_per_prompt_steering_to_model(model, layers_to_test)
     
     evaluation_results = {}
-    batch_size = 32 # Adjust based on VRAM
+    batch_size = args.batch_size
     
     # Iterate through configs again for generation
     config_count = 0
@@ -606,7 +630,7 @@ def run_mlp_mode(args, llm, val_data, val_indices, input_prompts, output_dir, ba
                     with torch.no_grad():
                         outputs = model.generate(
                             **inputs,
-                            max_new_tokens=1024, # Enforce max new tokens
+                            max_new_tokens=args.max_new_tokens,
                             do_sample=False,
                             repetition_penalty=1.1,
                             pad_token_id=tokenizer.pad_token_id,

@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "date": "2026-01-05",
+    "model": "Qwen/Qwen3-32B",
+    "mode": "mlp",
+    "backend": "easysteer_vllm",
+    "input_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl",
+    "output_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/steered_mlp_Qwen3-32B_2026-01-05.jsonl",
+    "num_examples": 132,
+    "processing_time_seconds": 1142.5765297412872,
+    "shard": null,
+    "validation_date": "2026-01-05",
+    "validation_time_seconds": 121.76756310462952,
+    "note": "Validation completed - steered_mlp dataset metrics added"
+  },
+  "mode_config": {
+    "activations_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/activations_dataset_Qwen3-32B_2026-01-05.pkl",
+    "probes_dir": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/probes_Qwen3-32B_2026-01-05/mlp",
+    "layers_tested": [
+      31
+    ],
+    "directions_tested": [
+      "offensive"
+    ],
+    "target_values_tested": [
+      15.0
+    ]
+  }
+}
