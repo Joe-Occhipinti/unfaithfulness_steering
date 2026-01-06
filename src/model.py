@@ -256,12 +256,12 @@ def load_model_for_forward_pass(model_id: str = "deepseek-ai/DeepSeek-R1-Distill
     Returns:
         Tuple of (model, tokenizer)
     """
-    # Use the same base loading logic
-    model, tokenizer = load_model(model_id)
+    # Use the same base loading logic with SDPA for memory efficiency
+    model, tokenizer = load_model(model_id, attn_implementation="sdpa")
 
     # Set to eval mode for forward passes (no generation)
     model.eval()
-    print("Model set to eval mode for forward passes")
+    print("Model set to eval mode for forward passes (using SDPA)")
 
     return model, tokenizer
 

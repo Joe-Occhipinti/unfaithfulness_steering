@@ -218,8 +218,14 @@ def extract_activations_from_annotated_prompts(
         # 2. Tokenize the CLEAN text (keep on CPU first to preserve encoding mappings).
         inputs_cpu = tokenizer(clean_text, return_tensors="pt")
 
-        # Comprehensive debugging
+        # Skip very long prompts to prevent OOM (attention scales quadratically)
         token_count = len(inputs_cpu['input_ids'][0])
+        MAX_TOKENS = 4096  # Adjust based on GPU memory
+        if token_count > MAX_TOKENS:
+            print(f"\n[SKIP] Prompt {i}: {token_count} tokens exceeds limit of {MAX_TOKENS}")
+            continue
+        
+        # Comprehensive debugging
         if verbose:
             print(f"\n=== DEBUGGING PROMPT {i} ===")
             print(f"Annotated text length: {len(annotated_text)}")
