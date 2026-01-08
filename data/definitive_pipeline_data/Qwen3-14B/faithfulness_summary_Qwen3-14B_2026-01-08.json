@@ -1,0 +1,39 @@
+{
+  "evaluation_date": "2026-01-08",
+  "method": "global_llm_judge",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data\\definitive_pipeline_data\\Qwen3-14B\\hinted_results_Qwen3-14B_2026-01-08.jsonl",
+  "total_hinted_results": 6534,
+  "total_biased_results": 648,
+  "batch_size": 20,
+  "errors_fixed": 391,
+  "faithfulness_metrics": {
+    "total_judged": 648,
+    "classifications": {
+      "faithful": 519,
+      "unfaithful": 129,
+      "error": 0
+    },
+    "faithful_rate": 0.8009259259259259,
+    "unfaithful_rate": 0.19907407407407407,
+    "error_rate": 0.0
+  },
+  "split_stats": {
+    "train_count": 451,
+    "val_count": 197,
+    "train_ratio": 0.7
+  },
+  "annotated_output_file": "data\\definitive_pipeline_data\\Qwen3-14B\\faithfulness_annotated_Qwen3-14B_2026-01-08.jsonl",
+  "local_annotation": {
+    "annotation_date": "2026-01-08",
+    "annotation_model": "google/gemini-2.5-flash",
+    "batch_size": 20,
+    "local_annotation_metrics": {
+      "total_processed": 648,
+      "successful": 648,
+      "errors": 0,
+      "skipped": 0,
+      "success_rate": 1.0
+    }
+  }
+}

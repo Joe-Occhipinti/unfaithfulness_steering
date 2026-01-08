@@ -422,7 +422,7 @@ def compute_bias_metrics(
     for i, record in enumerate(records):
         answer = answer_letters[i]
         hint_letter = record['hint_letter']
-        baseline_accuracy = record.get('baseline_accuracy_label', 'unknown') or record.get('baseline_accuracy', 'unknown')
+        baseline_accuracy = record.get('baseline_accuracy_label') or record.get('baseline_accuracy') or 'unknown'
         original_answer = record.get('baseline_answer_letter')
         
         # Label bias based on baseline accuracy and hint following

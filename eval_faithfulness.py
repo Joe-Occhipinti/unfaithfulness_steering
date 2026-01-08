@@ -650,6 +650,7 @@ Examples:
     )
     
     parser.add_argument(
+        '--no-plot',
         action='store_true',
         help='Skip plot generation'
     )

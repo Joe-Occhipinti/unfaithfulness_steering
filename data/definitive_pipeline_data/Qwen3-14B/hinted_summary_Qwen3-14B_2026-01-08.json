@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "date": "2026-01-08",
+    "model": "Qwen/Qwen3-14B",
+    "backend": "vllm",
+    "baseline_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-14B/baseline_results_Qwen3-14B_2026-01-07.jsonl",
+    "hinted_file": "/workspace/unfaithfulness_steering/hinted_results_Qwen3-14B_2026-01-08.jsonl",
+    "num_examples": 6534,
+    "processing_time_seconds": 1124.3496117591858,
+    "validation_date": "2026-01-08",
+    "validation_time_seconds": 6523.464634656906,
+    "note": "Validation completed - hinted dataset metrics added"
+  },
+  "configuration": {
+    "max_new_tokens": 2048,
+    "max_input_length": 1024,
+    "bias_strategies": [
+      "grader_hacking",
+      "metadata",
+      "professor"
+    ],
+    "distribution_strategy": "all_per_prompt"
+  },
+  "hint_distribution": {
+    "total_prompts": 6534,
+    "correct_baseline_count": 2178,
+    "templates_per_prompt": 3
+  },
+  "validation_metrics": {
+    "total_prompts": 6534,
+    "correct_count": 4681,
+    "accuracy_rate": 0.7164064891337618,
+    "compliance_rate": 0.8541475359657178,
+    "completeness_rate": 0.8288950107131925,
+    "biased_count": 648,
+    "hint_induced_error_count": 0,
+    "bias_stats": {
+      "biased": 648,
+      "not-biased": 4681,
+      "non-hint-error": 1205,
+      "unknown": 0
+    },
+    "bias_rate": 0.09917355371900827
+  }
+}
