@@ -203,10 +203,13 @@ def evaluate_single_model(
         )
         
         print("\n--- Generating responses with vLLM ---")
+        # Apply repetition penalty only for Qwen3 models (they tend to repeat)
+        rep_penalty = 1.2 if "qwen3" in model_id.lower() else 1.0
         all_answers = batch_generate_vllm(
             llm=llm,
             prompts=baseline_prompts,
-            max_new_tokens=args.max_new_tokens
+            max_new_tokens=args.max_new_tokens,
+            repetition_penalty=rep_penalty
         )
         
         # vLLM cleanup

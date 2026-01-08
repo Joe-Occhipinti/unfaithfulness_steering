@@ -210,6 +210,7 @@ def batch_generate_vllm(
     llm: Any,
     prompts: List[str],
     max_new_tokens: int = 2048,
+    repetition_penalty: float = 1.0,
 ) -> List[str]:
     """
     Generate text using vLLM's optimized inference engine.
@@ -219,6 +220,7 @@ def batch_generate_vllm(
         llm: vLLM LLM instance
         prompts: List of input prompts
         max_new_tokens: Maximum new tokens to generate
+        repetition_penalty: Penalty for repeating tokens (1.0 = no penalty, 1.2 = mild)
         
     Returns:
         List of generated text responses (in same order as prompts)
@@ -230,6 +232,7 @@ def batch_generate_vllm(
     sampling_params = SamplingParams(
         max_tokens=max_new_tokens,
         temperature=0,  # Deterministic (greedy decoding)
+        repetition_penalty=repetition_penalty,
     )
     
     outputs = llm.generate(prompts, sampling_params)
