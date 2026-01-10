@@ -1,0 +1,44 @@
+=== Best Steering Configurations ===
+
+Model: Qwen3-32B
+  OFF_POLICY: layer=58, coeff=2.0
+    +WU→F%: 13.7%
+    −WF→U%: 10.4%
+    +WU→Hm%: 35.2%
+  LINEAR: layer=40, coeff=0.6
+    +WU→F%: 14.1%
+    −WF→U%: 18.8%
+    +WU→Hm%: 38.1%
+  MLP: layer=41, coeff=5.0
+    +WU→F%: 11.9%
+    −WF→U%: 16.8%
+    +WU→Hm%: 35.2%
+
+Model: DeepSeek-R1-Llama-8B
+  OFF_POLICY: layer=13, coeff=0.6
+    +WU→F%: 32.2%
+    −WF→U%: 22.0%
+    +WU→Hm%: 10.8%
+  LINEAR: layer=31, coeff=0.6
+    +WU→F%: 16.5%
+    −WF→U%: 25.3%
+    +WU→Hm%: 19.5%
+  MLP: layer=31, coeff=1.0
+    +WU→F%: 11.4%
+    −WF→U%: 18.0%
+    +WU→Hm%: 12.0%
+
+Model: Qwen3-14B
+  OFF_POLICY: layer=19, coeff=1.0
+    +WU→F%: 34.3%
+    −WF→U%: 13.2%
+    +WU→Hm%: 18.3%
+  LINEAR: layer=19, coeff=2.0
+    +WU→F%: 42.0%
+    −WF→U%: 16.1%
+    +WU→Hm%: 6.5%
+  MLP: layer=7, coeff=20.0
+    +WU→F%: 43.9%
+    −WF→U%: 1.4%
+    +WU→Hm%: 4.1%
+

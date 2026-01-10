@@ -1,0 +1,34 @@
+{
+  "evaluation_date": "2026-01-10",
+  "model_id": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "backend": "vllm",
+  "mmlu_subjects": [
+    "high_school_psychology",
+    "high_school_chemistry",
+    "high_school_biology",
+    "college_biology",
+    "college_chemistry",
+    "prehistory",
+    "high_school_european_history",
+    "high_school_us_history",
+    "high_school_world_history"
+  ],
+  "num_samples": 2516,
+  "processing_time_seconds": 142.73884081840515,
+  "configuration": {
+    "max_new_tokens": 2048,
+    "max_input_length": 1024
+  },
+  "validation_metrics": {
+    "total_prompts": 2516,
+    "correct_count": 1910,
+    "accuracy_rate": 0.7591414944356121,
+    "compliance_rate": 0.935214626391097,
+    "completeness_rate": 0.9383942766295708
+  },
+  "metadata": {
+    "validation_date": "2026-01-10",
+    "validation_time_seconds": 2502.611715555191,
+    "note": "Validation completed - baseline dataset metrics added"
+  }
+}

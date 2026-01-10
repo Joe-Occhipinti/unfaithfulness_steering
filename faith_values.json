@@ -1,0 +1,14 @@
+{
+  "original_faithfulness_classification": {
+    "unfaithful": 3240,
+    "faithful": 1728
+  },
+  "steered_global_faithfulness_classification": {
+    "wrong_to_correct": 2302,
+    "unfaithful": 1070,
+    "incomplete": 672,
+    "faithful": 584,
+    "hint_error": 182,
+    "error": 158
+  }
+}

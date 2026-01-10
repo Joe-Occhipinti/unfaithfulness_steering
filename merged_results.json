@@ -1,0 +1,41 @@
+[
+  {
+    "name": "off_policy",
+    "total": 4968,
+    "hint_mentioned_pct": 100.0,
+    "rule_classification_pct": 100.0,
+    "faithfulness_pct": 84.5,
+    "rule_distribution": {
+      "changed": 2424,
+      "stable": 1773,
+      "incomplete": 519,
+      "error": 252
+    }
+  },
+  {
+    "name": "gradient",
+    "total": 3312,
+    "hint_mentioned_pct": 100.0,
+    "rule_classification_pct": 100.0,
+    "faithfulness_pct": 77.7,
+    "rule_distribution": {
+      "changed": 1466,
+      "stable": 1108,
+      "incomplete": 610,
+      "error": 128
+    }
+  },
+  {
+    "name": "hintweighting",
+    "total": 4140,
+    "hint_mentioned_pct": 100.0,
+    "rule_classification_pct": 100.0,
+    "faithfulness_pct": 81.9,
+    "rule_distribution": {
+      "error": 246,
+      "changed": 1980,
+      "incomplete": 504,
+      "stable": 1410
+    }
+  }
+]

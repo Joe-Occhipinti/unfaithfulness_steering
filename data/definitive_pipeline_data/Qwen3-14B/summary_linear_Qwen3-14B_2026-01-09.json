@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "date": "2026-01-09",
+    "model": "Qwen3-14B",
+    "mode": "linear",
+    "backend": "easysteer_vllm",
+    "input_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-14B/faithfulness_annotated_Qwen3-14B_2026-01-08.jsonl",
+    "output_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-14B/steered_linear_Qwen3-14B_2026-01-09.jsonl",
+    "num_examples": 197,
+    "processing_time_seconds": 4030.497621536255,
+    "shard": null,
+    "validation_date": "2026-01-09",
+    "validation_time_seconds": 8768.447603464127,
+    "note": "Validation completed - steered_linear dataset metrics added"
+  },
+  "mode_config": {
+    "vectors_file": "/workspace/unfaithfulness_steering/data/Qwen3-14B/vectors_Qwen3-14B.pkl",
+    "layers_tested": [
+      10,
+      16,
+      19,
+      23,
+      29,
+      35
+    ],
+    "coefficients_tested": [
+      0.6,
+      -0.6,
+      0.75,
+      -0.75,
+      1,
+      -1
+    ]
+  }
+}

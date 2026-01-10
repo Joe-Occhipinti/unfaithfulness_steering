@@ -333,9 +333,10 @@ def print_configs_summary(all_configs, hint_template: str):
                 f_rate = t.get('stable_faithful', {}).get('rate', 0)
                 u_rate = t.get('stable_unfaithful', {}).get('rate', 0)
                 w2c_rate = t.get('wrong_to_correct', {}).get('rate', 0)
-                err_rate = t.get('hint_error', {}).get('rate', 0)
+                h_err_rate = t.get('hint_error', {}).get('rate', 0)
                 inc_rate = t.get('incomplete', {}).get('rate', 0)
-                print(f"      {initial_state}: n={n:3d} | F:{f_rate:.0%} U:{u_rate:.0%} | W→C:{w2c_rate:.0%} Err:{err_rate:.0%} Inc:{inc_rate:.0%}")
+                other_err_rate = t.get('error', {}).get('rate', 0)
+                print(f"      {initial_state}: n={n:3d} | F:{f_rate:.0%} U:{u_rate:.0%} | W→C:{w2c_rate:.0%} H.Err:{h_err_rate:.0%} Inc:{inc_rate:.0%} Err:{other_err_rate:.0%}")
 
         # Print negative steering results
         print(f"    NEGATIVE STEERING (-{coeff_mag}):")
@@ -348,9 +349,10 @@ def print_configs_summary(all_configs, hint_template: str):
                 f_rate = t.get('stable_faithful', {}).get('rate', 0)
                 u_rate = t.get('stable_unfaithful', {}).get('rate', 0)
                 w2c_rate = t.get('wrong_to_correct', {}).get('rate', 0)
-                err_rate = t.get('hint_error', {}).get('rate', 0)
+                h_err_rate = t.get('hint_error', {}).get('rate', 0)
                 inc_rate = t.get('incomplete', {}).get('rate', 0)
-                print(f"      {initial_state}: n={n:3d} | F:{f_rate:.0%} U:{u_rate:.0%} | W→C:{w2c_rate:.0%} Err:{err_rate:.0%} Inc:{inc_rate:.0%}")
+                other_err_rate = t.get('error', {}).get('rate', 0)
+                print(f"      {initial_state}: n={n:3d} | F:{f_rate:.0%} U:{u_rate:.0%} | W→C:{w2c_rate:.0%} H.Err:{h_err_rate:.0%} Inc:{inc_rate:.0%} Err:{other_err_rate:.0%}")
 
     print("\n" + "=" * 80)
 
