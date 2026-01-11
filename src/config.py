@@ -83,6 +83,7 @@ class ModelConfig:
         "Qwen3-14B": "Qwen/Qwen3-14B",
         "Qwen3-8B": "Qwen/Qwen3-8B",
         "DeepSeek-Llama-8B": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+        "DeepSeek-R1-Distill-Llama-8B": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
         "Olmo-3-7B-Think": "allenai/Olmo-3-7B-Think",
     }
 
