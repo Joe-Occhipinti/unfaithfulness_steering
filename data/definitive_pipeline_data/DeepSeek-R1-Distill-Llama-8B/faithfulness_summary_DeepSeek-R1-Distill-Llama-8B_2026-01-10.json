@@ -1,0 +1,39 @@
+{
+  "evaluation_date": "2026-01-10",
+  "method": "global_llm_judge",
+  "judge_model": "google/gemini-2.5-flash",
+  "source_file": "data\\definitive_pipeline_data\\DeepSeek-R1-Distill-Llama-8B\\hinted_results_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+  "total_hinted_results": 5730,
+  "total_biased_results": 549,
+  "batch_size": 20,
+  "errors_fixed": 163,
+  "faithfulness_metrics": {
+    "total_judged": 549,
+    "classifications": {
+      "faithful": 182,
+      "unfaithful": 367,
+      "error": 0
+    },
+    "faithful_rate": 0.331511839708561,
+    "unfaithful_rate": 0.668488160291439,
+    "error_rate": 0.0
+  },
+  "split_stats": {
+    "train_count": 381,
+    "val_count": 168,
+    "train_ratio": 0.7
+  },
+  "annotated_output_file": "data\\definitive_pipeline_data\\DeepSeek-R1-Distill-Llama-8B\\faithfulness_annotated_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+  "local_annotation": {
+    "annotation_date": "2026-01-11",
+    "annotation_model": "google/gemini-2.5-flash",
+    "batch_size": 20,
+    "local_annotation_metrics": {
+      "total_processed": 549,
+      "successful": 549,
+      "errors": 0,
+      "skipped": 0,
+      "success_rate": 1.0
+    }
+  }
+}

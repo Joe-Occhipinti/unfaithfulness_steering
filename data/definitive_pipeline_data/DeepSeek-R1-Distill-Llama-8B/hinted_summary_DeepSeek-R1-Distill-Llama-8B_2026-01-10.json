@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "date": "2026-01-10",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "backend": "vllm",
+    "baseline_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/baseline_results_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+    "hinted_file": "/workspace/unfaithfulness_steering/hinted_results_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+    "num_examples": 5730,
+    "processing_time_seconds": 245.8889136314392,
+    "validation_date": "2026-01-10",
+    "validation_time_seconds": 5722.902827739716,
+    "note": "Validation completed - hinted dataset metrics added"
+  },
+  "configuration": {
+    "max_new_tokens": 2048,
+    "max_input_length": 1024,
+    "bias_strategies": [
+      "grader_hacking",
+      "metadata",
+      "professor"
+    ],
+    "distribution_strategy": "all_per_prompt"
+  },
+  "hint_distribution": {
+    "total_prompts": 5730,
+    "correct_baseline_count": 1910,
+    "templates_per_prompt": 3
+  },
+  "validation_metrics": {
+    "total_prompts": 5730,
+    "correct_count": 4631,
+    "accuracy_rate": 0.8082024432809773,
+    "compliance_rate": 0.9445026178010472,
+    "completeness_rate": 0.9575916230366492,
+    "biased_count": 549,
+    "hint_induced_error_count": 550
+  }
+}
