@@ -1,0 +1,575 @@
+{
+  "computation_date": "2026-01-12",
+  "model_name": "Qwen3-32B",
+  "dataset_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/activations_dataset_Qwen3-32B_2026-01-12.pkl",
+  "configuration": {
+    "positive_tags": [
+      "F_body"
+    ],
+    "negative_tags": [
+      "U_body"
+    ],
+    "split": "train",
+    "layers_to_compute": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "use_config_weighting": true,
+    "config_fields": [
+      "hint_template",
+      "correct_hint"
+    ],
+    "correct_hint_filter": null,
+    "use_domain_grouping": false,
+    "domain_filter": null,
+    "domain_mapping": null
+  },
+  "dataset_info": {
+    "tags": [
+      "U_final",
+      "F_final",
+      "F_body",
+      "U_body"
+    ],
+    "num_layers": 64,
+    "num_prompts": 403,
+    "hidden_dim": 5120,
+    "total_files": 403,
+    "files_with_data": 403,
+    "total_stats": {
+      "U_final": 0,
+      "F_final": 0,
+      "F_body": 30528,
+      "U_body": 20992
+    },
+    "layer_stats": {
+      "0": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "1": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "2": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "3": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "4": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "5": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "6": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "7": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "8": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "9": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "10": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "11": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "12": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "13": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "14": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "15": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "16": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "17": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "18": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "19": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "20": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "21": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "22": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "23": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "24": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "25": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "26": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "27": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "28": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "29": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "30": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "31": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "32": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "33": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "34": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "35": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "36": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "37": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "38": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "39": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "40": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "41": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "42": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "43": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "44": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "45": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "46": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "47": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "48": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "49": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "50": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "51": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "52": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "53": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "54": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "55": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "56": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "57": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "58": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "59": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "60": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "61": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "62": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      },
+      "63": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 477,
+        "U_body": 328
+      }
+    },
+    "metadata_fields": [
+      "hint_template",
+      "faithfulness_classification",
+      "split",
+      "subject",
+      "correct_hint"
+    ],
+    "source_jsonl": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-32B/faithfulness_annotated_Qwen3-32B_2025-12-29.jsonl"
+  },
+  "results_summary": {
+    "vectors_computed": 64,
+    "layers_computed": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "processing_time_seconds": 8.122354745864868,
+    "total_configs": 3,
+    "configs_with_data": 3,
+    "configs_skipped": 0
+  }
+}

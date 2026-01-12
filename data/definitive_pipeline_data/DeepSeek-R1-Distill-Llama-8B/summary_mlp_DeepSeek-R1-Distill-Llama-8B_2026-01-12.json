@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "date": "2026-01-12",
+    "model": "DeepSeek-R1-Distill-Llama-8B",
+    "mode": "mlp",
+    "backend": "easysteer_vllm",
+    "input_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/faithfulness_annotated_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+    "output_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/steered_mlp_DeepSeek-R1-Distill-Llama-8B_2026-01-12.jsonl",
+    "num_examples": 168,
+    "processing_time_seconds": 14863.361281394958,
+    "shard": null,
+    "validation_date": "2026-01-12",
+    "validation_time_seconds": 3878.3629920482635,
+    "note": "Validation completed - steered_mlp dataset metrics added"
+  },
+  "mode_config": {
+    "activations_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/activations_dataset_DeepSeek-R1-Distill-Llama-8B_2026-01-11.pkl",
+    "probes_dir": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/probes_DeepSeek-R1-Distill-Llama-8B_2026-01-12/mlp",
+    "layers_tested": [
+      9,
+      13,
+      17,
+      25
+    ],
+    "directions_tested": [
+      "offensive",
+      "defensive"
+    ],
+    "target_values_tested": [
+      5.0,
+      15.0,
+      20.0
+    ]
+  }
+}

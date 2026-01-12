@@ -1,0 +1,319 @@
+{
+  "computation_date": "2026-01-12",
+  "model_name": "DeepSeek-R1-Distill-Llama-8B",
+  "dataset_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/activations_dataset_DeepSeek-R1-Distill-Llama-8B_2026-01-11.pkl",
+  "configuration": {
+    "positive_tags": [
+      "F_body"
+    ],
+    "negative_tags": [
+      "U_body"
+    ],
+    "split": "train",
+    "layers_to_compute": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "use_config_weighting": true,
+    "config_fields": [
+      "hint_template",
+      "correct_hint"
+    ],
+    "correct_hint_filter": null,
+    "use_domain_grouping": false,
+    "domain_filter": null,
+    "domain_mapping": null
+  },
+  "dataset_info": {
+    "tags": [
+      "U_final",
+      "F_final",
+      "F_body",
+      "U_body"
+    ],
+    "num_layers": 32,
+    "num_prompts": 535,
+    "hidden_dim": 4096,
+    "total_files": 535,
+    "files_with_data": 535,
+    "total_stats": {
+      "U_final": 0,
+      "F_final": 0,
+      "F_body": 14688,
+      "U_body": 18432
+    },
+    "layer_stats": {
+      "0": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "1": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "2": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "3": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "4": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "5": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "6": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "7": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "8": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "9": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "10": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "11": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "12": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "13": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "14": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "15": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "16": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "17": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "18": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "19": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "20": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "21": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "22": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "23": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "24": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "25": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "26": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "27": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "28": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "29": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "30": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      },
+      "31": {
+        "U_final": 0,
+        "F_final": 0,
+        "F_body": 459,
+        "U_body": 576
+      }
+    },
+    "metadata_fields": [
+      "hint_template",
+      "faithfulness_classification",
+      "split",
+      "subject",
+      "correct_hint"
+    ],
+    "source_jsonl": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/faithfulness_annotated_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl"
+  },
+  "results_summary": {
+    "vectors_computed": 32,
+    "layers_computed": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "processing_time_seconds": 4.1186912059783936,
+    "total_configs": 3,
+    "configs_with_data": 3,
+    "configs_skipped": 0
+  }
+}

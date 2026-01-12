@@ -218,6 +218,19 @@ def load_qwen3_14b(base_dir: Path) -> ModelData:
     return model
 
 
+def load_deepseek_r1_distill_llama_8b(base_dir: Path) -> ModelData:
+    """Load all DeepSeek-R1-Distill-Llama-8B data."""
+    data_dir = base_dir / "data" / "definitive_pipeline_data" / "DeepSeek-R1-Distill-Llama-8B"
+    print("Loading DeepSeek-R1-Distill-Llama-8B...")
+    
+    model = ModelData()
+    model.off_policy = load_approach(data_dir, "off_policy", "DeepSeek-R1-Distill-Llama-8B")
+    model.linear = load_approach(data_dir, "linear", "DeepSeek-R1-Distill-Llama-8B")
+    model.mlp = load_approach(data_dir, "mlp", "DeepSeek-R1-Distill-Llama-8B")
+    
+    return model
+
+
 # =============================================================================
 # Placeholder Generation
 # =============================================================================
@@ -271,7 +284,7 @@ def plot_variation_1(
     """
     fig, axes = plt.subplots(2, 2, figsize=(28, 24))
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     # Swapped order: Linear first, then Off-Policy
     approaches = ["linear", "off_policy", "mlp"]
     approach_labels = ["Linear", "Off-Policy", "MLP"]
@@ -335,7 +348,7 @@ def plot_variation_1(
             color = current_palette[shade_idx]
             
             # Use shorter display labels for legend
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Llama-8B" else model
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
         # 2x font sizes for print readability
@@ -378,7 +391,7 @@ def plot_variation_2(
     """
     fig, axes = plt.subplots(2, 2, figsize=(28, 24))
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     approaches = ["off_policy", "linear", "mlp"]
     approach_labels = ["Off-Policy", "Linear", "MLP"]
     
@@ -437,7 +450,7 @@ def plot_variation_2(
             color = current_palette[shade_idx]
             
             # Use shorter display labels for legend
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Llama-8B" else model
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
         # 2x font sizes for print readability
@@ -476,7 +489,7 @@ def plot_variation_3a(
     # 4 columns, so we need huge width
     fig, axes = plt.subplots(1, 4, figsize=(56, 12))
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     approaches = ["off_policy", "linear", "mlp"]
     approach_labels = ["Off-Policy", "Linear", "MLP"]
     
@@ -519,7 +532,7 @@ def plot_variation_3a(
             offset = (i - 1) * width
             shade_idx = shade_indices[i]
             color = current_palette[shade_idx]
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Llama-8B" else model
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
@@ -556,7 +569,7 @@ def plot_variation_3b(
     """
     fig, axes = plt.subplots(1, 4, figsize=(56, 12))
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     approaches = ["off_policy", "linear", "mlp"]
     approach_labels = ["Off-Policy", "Linear", "MLP"]
     
@@ -599,7 +612,7 @@ def plot_variation_3b(
             offset = (i - 1) * width
             shade_idx = shade_indices[i]
             color = current_palette[shade_idx]
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Llama-8B" else model
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
@@ -642,7 +655,7 @@ def plot_variation_4(
     """
     fig, axes = plt.subplots(3, 2, figsize=(28, 36))
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     approaches = ["off_policy", "linear", "mlp"]
     approach_labels = ["Off-Policy", "Linear", "MLP"]
     
@@ -691,7 +704,7 @@ def plot_variation_4(
             offset = (i - 1) * width
             shade_idx = shade_indices[i]
             color = current_palette[shade_idx]
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Llama-8B" else model
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
@@ -734,7 +747,7 @@ def plot_variation_5(
     fig = plt.figure(figsize=(22, 16))
     gs = fig.add_gridspec(3, 4, height_ratios=[1, 1, 1])
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     approaches = ["off_policy", "linear", "mlp"]
     approach_labels = ["Off-Policy", "Linear", "MLP"]
     
@@ -868,7 +881,7 @@ def plot_variation_6(
     """
     fig, axes = plt.subplots(4, 2, figsize=(16, 18))
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Llama-8B", "Qwen3-14B"]
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
     approaches = ["off_policy", "linear", "mlp"]
     approach_labels = ["Off-Policy", "Linear", "MLP"]
     
@@ -956,15 +969,14 @@ def main():
     output_dir = args.output_dir or (args.base_dir / "plots")
     output_dir.mkdir(exist_ok=True)
     
-    # Load real data for Qwen3-32B
+    # Load real data for all models
     qwen_data = load_qwen3_32b(args.base_dir)
     qwen14b_data = load_qwen3_14b(args.base_dir)
+    deepseek_data = load_deepseek_r1_distill_llama_8b(args.base_dir)
     
-    # Generate placeholders for other models
-    random.seed(42)
     all_data = {
         "Qwen3-32B": qwen_data,
-        "DeepSeek-R1-Llama-8B": generate_placeholder_model(),
+        "DeepSeek-R1-Distill-Llama-8B": deepseek_data,
         "Qwen3-14B": qwen14b_data
     }
     

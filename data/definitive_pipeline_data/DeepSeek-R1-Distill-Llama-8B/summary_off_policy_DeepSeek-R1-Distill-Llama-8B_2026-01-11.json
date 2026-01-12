@@ -1,0 +1,37 @@
+{
+  "metadata": {
+    "date": "2026-01-11",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "mode": "off-policy",
+    "backend": "easysteer_vllm",
+    "input_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/faithfulness_annotated_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+    "output_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/steered_off_policy_DeepSeek-R1-Distill-Llama-8B_2026-01-11.jsonl",
+    "num_examples": 168,
+    "processing_time_seconds": 1678.555151939392,
+    "shard": null,
+    "validation_date": "2026-01-12",
+    "validation_time_seconds": 7864.967102527618,
+    "note": "Validation completed - steered_off_policy dataset metrics added"
+  },
+  "mode_config": {
+    "vectors_file": "/workspace/unfaithfulness_steering/data/DeepSeek-R1-Distill-Llama-8B/vectors_DeepSeek-R1-Distill-Llama-8B_off_policy.pkl",
+    "layers_tested": [
+      8,
+      13,
+      15,
+      18,
+      23,
+      28
+    ],
+    "coefficients_tested": [
+      0.6,
+      -0.6,
+      0.75,
+      -0.75,
+      1.0,
+      -1.0,
+      2.0,
+      -2.0
+    ]
+  }
+}

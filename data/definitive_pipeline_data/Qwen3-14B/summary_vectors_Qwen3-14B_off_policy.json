@@ -1,0 +1,13 @@
+{
+  "computation_date": "2026-01-12",
+  "model_name": "Qwen3-14B",
+  "mode": "off-policy",
+  "dataset_file": "/workspace/unfaithfulness_steering/data/definitive_pipeline_data/Qwen3-14B/off_policy_dataset_Qwen3-14B_2026-01-12.pkl",
+  "results_summary": {
+    "vectors_computed": 40,
+    "total_items": 324,
+    "faithful_count": 162,
+    "unfaithful_count": 162,
+    "processing_time_seconds": 1.2242436408996582
+  }
+}

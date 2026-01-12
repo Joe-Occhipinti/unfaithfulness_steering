@@ -14,19 +14,19 @@ Model: Qwen3-32B
     −WF→U%: 16.8%
     +WU→Hm%: 35.2%
 
-Model: DeepSeek-R1-Llama-8B
-  OFF_POLICY: layer=13, coeff=0.6
-    +WU→F%: 32.2%
-    −WF→U%: 22.0%
-    +WU→Hm%: 10.8%
-  LINEAR: layer=31, coeff=0.6
-    +WU→F%: 16.5%
-    −WF→U%: 25.3%
-    +WU→Hm%: 19.5%
-  MLP: layer=31, coeff=1.0
-    +WU→F%: 11.4%
-    −WF→U%: 18.0%
-    +WU→Hm%: 12.0%
+Model: DeepSeek-R1-Distill-Llama-8B
+  OFF_POLICY: layer=15, coeff=2.0
+    +WU→F%: 24.9%
+    −WF→U%: 21.1%
+    +WU→Hm%: 25.1%
+  LINEAR: layer=15, coeff=2.0
+    +WU→F%: 24.9%
+    −WF→U%: 24.5%
+    +WU→Hm%: 25.1%
+  MLP: layer=25, coeff=5.0
+    +WU→F%: 7.6%
+    −WF→U%: 7.0%
+    +WU→Hm%: 36.4%
 
 Model: Qwen3-14B
   OFF_POLICY: layer=19, coeff=1.0
