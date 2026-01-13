@@ -13,7 +13,6 @@ Using top configuration per (approach × model) via argmax.
 """
 
 import json
-import random
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
@@ -32,6 +31,7 @@ class MetricSet:
     faithful_pct: float = 0.0      # F%: stable_faithful rate
     unfaithful_pct: float = 0.0    # U%: stable_unfaithful rate
     correct_pct: float = 0.0       # C%: wrong_to_correct rate
+    correct_count: int = 0         # Raw count of wrong_to_correct
     hint_mentioning_pct: float = 0.0  # Hm%: sum of *_mentioning_hint
     n: int = 0
 
@@ -72,6 +72,9 @@ def extract_metrics(transitions: dict) -> MetricSet:
     def get_rate(key: str) -> float:
         return transitions.get(key, {}).get("rate", 0.0)
     
+    def get_count(key: str) -> int:
+        return transitions.get(key, {}).get("count", 0)
+    
     hint_mentioning = sum(
         v.get("rate", 0.0) for k, v in transitions.items()
         if "mentioning_hint" in k and isinstance(v, dict)
@@ -81,6 +84,7 @@ def extract_metrics(transitions: dict) -> MetricSet:
         faithful_pct=get_rate("stable_faithful") * 100,
         unfaithful_pct=get_rate("stable_unfaithful") * 100,
         correct_pct=get_rate("wrong_to_correct") * 100,
+        correct_count=get_count("wrong_to_correct"),
         hint_mentioning_pct=hint_mentioning * 100,
     )
 
@@ -126,16 +130,17 @@ def parse_configurations(summary: dict) -> list[ConfigResult]:
             if not metric_list:
                 continue
             
-            # Calculate simple average of rates (counts are summed just for info)
-            count = len(metric_list)
+            # Calculate simple average of rates (counts are summed for pooling)
+            num_templates = len(metric_list)
             avg_metrics = MetricSet()
             
-            if count > 0:
-                avg_metrics.faithful_pct = sum(m.faithful_pct for m in metric_list) / count
-                avg_metrics.unfaithful_pct = sum(m.unfaithful_pct for m in metric_list) / count
-                avg_metrics.correct_pct = sum(m.correct_pct for m in metric_list) / count
-                avg_metrics.hint_mentioning_pct = sum(m.hint_mentioning_pct for m in metric_list) / count
-                avg_metrics.n = sum(m.n for m in metric_list) # Sum N to show total samples involved
+            if num_templates > 0:
+                avg_metrics.faithful_pct = sum(m.faithful_pct for m in metric_list) / num_templates
+                avg_metrics.unfaithful_pct = sum(m.unfaithful_pct for m in metric_list) / num_templates
+                avg_metrics.correct_pct = sum(m.correct_pct for m in metric_list) / num_templates
+                avg_metrics.correct_count = sum(m.correct_count for m in metric_list)  # Sum counts for pooling
+                avg_metrics.hint_mentioning_pct = sum(m.hint_mentioning_pct for m in metric_list) / num_templates
+                avg_metrics.n = sum(m.n for m in metric_list)  # Sum N to show total samples involved
             
             setattr(result, list_key, avg_metrics)
         
@@ -232,42 +237,7 @@ def load_deepseek_r1_distill_llama_8b(base_dir: Path) -> ModelData:
 
 
 # =============================================================================
-# Placeholder Generation
-# =============================================================================
-
-def generate_placeholder_metrics() -> MetricSet:
-    """Generate random placeholder metrics."""
-    return MetricSet(
-        faithful_pct=random.uniform(10, 40),
-        unfaithful_pct=random.uniform(15, 45),
-        correct_pct=random.uniform(20, 50),
-        hint_mentioning_pct=random.uniform(10, 35),
-        n=30
-    )
-
-
-def generate_placeholder_model() -> ModelData:
-    """Generate placeholder data for a model."""
-    model = ModelData()
-    for approach in ["off_policy", "linear", "mlp"]:
-        cfg = ConfigResult(
-            layer=random.choice([13, 24, 31, 40]),
-            coefficient=random.choice([0.6, 0.75, 1.0]),
-            positive_WF=generate_placeholder_metrics(),
-            positive_WU=generate_placeholder_metrics(),
-            negative_WF=generate_placeholder_metrics(),
-            negative_WU=generate_placeholder_metrics()
-        )
-        setattr(model, approach, ApproachData(
-            best_config=(cfg.layer, cfg.coefficient),
-            best_result=cfg,
-            all_configs=[cfg]
-        ))
-    return model
-
-
-# =============================================================================
-# Plotting: Variation 1
+# Plotting
 # =============================================================================
 
 def plot_variation_1(
@@ -375,56 +345,235 @@ def plot_variation_1(
     return fig
 
 
+def load_hintwise_data(base_dir: Path) -> dict:
+    """
+    Load steering data per hint template (not averaged).
+    
+    Returns: {model: {approach: {hint: ConfigResult}}}
+    """
+    models_config = {
+        "Qwen3-32B": "Qwen3-32B",
+        "Qwen3-14B": "Qwen3-14B", 
+        "DeepSeek-R1-Distill-Llama-8B": "DeepSeek-R1-Distill-Llama-8B",
+    }
+    
+    approaches = ["linear", "off_policy", "mlp"]
+    hints = ["grader_hacking", "metadata", "professor"]
+    
+    all_data = {}
+    
+    for model_name, model_suffix in models_config.items():
+        data_dir = base_dir / "data" / "definitive_pipeline_data" / model_suffix
+        all_data[model_name] = {}
+        
+        for mode in approaches:
+            pattern = f"summary_steered_{mode}_{model_suffix}_*.json"
+            files = list(data_dir.glob(pattern))
+            
+            if not files:
+                all_data[model_name][mode] = {}
+                continue
+            
+            latest = sorted(files)[-1]
+            with open(latest, "r", encoding="utf-8") as f:
+                summary = json.load(f)
+            
+            # Parse per-hint configs and find best for each hint
+            configs_by_hint = summary.get("configurations_by_hint", {})
+            all_data[model_name][mode] = {}
+            
+            for hint in hints:
+                hint_configs = configs_by_hint.get(hint, [])
+                if not hint_configs:
+                    continue
+                
+                # Find best config for this hint using same scoring
+                best_score = float("-inf")
+                best_result = None
+                eps = 1e-6
+                
+                for cfg in hint_configs:
+                    layer = cfg.get("layer")
+                    coeff = cfg.get("coefficient_magnitude")
+                    
+                    # Extract metrics for this config
+                    result = ConfigResult(layer=layer, coefficient=coeff)
+                    
+                    for json_key, attr_key in [
+                        ("positive_on_WF", "positive_WF"),
+                        ("positive_on_WU", "positive_WU"),
+                        ("negative_on_WF", "negative_WF"),
+                        ("negative_on_WU", "negative_WU"),
+                    ]:
+                        data = cfg.get(json_key, {})
+                        metrics = extract_metrics(data.get("transitions", {}))
+                        metrics.n = data.get("n", 0)
+                        setattr(result, attr_key, metrics)
+                    
+                    # Score: intended effect / collateral damage
+                    intended = result.positive_WU.faithful_pct
+                    collateral = result.positive_WF.unfaithful_pct
+                    score = intended / (collateral + eps)
+                    
+                    if score > best_score:
+                        best_score = score
+                        best_result = result
+                
+                all_data[model_name][mode][hint] = best_result
+    
+    return all_data
+
+
+def plot_variation_1_hintwise(
+    base_dir: Path,
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 1 Hint-wise: 2×3 grid
+    
+    Rows: 2 metrics (+ Steering Faithfulness, - Steering Unfaithfulness)
+    Columns: 3 models (Qwen3-32B, Qwen3-14B, Llama-8B)
+    Each cell: 9 bars (3 approaches × 3 hints, color-coded by hint)
+    """
+    print("Loading hint-wise data...")
+    hintwise_data = load_hintwise_data(base_dir)
+    
+    fig, axes = plt.subplots(2, 3, figsize=(30, 18))
+    
+    models = ["Qwen3-32B", "Qwen3-14B", "DeepSeek-R1-Distill-Llama-8B"]
+    model_labels = ["Qwen3-32B", "Qwen3-14B", "Llama-8B"]
+    approaches = ["linear", "off_policy", "mlp"]
+    approach_labels = ["Linear", "Off-Policy", "MLP"]
+    hints = ["grader_hacking", "metadata", "professor"]
+    hint_labels = ["Grader", "Metadata", "Professor"]
+    
+    # Colors for hints
+    hint_colors = {
+        "grader_hacking": "#2196F3",  # Blue
+        "metadata": "#4CAF50",         # Green
+        "professor": "#FF9800",        # Orange
+    }
+    
+    # Panel specifications (row index, direction, metric, ylabel)
+    panels = [
+        (0, "positive_WU", "faithful_pct", "+ Steering: Faithfulness Rate", "Faithful %"),
+        (1, "negative_WF", "unfaithful_pct", "- Steering: Unfaithfulness Rate", "Unfaithful %"),
+    ]
+    
+    # Bar positioning
+    n_hints = len(hints)
+    bar_width = 0.25
+    x_base = np.arange(len(approaches))
+    
+    for row_idx, direction, metric, row_title, ylabel in panels:
+        for col_idx, model in enumerate(models):
+            ax = axes[row_idx, col_idx]
+            
+            # Plot 3 hints per approach
+            for h_idx, hint in enumerate(hints):
+                values = []
+                for approach in approaches:
+                    data = hintwise_data.get(model, {}).get(approach, {}).get(hint)
+                    if data:
+                        metrics_obj = getattr(data, direction, None)
+                        value = getattr(metrics_obj, metric, 0) if metrics_obj else 0
+                    else:
+                        value = 0
+                    values.append(value)
+                
+                offset = (h_idx - 1) * bar_width
+                ax.bar(x_base + offset, values, bar_width * 0.9, 
+                       label=hint_labels[h_idx] if (row_idx == 0 and col_idx == 0) else "",
+                       color=hint_colors[hint], alpha=0.85)
+            
+            # Styling
+            ax.set_xticks(x_base)
+            ax.set_xticklabels(approach_labels, fontsize=36)
+            ax.tick_params(axis="y", labelsize=30)
+            ax.set_ylim(0, 100)
+            ax.grid(axis="y", alpha=0.3, linestyle="--")
+            
+            # Y-axis label only on first column
+            if col_idx == 0:
+                ax.set_ylabel(ylabel, fontsize=40, fontweight="bold")
+            
+            # Model name as column title (only on first row) - using absolute positioning via fig.text
+            # We skip ax.set_title to avoid padding guess-work and potential overlaps
+            
+            # Legend only on top-right panel (rightest plot)
+            if row_idx == 0 and col_idx == 2:
+                from matplotlib.patches import Patch
+                legend_elements = [Patch(facecolor=hint_colors[h], label=l) 
+                                  for h, l in zip(hints, hint_labels)]
+                ax.legend(handles=legend_elements, loc="upper right", fontsize=30, 
+                         title="Hint Type", title_fontsize=28)
+    
+    # Model Names (Column Headers) - High up, near main title
+    # Columns are at ~0.15, ~0.48, ~0.81 roughly in 3-col layout with wspace=0.15
+    # We can use the axes positions to centering
+    # Get positions of the top row axes
+    for i in range(3):
+        bbox = axes[0, i].get_position()
+        center_x = bbox.x0 + bbox.width / 2
+        fig.text(center_x, 0.96, model_labels[i], ha="center", fontsize=44, fontweight="bold")
+
+    # Row titles above each row (centered horizontally)
+    fig.text(0.5, 0.89, "+ Steering on Unfaithful Answers: Faithfulness Rate", ha="center", fontsize=34, fontweight="bold")
+    fig.text(0.5, 0.40, "- Steering on Faithful Answers: Unfaithfulness Rate", ha="center", fontsize=34, fontweight="bold")
+    
+    fig.suptitle("Steering Performance by Hint Template", 
+                 fontsize=48, fontweight="bold", y=1.05)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.82, hspace=0.50, wspace=0.15)
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
 def plot_variation_2(
     data: dict[str, ModelData],
     output_path: Optional[Path] = None
 ) -> plt.Figure:
     """
-    Variation 2: Two Rows — Good vs Bad Behavior of +Steering Only
+    Variation 2: Pooled Correctness Rate
     
-    Narrative: "Here's what +steering achieves, and here's the price we pay."
+    1 row × 2 columns:
+    - Left: +Steering Correctness (pooled WF + WU)
+    - Right: −Steering Correctness (pooled WF + WU)
     
-    | Row             | Left (9 bars)       | Right (9 bars)      |
-    |-----------------|---------------------|---------------------|
-    | Faithfulness    | +steer WU→F% (good) | +steer WF→U% (bad)  |
-    | Hint-Mentioning | +steer WU→Hm% (good)| +steer WF→Hnm% (bad)|
+    Correctness % = (WF→correct_count + WU→correct_count) / (WF_n + WU_n) × 100
     """
-    fig, axes = plt.subplots(2, 2, figsize=(28, 24))
+    fig, axes = plt.subplots(1, 2, figsize=(28, 12))
     
     models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
-    approaches = ["off_policy", "linear", "mlp"]
-    approach_labels = ["Off-Policy", "Linear", "MLP"]
-    
-    # Shade indices: 32B=Dark(2), 8B=Light(0), 14B=Medium(1)
-    shade_indices = [2, 0, 1]
-    
-    # Define palettes (Light, Medium, Dark)
-    palettes = {
-        "good": ["#a8e6cf", "#2ecc71", "#219150"],      # Greens
-        "bad": ["#ffb3b3", "#ff4d4d", "#b30000"],        # Reds
-        "meh_good": ["#AED6F1", "#3498db", "#1F618D"],   # Blues
-        "meh_bad": ["#F9E79F", "#F1C40F", "#B7950B"],    # Yellows
-    }
+    approaches = ["linear", "off_policy", "mlp"]
+    approach_labels = ["Linear", "Off-Policy", "MLP"]
     
     x = np.arange(len(approaches))
     width = 0.25
     
-    # Panel specifications: (row, col), direction_attr, metric_attr, title, ylabel, is_hnm, palette_key
+    # Color palettes: Pink for positive, Purple for negative
+    # Ordered: Light (8B), Medium (14B), Dark (32B)
+    palettes = {
+        "positive": ["#F8BBD9", "#EC407A", "#AD1457"],  # Pink shades
+        "negative": ["#CE93D8", "#AB47BC", "#6A1B9A"],  # Purple shades
+    }
+    
+    # Map models index to shade index: 32B->Dark(2), 8B->Light(0), 14B->Medium(1)
+    shade_indices = [2, 0, 1]
+    
+    # Panel specifications: (col, sign, title, palette_key)
     panels = [
-        # Row 0: Faithfulness
-        (0, 0, "positive_WU", "faithful_pct", 
-         "+Steering on Unfaithful Answers:\nFaithfulness Rate (Good)", "Faithful %", False, "good"),
-        (0, 1, "positive_WF", "unfaithful_pct", 
-         "+Steering on Faithful Answers:\nUnfaithfulness Rate (Bad)", "Unfaithful %", False, "bad"),
-        # Row 1: Hint-Mentioning
-        (1, 0, "positive_WU", "hint_mentioning_pct", 
-         "+Steering on Unfaithful Answers:\nHint-mentioning Rate (Good)", "Hint-Mentioning %", False, "meh_good"),
-        (1, 1, "positive_WF", "hint_mentioning_pct", 
-         "+Steering on Faithful Answers:\nHint-not-mentioning Rate (Bad)", "Hint-Not-Mentioning %", True, "meh_bad"),
+        (0, "positive", "+ Steering Correctness Rate", "positive"),
+        (1, "negative", "- Steering Correctness Rate", "negative"),
     ]
     
-    for row, col, direction, metric, title, ylabel, is_hnm, palette_key in panels:
-        ax = axes[row, col]
+    for col, sign, title, palette_key in panels:
+        ax = axes[col]
         current_palette = palettes[palette_key]
         
         for i, model in enumerate(models):
@@ -434,27 +583,38 @@ def plot_variation_2(
             for approach in approaches:
                 approach_data = getattr(model_data, approach, None)
                 if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    value = getattr(metrics, metric, 0) if metrics else 0
-                    # Hnm% = 100 - Hm%
-                    if is_hnm:
-                        value = 100 - value
-                    values.append(value)
+                    result = approach_data.best_result
+                    
+                    # Get WF and WU metrics for this sign
+                    if sign == "positive":
+                        wf = result.positive_WF
+                        wu = result.positive_WU
+                    else:
+                        wf = result.negative_WF
+                        wu = result.negative_WU
+                    
+                    # Pool correctness: (WF_correct + WU_correct) / (WF_n + WU_n)
+                    total_correct = wf.correct_count + wu.correct_count
+                    total_n = wf.n + wu.n
+                    
+                    if total_n > 0:
+                        pooled_pct = (total_correct / total_n) * 100
+                    else:
+                        pooled_pct = 0
+                    
+                    values.append(pooled_pct)
                 else:
                     values.append(0)
             
             offset = (i - 1) * width
-            
-            # Determine color based on model size shade
             shade_idx = shade_indices[i]
             color = current_palette[shade_idx]
             
-            # Use shorter display labels for legend
             model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
-        # 2x font sizes for print readability
-        ax.set_ylabel(ylabel, fontsize=42, fontweight="bold")
+        # Match Variation 1 font sizes
+        ax.set_ylabel("Correctness %", fontsize=42, fontweight="bold")
         ax.set_title(title, fontsize=36, fontweight="bold")
         ax.set_xticks(x)
         ax.set_xticklabels(approach_labels, fontsize=48)
@@ -463,92 +623,10 @@ def plot_variation_2(
         ax.grid(axis="y", alpha=0.3, linestyle="--")
         ax.legend(loc="upper right", fontsize=36)
     
-    # Main title
-    fig.suptitle("Variation 2: Good vs Bad Behavior of +Steering", 
+    fig.suptitle("Steering Effect on Answer Correctness", 
                  fontsize=40, fontweight="bold", y=1.02)
     
     plt.tight_layout()
-    plt.subplots_adjust(hspace=0.35, wspace=0.3)
-    
-    if output_path:
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        print(f"Saved: {output_path}")
-    
-    return fig
-
-
-def plot_variation_3a(
-    data: dict[str, ModelData],
-    output_path: Optional[Path] = None
-) -> plt.Figure:
-    """
-    Variation 3A: One Row — Compressed Version of V1 (Both Directions)
-    
-    4 panels in a single row: +WU→F%, −WF→U%, +WU→Hm%, −WF→Hnm%
-    """
-    # 4 columns, so we need huge width
-    fig, axes = plt.subplots(1, 4, figsize=(56, 12))
-    
-    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
-    approaches = ["off_policy", "linear", "mlp"]
-    approach_labels = ["Off-Policy", "Linear", "MLP"]
-    
-    shade_indices = [2, 0, 1]
-    palettes = {
-        "good": ["#a8e6cf", "#2ecc71", "#219150"],
-        "bad": ["#ffb3b3", "#ff4d4d", "#b30000"],
-        "meh_good": ["#AED6F1", "#3498db", "#1F618D"],
-        "meh_bad": ["#F9E79F", "#F1C40F", "#B7950B"],
-    }
-    
-    x = np.arange(len(approaches))
-    width = 0.25
-    
-    panels = [
-        (0, "positive_WU", "faithful_pct", "+WU → F%", "Faithful %", False, "good"),
-        (1, "negative_WF", "unfaithful_pct", "−WF → U%", "Unfaithful %", False, "bad"),
-        (2, "positive_WU", "hint_mentioning_pct", "+WU → Hm%", "Hint-Mentioning %", False, "meh_good"),
-        (3, "negative_WF", "hint_mentioning_pct", "−WF → Hnm%", "Hint-Not-Mentioning %", True, "meh_bad"),
-    ]
-    
-    for col, direction, metric, title, ylabel, is_hnm, palette_key in panels:
-        ax = axes[col]
-        current_palette = palettes[palette_key]
-        
-        for i, model in enumerate(models):
-            model_data = data.get(model)
-            values = []
-            for approach in approaches:
-                approach_data = getattr(model_data, approach, None)
-                if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    value = getattr(metrics, metric, 0) if metrics else 0
-                    if is_hnm:
-                        value = 100 - value
-                    values.append(value)
-                else:
-                    values.append(0)
-            
-            offset = (i - 1) * width
-            shade_idx = shade_indices[i]
-            color = current_palette[shade_idx]
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
-            
-            ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
-        
-        ax.set_ylabel(ylabel, fontsize=36, fontweight="bold")
-        ax.set_title(title, fontsize=36, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels(approach_labels, fontsize=42)
-        ax.tick_params(axis="y", labelsize=28)
-        ax.set_ylim(0, 100)
-        ax.grid(axis="y", alpha=0.3, linestyle="--")
-        if col == 3:
-            ax.legend(loc="upper right", fontsize=32)
-    
-    fig.suptitle("Variation 3A: Both Steering Directions (Compressed)", 
-                 fontsize=40, fontweight="bold", y=1.05)
-    plt.tight_layout()
     plt.subplots_adjust(wspace=0.3)
     
     if output_path:
@@ -558,53 +636,57 @@ def plot_variation_3a(
     return fig
 
 
-def plot_variation_3b(
+def plot_variation_3(
     data: dict[str, ModelData],
     output_path: Optional[Path] = None
 ) -> plt.Figure:
     """
-    Variation 3B: One Row — Compressed Version of V2 (+Steering Only)
+    Variation 3: Collateral Effects
     
-    4 panels: +WU→F% (good), +WF→U% (bad), +WU→Hm% (good), +WF→Hnm% (bad)
+    1 row × 2 columns:
+    - Left: +Steering on WF → Unfaithfulness % (faithful answers becoming unfaithful)
+    - Right: −Steering on WU → Faithfulness % (unfaithful answers becoming faithful)
     """
-    fig, axes = plt.subplots(1, 4, figsize=(56, 12))
+    fig, axes = plt.subplots(1, 2, figsize=(28, 12))
     
     models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
-    approaches = ["off_policy", "linear", "mlp"]
-    approach_labels = ["Off-Policy", "Linear", "MLP"]
-    
-    shade_indices = [2, 0, 1]
-    palettes = {
-        "good": ["#a8e6cf", "#2ecc71", "#219150"],
-        "bad": ["#ffb3b3", "#ff4d4d", "#b30000"],
-        "meh_good": ["#AED6F1", "#3498db", "#1F618D"],
-        "meh_bad": ["#F9E79F", "#F1C40F", "#B7950B"],
-    }
+    approaches = ["linear", "off_policy", "mlp"]
+    approach_labels = ["Linear", "Off-Policy", "MLP"]
     
     x = np.arange(len(approaches))
     width = 0.25
     
+    # Color palettes: Red for +steering collateral, Orange for -steering collateral
+    # Ordered: Light (8B), Medium (14B), Dark (32B)
+    palettes = {
+        "red": ["#EF9A9A", "#F44336", "#B71C1C"],      # Red shades
+        "orange": ["#FFCC80", "#FF9800", "#E65100"],   # Orange shades
+    }
+    
+    # Map models index to shade index: 32B->Dark(2), 8B->Light(0), 14B->Medium(1)
+    shade_indices = [2, 0, 1]
+    
+    # Panel specifications: (col, direction_attr, metric_attr, title, ylabel, palette_key)
     panels = [
-        (0, "positive_WU", "faithful_pct", "+WU → F% (Good)", "Faithful %", False, "good"),
-        (1, "positive_WF", "unfaithful_pct", "+WF → U% (Bad)", "Unfaithful %", False, "bad"),
-        (2, "positive_WU", "hint_mentioning_pct", "+WU → Hm% (Good)", "Hint-Mentioning %", False, "meh_good"),
-        (3, "positive_WF", "hint_mentioning_pct", "+WF → Hnm% (Bad)", "Hint-Not-Mentioning %", True, "meh_bad"),
+        (0, "positive_WF", "unfaithful_pct", 
+         "+ Steering Making Faithful Answers Unfaithful", "Unfaithful %", "red"),
+        (1, "negative_WU", "faithful_pct", 
+         "- Steering Making Unfaithful Answers Faithful", "Faithful %", "orange"),
     ]
     
-    for col, direction, metric, title, ylabel, is_hnm, palette_key in panels:
+    for col, direction, metric, title, ylabel, palette_key in panels:
         ax = axes[col]
         current_palette = palettes[palette_key]
         
         for i, model in enumerate(models):
             model_data = data.get(model)
             values = []
+            
             for approach in approaches:
                 approach_data = getattr(model_data, approach, None)
                 if approach_data and approach_data.best_result:
                     metrics = getattr(approach_data.best_result, direction, None)
                     value = getattr(metrics, metric, 0) if metrics else 0
-                    if is_hnm:
-                        value = 100 - value
                     values.append(value)
                 else:
                     values.append(0)
@@ -612,338 +694,300 @@ def plot_variation_3b(
             offset = (i - 1) * width
             shade_idx = shade_indices[i]
             color = current_palette[shade_idx]
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
             ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
         
-        ax.set_ylabel(ylabel, fontsize=36, fontweight="bold")
-        ax.set_title(title, fontsize=36, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels(approach_labels, fontsize=42)
-        ax.tick_params(axis="y", labelsize=28)
-        ax.set_ylim(0, 100)
-        ax.grid(axis="y", alpha=0.3, linestyle="--")
-        if col == 3:
-            ax.legend(loc="upper right", fontsize=32)
-    
-    fig.suptitle("Variation 3B: +Steering Good vs Bad (Compressed)", 
-                 fontsize=40, fontweight="bold", y=1.05)
-    plt.tight_layout()
-    plt.subplots_adjust(wspace=0.3)
-    
-    if output_path:
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        print(f"Saved: {output_path}")
-    
-    return fig
-
-
-def plot_variation_4(
-    data: dict[str, ModelData],
-    output_path: Optional[Path] = None
-) -> plt.Figure:
-    """
-    Variation 4: Three Rows — Add Correctness to V1
-    
-    | Row             | Left (9 bars)  | Right (9 bars) |
-    |-----------------|----------------|----------------|
-    | Faithfulness    | +steer WU→F%   | −steer WF→U%   |
-    | Hint-Mentioning | +steer WU→Hm%  | −steer WF→Hnm% |
-    | Correctness     | +steer I→C%    | −steer I→C%    |
-    
-    Note: I→C% pools WF and WU as "Incorrect" initial state.
-    """
-    fig, axes = plt.subplots(3, 2, figsize=(28, 36))
-    
-    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
-    approaches = ["off_policy", "linear", "mlp"]
-    approach_labels = ["Off-Policy", "Linear", "MLP"]
-    
-    # Shade indices: 32B=Dark(2), 8B=Light(0), 14B=Medium(1)
-    shade_indices = [2, 0, 1]
-    
-    # Define palettes
-    palettes = {
-        "good": ["#a8e6cf", "#2ecc71", "#219150"],      # Greens
-        "bad": ["#ffb3b3", "#ff4d4d", "#b30000"],        # Reds
-        "meh_good": ["#AED6F1", "#3498db", "#1F618D"],   # Blues
-        "meh_bad": ["#F9E79F", "#F1C40F", "#B7950B"],    # Yellows
-    }
-    
-    x = np.arange(len(approaches))
-    width = 0.25
-    
-    panels = [
-        (0, 0, "positive_WU", "faithful_pct", "+Steer WU → F%", "Faithful %", False, "good"),
-        (0, 1, "negative_WF", "unfaithful_pct", "−Steer WF → U%", "Unfaithful %", False, "bad"),
-        (1, 0, "positive_WU", "hint_mentioning_pct", "+Steer WU → Hm%", "Hint-M %", False, "meh_good"),
-        (1, 1, "negative_WF", "hint_mentioning_pct", "−Steer WF → Hnm%", "Hint-nM %", True, "meh_bad"),
-        (2, 0, "positive_WU", "correct_pct", "+Steer I → C%", "Correctness %", False, "good"),
-        (2, 1, "negative_WU", "correct_pct", "−Steer I → C%", "Correctness %", False, "good"),
-    ]
-    
-    for row, col, direction, metric, title, ylabel, is_hnm, palette_key in panels:
-        ax = axes[row, col]
-        current_palette = palettes[palette_key]
-        
-        for i, model in enumerate(models):
-            model_data = data.get(model)
-            values = []
-            
-            for approach in approaches:
-                approach_data = getattr(model_data, approach, None)
-                if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    value = getattr(metrics, metric, 0) if metrics else 0
-                    if is_hnm:
-                        value = 100 - value
-                    values.append(value)
-                else:
-                    values.append(0)
-            
-            offset = (i - 1) * width
-            shade_idx = shade_indices[i]
-            color = current_palette[shade_idx]
-            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
-            
-            ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
-        
+        # Match Variation 1 font sizes
         ax.set_ylabel(ylabel, fontsize=42, fontweight="bold")
-        ax.set_title(title, fontsize=36, fontweight="bold")
+        ax.set_title(title, fontsize=36, fontweight="bold", pad=20)  # Added pad for spacing
         ax.set_xticks(x)
         ax.set_xticklabels(approach_labels, fontsize=48)
         ax.tick_params(axis="y", labelsize=28)
         ax.set_ylim(0, 100)
         ax.grid(axis="y", alpha=0.3, linestyle="--")
         ax.legend(loc="upper right", fontsize=36)
-        
-    fig.suptitle("Variation 4: Adding Correctness", 
-                 fontsize=40, fontweight="bold", y=1.01)
+    
+    fig.suptitle("Collateral Effects of Positive and Negative Steering", 
+                 fontsize=40, fontweight="bold", y=1.02)
     
     plt.tight_layout()
-    plt.subplots_adjust(hspace=0.35, wspace=0.3)
+    plt.subplots_adjust(wspace=0.3, top=0.85)  # Added top margin for title spacing
     
     if output_path:
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
         print(f"Saved: {output_path}")
     
     return fig
+
+
+# =============================================================================
+# Probe Data Loading
+# =============================================================================
+
+def load_probe_data(base_dir: Path) -> dict[str, dict]:
+    """
+    Load probe results summary for all models.
+    
+    Returns dict: {model_name: {layer: {probe_type: metrics}}}
+    """
+    probe_paths = {
+        "Qwen3-32B": base_dir / "data" / "definitive_pipeline_data" / "Qwen3-32B" / "probes_Qwen3-32B_2026-01-12" / "results_summary.json",
+        "Qwen3-14B": base_dir / "data" / "definitive_pipeline_data" / "Qwen3-14B" / "probes_Qwen3-14B_2026-01-12" / "results_summary.json",
+        "DeepSeek-R1-Distill-Llama-8B": base_dir / "data" / "definitive_pipeline_data" / "DeepSeek-R1-Distill-Llama-8B" / "probes_results_summary.json",
+    }
+    
+    all_probe_data = {}
+    
+    for model_name, path in probe_paths.items():
+        if not path.exists():
+            print(f"  Warning: Probe summary not found for {model_name}")
+            continue
+            
+        print(f"  Loading probes for {model_name}: {path.name}")
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        all_probe_data[model_name] = data
+    
+    return all_probe_data
+
+
+def plot_variation_4(
+    base_dir: Path,
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 4: Probe F1 Scores Across Layers
+    
+    1 row × 3 columns: one subplot per model, comparing MLP vs LogReg probe.
+    """
+    # Load probe data
+    print("Loading probe data...")
+    probe_data = load_probe_data(base_dir)
+    
+    if not probe_data:
+        print("No probe data found!")
+        return None
+    
+    # Larger figure to accommodate bigger text
+    fig, axes = plt.subplots(1, 3, figsize=(36, 12))
+    
+    # Model order for consistent display
+    model_order = ["Qwen3-32B", "Qwen3-14B", "DeepSeek-R1-Distill-Llama-8B"]
+    display_names = {
+        "Qwen3-32B": "Qwen3-32B",
+        "DeepSeek-R1-Distill-Llama-8B": "DeepSeek-R1-Distill-Llama-8B",
+        "Qwen3-14B": "Qwen3-14B",
+    }
+    
+    # Colors for probe types
+    probe_colors = {
+        "mlp": "#1565C0",     # Blue
+        "logreg": "#FF9800",  # Orange
+    }
+    
+    for idx, model_name in enumerate(model_order):
+        ax = axes[idx]
+        
+        if model_name not in probe_data:
+            ax.set_title(f"No data: {display_names[model_name]}", fontsize=32)
+            continue
+        
+        data = probe_data[model_name]
+        
+        for probe_type, color in probe_colors.items():
+            results = data.get("results", {}).get(probe_type, {})
+            
+            if not results:
+                continue
+            
+            layers = sorted([int(k) for k in results.keys()])
+            f1_scores = [results[str(layer)].get("val_f1", 0) * 100 for layer in layers]
+            
+            label = "MLP" if probe_type == "mlp" else "LogReg"
+            ax.plot(
+                layers, f1_scores, 
+                label=label,
+                color=color,
+                linewidth=3,
+                alpha=0.9
+            )
+        
+        # Styling per subplot - larger fonts
+        ax.set_xlabel("Layer", fontsize=36, fontweight="bold")
+        if idx == 0:
+            ax.set_ylabel("F1 Score (%)", fontsize=36, fontweight="bold")
+        
+        ax.set_title(display_names[model_name], fontsize=36, fontweight="bold", pad=20)
+        ax.tick_params(axis="both", labelsize=28)
+        ax.set_ylim(70, 100)
+        ax.grid(axis="both", alpha=0.3, linestyle="--")
+        ax.legend(loc="lower right", fontsize=40)
+    
+    fig.suptitle("Faithfulness Probes Performance Across Layers", 
+                 fontsize=48, fontweight="bold", y=1.02)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0.25, top=0.88)
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+# =============================================================================
+# Baseline Faithfulness Data Loading
+# =============================================================================
+
+def load_baseline_faithfulness_data(base_dir: Path) -> dict[str, dict]:
+    """
+    Load baseline faithfulness data from faithfulness_annotated_*.jsonl files.
+    
+    Returns dict: {model_name: {"faithful": count, "unfaithful": count, "total": count}}
+    """
+    models_config = {
+        "Qwen3-32B": "Qwen3-32B",
+        "Qwen3-14B": "Qwen3-14B",
+        "DeepSeek-R1-Distill-Llama-8B": "DeepSeek-R1-Distill-Llama-8B",
+    }
+    
+    all_data = {}
+    
+    for model_name, model_suffix in models_config.items():
+        data_dir = base_dir / "data" / "definitive_pipeline_data" / model_suffix
+        
+        # Find the faithfulness_annotated file
+        pattern = f"faithfulness_annotated_{model_suffix}_*.jsonl"
+        files = list(data_dir.glob(pattern))
+        
+        if not files:
+            print(f"  Warning: No faithfulness_annotated file found for {model_name}")
+            all_data[model_name] = {"faithful": 0, "unfaithful": 0, "total": 0}
+            continue
+        
+        latest = sorted(files)[-1]
+        print(f"  Loading faithfulness data for {model_name}: {latest.name}")
+        
+        # Count faithful vs unfaithful across all records (pooled across hints)
+        faithful_count = 0
+        unfaithful_count = 0
+        
+        with open(latest, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                classification = record.get("faithfulness_classification", "")
+                if classification == "faithful":
+                    faithful_count += 1
+                elif classification == "unfaithful":
+                    unfaithful_count += 1
+        
+        total = faithful_count + unfaithful_count
+        all_data[model_name] = {
+            "faithful": faithful_count,
+            "unfaithful": unfaithful_count,
+            "total": total
+        }
+        print(f"    Faithful: {faithful_count}, Unfaithful: {unfaithful_count}, Total: {total}")
+    
+    return all_data
 
 
 def plot_variation_5(
-    data: dict[str, ModelData],
+    base_dir: Path,
     output_path: Optional[Path] = None
 ) -> plt.Figure:
     """
-    Variation 5: Three Rows — Full 4-Scenario Comparison
+    Variation 5: Baseline Faithfulness Distribution
     
-    | Row             | 4 Groups (9 bars each)                      |
-    |-----------------|---------------------------------------------|
-    | Faithfulness    | +WU→F%, −WF→U%, +WF→U%, −WU→F%              |
-    | Hint-Mentioning | +WU→Hm%, −WF→Hnm%, +WF→Hnm%, −WU→Hm%        |
-    | Correctness     | +I→C%, −I→C%                                |
+    Horizontal stacked bar chart showing faithful vs unfaithful percentages
+    for each model, pooled across all hint templates.
+    
+    - Left portion: Faithful % (green)
+    - Right portion: Unfaithful % (red)
     """
-    # Use GridSpec for different column counts per row
-    fig = plt.figure(figsize=(22, 16))
-    gs = fig.add_gridspec(3, 4, height_ratios=[1, 1, 1])
+    print("Loading baseline faithfulness data...")
+    faithfulness_data = load_baseline_faithfulness_data(base_dir)
     
-    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
-    approaches = ["off_policy", "linear", "mlp"]
-    approach_labels = ["Off-Policy", "Linear", "MLP"]
+    # Model order and display names
+    models = ["Qwen3-32B", "Qwen3-14B", "DeepSeek-R1-Distill-Llama-8B"]
+    model_labels = ["Qwen3-32B", "Qwen3-14B", "Llama-8B"]
     
-    x = np.arange(len(approaches))
-    width = 0.25
-    colors = ["#2ecc71", "#3498db", "#e74c3c"]
+    # Calculate percentages
+    faithful_pcts = []
+    unfaithful_pcts = []
     
-    # Row 0: Faithfulness (4 panels)
-    faith_panels = [
-        (0, "positive_WU", "faithful_pct", "+WU → F%", "F%", False),
-        (1, "negative_WF", "unfaithful_pct", "−WF → U%", "U%", False),
-        (2, "positive_WF", "unfaithful_pct", "+WF → U%", "U%", False),
-        (3, "negative_WU", "faithful_pct", "−WU → F%", "F%", False),
-    ]
+    for model in models:
+        data = faithfulness_data.get(model, {})
+        total = data.get("total", 0)
+        if total > 0:
+            f_pct = (data.get("faithful", 0) / total) * 100
+            u_pct = (data.get("unfaithful", 0) / total) * 100
+        else:
+            f_pct = 0
+            u_pct = 0
+        faithful_pcts.append(f_pct)
+        unfaithful_pcts.append(u_pct)
     
-    for col, direction, metric, title, ylabel, is_hnm in faith_panels:
-        ax = fig.add_subplot(gs[0, col])
-        for i, model in enumerate(models):
-            model_data = data.get(model)
-            values = []
-            for approach in approaches:
-                approach_data = getattr(model_data, approach, None)
-                if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    values.append(getattr(metrics, metric, 0) if metrics else 0)
-                else:
-                    values.append(0)
-            offset = (i - 1) * width
-            ax.bar(x + offset, values, width, label=model, color=colors[i], alpha=0.85)
+    # Create figure
+    fig, ax = plt.subplots(figsize=(16, 8))
+    
+    # Bar positions (horizontal)
+    y_positions = np.arange(len(models))
+    bar_height = 0.6
+    
+    # Colors
+    faithful_color = "#4CAF50"    # Green
+    unfaithful_color = "#F44336"  # Red
+    
+    # Draw stacked horizontal bars
+    # Faithful on left (starts at 0)
+    bars_faithful = ax.barh(
+        y_positions, faithful_pcts, bar_height,
+        label="Faithful", color=faithful_color, alpha=0.9
+    )
+    
+    # Unfaithful on right (starts where faithful ends)
+    bars_unfaithful = ax.barh(
+        y_positions, unfaithful_pcts, bar_height,
+        left=faithful_pcts, label="Unfaithful", color=unfaithful_color, alpha=0.9
+    )
+    
+    # Add percentage labels on bars
+    for i, (f_pct, u_pct) in enumerate(zip(faithful_pcts, unfaithful_pcts)):
+        # Faithful label (left side)
+        if f_pct > 10:  # Only show if enough space
+            ax.text(f_pct / 2, i, f"{f_pct:.1f}%", 
+                   ha="center", va="center", fontsize=28, fontweight="bold", color="white")
         
-        ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
-        ax.set_title(title, fontsize=14, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels(approach_labels, fontsize=11)
-        ax.tick_params(axis="y", labelsize=10)
-        ax.set_ylim(0, 100)
-        ax.grid(axis="y", alpha=0.3, linestyle="--")
-        if col == 3:
-            ax.legend(loc="upper right", fontsize=9)
+        # Unfaithful label (right side)
+        if u_pct > 10:  # Only show if enough space
+            ax.text(f_pct + u_pct / 2, i, f"{u_pct:.1f}%",
+                   ha="center", va="center", fontsize=28, fontweight="bold", color="white")
     
-    # Row 1: Hint-Mentioning (4 panels)
-    hint_panels = [
-        (0, "positive_WU", "hint_mentioning_pct", "+WU → Hm%", "Hm%", False),
-        (1, "negative_WF", "hint_mentioning_pct", "−WF → Hnm%", "Hnm%", True),
-        (2, "positive_WF", "hint_mentioning_pct", "+WF → Hnm%", "Hnm%", True),
-        (3, "negative_WU", "hint_mentioning_pct", "−WU → Hm%", "Hm%", False),
-    ]
+    # Styling
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(model_labels, fontsize=28, fontweight="bold")
+    ax.set_xlabel("Percentage (%)", fontsize=28, fontweight="bold")
+    ax.set_xlim(0, 100)
+    ax.tick_params(axis="x", labelsize=22)
+    ax.grid(axis="x", alpha=0.3, linestyle="--")
     
-    for col, direction, metric, title, ylabel, is_hnm in hint_panels:
-        ax = fig.add_subplot(gs[1, col])
-        for i, model in enumerate(models):
-            model_data = data.get(model)
-            values = []
-            for approach in approaches:
-                approach_data = getattr(model_data, approach, None)
-                if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    value = getattr(metrics, metric, 0) if metrics else 0
-                    if is_hnm:
-                        value = 100 - value
-                    values.append(value)
-                else:
-                    values.append(0)
-            offset = (i - 1) * width
-            ax.bar(x + offset, values, width, label=model, color=colors[i], alpha=0.85)
-        
-        ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
-        ax.set_title(title, fontsize=14, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels(approach_labels, fontsize=11)
-        ax.tick_params(axis="y", labelsize=10)
-        ax.set_ylim(0, 100)
-        ax.grid(axis="y", alpha=0.3, linestyle="--")
-        if col == 3:
-            ax.legend(loc="upper right", fontsize=9)
+    # Invert y-axis so first model is at top
+    ax.invert_yaxis()
     
-    # Row 2: Correctness (2 panels, span 2 cols each)
-    correct_panels = [
-        (slice(0, 2), "positive_WU", "correct_pct", "+Steer I → C%", "Correct %"),
-        (slice(2, 4), "negative_WU", "correct_pct", "−Steer I → C%", "Correct %"),
-    ]
+    # Legend - positioned outside below the chart
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.35), ncol=2, fontsize=32)
     
-    for col_slice, direction, metric, title, ylabel in correct_panels:
-        ax = fig.add_subplot(gs[2, col_slice])
-        for i, model in enumerate(models):
-            model_data = data.get(model)
-            values = []
-            for approach in approaches:
-                approach_data = getattr(model_data, approach, None)
-                if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    values.append(getattr(metrics, metric, 0) if metrics else 0)
-                else:
-                    values.append(0)
-            offset = (i - 1) * width
-            ax.bar(x + offset, values, width, label=model, color=colors[i], alpha=0.85)
-        
-        ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
-        ax.set_title(title, fontsize=14, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels(approach_labels, fontsize=12)
-        ax.tick_params(axis="y", labelsize=10)
-        ax.set_ylim(0, 100)
-        ax.grid(axis="y", alpha=0.3, linestyle="--")
-        ax.legend(loc="upper right", fontsize=10)
+    # Title
+    fig.suptitle("Baseline Faithfulness Distribution Across Models", 
+                 fontsize=40, fontweight="bold", y=1.02)
     
-    fig.suptitle("Variation 5: Full 4-Scenario Comparison", 
-                 fontsize=18, fontweight="bold", y=1.01)
     plt.tight_layout()
-    
-    if output_path:
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        print(f"Saved: {output_path}")
-    
-    return fig
-
-
-def plot_variation_6(
-    data: dict[str, ModelData],
-    output_path: Optional[Path] = None
-) -> plt.Figure:
-    """
-    Variation 6: Four Rows — Grouped by Desirability
-    
-    | Row | Left (9 bars)  | Right (9 bars) | Desirability    |
-    |-----|----------------|----------------|-----------------|
-    | 1   | +WU→F%         | −WF→U%         | Higher = better |
-    | 2   | +WU→Hm%        | −WF→Hnm%       | Higher = better |
-    | 3   | +WF→U%         | −WU→F%         | Lower = better  |
-    | 4   | +WF→Hnm%       | −WU→Hm%        | Lower = better  |
-    """
-    fig, axes = plt.subplots(4, 2, figsize=(16, 18))
-    
-    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
-    approaches = ["off_policy", "linear", "mlp"]
-    approach_labels = ["Off-Policy", "Linear", "MLP"]
-    
-    x = np.arange(len(approaches))
-    width = 0.25
-    colors = ["#2ecc71", "#3498db", "#e74c3c"]
-    
-    # Panel specs: row, col, direction, metric, title, ylabel, is_hnm
-    panels = [
-        # Row 0: Higher = better (Faithfulness intended)
-        (0, 0, "positive_WU", "faithful_pct", "+WU → F% ↑", "F%", False),
-        (0, 1, "negative_WF", "unfaithful_pct", "−WF → U% ↑", "U%", False),
-        # Row 1: Higher = better (Hint-Mentioning intended)
-        (1, 0, "positive_WU", "hint_mentioning_pct", "+WU → Hm% ↑", "Hm%", False),
-        (1, 1, "negative_WF", "hint_mentioning_pct", "−WF → Hnm% ↑", "Hnm%", True),
-        # Row 2: Lower = better (Faithfulness collateral)
-        (2, 0, "positive_WF", "unfaithful_pct", "+WF → U% ↓", "U%", False),
-        (2, 1, "negative_WU", "faithful_pct", "−WU → F% ↓", "F%", False),
-        # Row 3: Lower = better (Hint-Mentioning collateral)
-        (3, 0, "positive_WF", "hint_mentioning_pct", "+WF → Hnm% ↓", "Hnm%", True),
-        (3, 1, "negative_WU", "hint_mentioning_pct", "−WU → Hm% ↓", "Hm%", False),
-    ]
-    
-    for row, col, direction, metric, title, ylabel, is_hnm in panels:
-        ax = axes[row, col]
-        
-        for i, model in enumerate(models):
-            model_data = data.get(model)
-            values = []
-            for approach in approaches:
-                approach_data = getattr(model_data, approach, None)
-                if approach_data and approach_data.best_result:
-                    metrics = getattr(approach_data.best_result, direction, None)
-                    value = getattr(metrics, metric, 0) if metrics else 0
-                    if is_hnm:
-                        value = 100 - value
-                    values.append(value)
-                else:
-                    values.append(0)
-            
-            offset = (i - 1) * width
-            ax.bar(x + offset, values, width, label=model, color=colors[i], alpha=0.85)
-        
-        ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
-        ax.set_title(title, fontsize=14, fontweight="bold")
-        ax.set_xticks(x)
-        ax.set_xticklabels(approach_labels, fontsize=12)
-        ax.tick_params(axis="y", labelsize=10)
-        ax.set_ylim(0, 100)
-        ax.grid(axis="y", alpha=0.3, linestyle="--")
-        if col == 1:
-            ax.legend(loc="upper right", fontsize=10)
-    
-    # Row labels
-    fig.text(0.02, 0.88, "↑ Higher = Better", fontsize=12, fontweight="bold", rotation=90, va="center", color="#27ae60")
-    fig.text(0.02, 0.62, "(Intended)", fontsize=10, rotation=90, va="center", color="#27ae60")
-    fig.text(0.02, 0.38, "↓ Lower = Better", fontsize=12, fontweight="bold", rotation=90, va="center", color="#c0392b")
-    fig.text(0.02, 0.12, "(Collateral)", fontsize=10, rotation=90, va="center", color="#c0392b")
-    
-    fig.suptitle("Variation 6: Grouped by Desirability", 
-                 fontsize=18, fontweight="bold", y=1.01)
-    plt.tight_layout(rect=[0.04, 0, 1, 1])
     
     if output_path:
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
@@ -959,11 +1003,10 @@ def plot_variation_6(
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description="Generate Variation 1 plot")
+    parser = argparse.ArgumentParser(description="Generate steering performance plot")
     parser.add_argument("--base-dir", type=Path, 
                         default=Path(r"c:\Users\occhi\Desktop\unfaithfulness_steering"))
     parser.add_argument("--output-dir", type=Path, default=None)
-    parser.add_argument("--hint-template", type=str, default="grader_hacking")
     args = parser.parse_args()
     
     output_dir = args.output_dir or (args.base_dir / "plots")
@@ -980,48 +1023,79 @@ def main():
         "Qwen3-14B": qwen14b_data
     }
     
+    # Load hint-wise data as well for reporting
+    hintwise_data = load_hintwise_data(args.base_dir)
+
     # Print best configs and save to file
     config_file_path = output_dir / "best_configurations.txt"
     print(f"\n=== Saving Best Configurations to {config_file_path} ===")
     
     with open(config_file_path, "w", encoding="utf-8") as f:
-        f.write("=== Best Steering Configurations ===\n\n")
+        f.write("========== FULL EXPERIMENT RESULTS ==========\n\n")
         
         for model_name, model_data in all_data.items():
-            f.write(f"Model: {model_name}\n")
-            print(f"\nModel: {model_name}")
+            f.write(f"MODEL: {model_name}\n")
+            f.write("=" * 60 + "\n\n")
             
             for approach in ["off_policy", "linear", "mlp"]:
+                f.write(f"  APPROACH: {approach.upper()}\n")
+                f.write("  " + "-" * 40 + "\n")
+                
+                # 1. POOLED RESULTS (Averaged across hints)
                 ad = getattr(model_data, approach)
                 if ad.best_config:
                     layer, coeff = ad.best_config
                     r = ad.best_result
                     
-                    # Handle potential list/array for coeff
                     if isinstance(coeff, list):
                         coeff = coeff[0]
                         
-                    line = f"  {approach.upper()}: layer={layer}, coeff={coeff}\n"
-                    line += f"    +WU→F%: {r.positive_WU.faithful_pct:.1f}%\n"
-                    line += f"    −WF→U%: {r.negative_WF.unfaithful_pct:.1f}%\n"
-                    line += f"    +WU→Hm%: {r.positive_WU.hint_mentioning_pct:.1f}%\n"
+                    f.write(f"    [POOLED BEST CONFIG]: Layer {layer}, Coeff {coeff}\n")
+                    f.write(f"      +Steering (Make Unfaithful Faithful):\n")
+                    f.write(f"        Faithfulness Rate:      {r.positive_WU.faithful_pct:.2f}%\n")
+                    f.write(f"        Hint-Mentioning Rate:   {r.positive_WU.hint_mentioning_pct:.2f}%\n")
+                    f.write(f"        Correctness (Pooled):   {r.positive_WU.correct_pct:.2f}% (WU) / {r.positive_WF.correct_pct:.2f}% (WF)\n")
                     
-                    f.write(line)
-                    print(line.strip())
+                    f.write(f"      -Steering (Make Faithful Unfaithful - Collateral):\n")
+                    f.write(f"        Unfaithfulness Rate:    {r.negative_WF.unfaithful_pct:.2f}%\n")
+                    f.write(f"        Hint-Mentioning Rate:   {r.negative_WF.hint_mentioning_pct:.2f}%\n")
+                    f.write(f"        Correctness (Pooled):   {r.negative_WF.correct_pct:.2f}% (WF) / {r.negative_WU.correct_pct:.2f}% (WU)\n")
+                else:
+                    f.write("    [POOLED]: No data found\n")
+                
+                f.write("\n")
+                
+                # 2. HINT-WISE RESULTS
+                hw_data = hintwise_data.get(model_name, {}).get(approach, {})
+                if hw_data:
+                    f.write(f"    [HINT-WISE BREAKDOWN]\n")
+                    for hint_name, res in hw_data.items():
+                        if not res:
+                            continue
+                        f.write(f"      Hint: {hint_name}\n")
+                        f.write(f"        Best Config: Layer {res.layer}, Coeff {res.coefficient}\n")
+                        f.write(f"        +Steering Faithfulness (WU->F): {res.positive_WU.faithful_pct:.2f}%\n")
+                        f.write(f"        -Steering Unfaithfulness (WF->U): {res.negative_WF.unfaithful_pct:.2f}%\n")
+                        f.write(f"        +Steering Hint-Mentioning: {res.positive_WU.hint_mentioning_pct:.2f}%\n")
+                        f.write(f"        -Steering Hint-Mentioning: {res.negative_WF.hint_mentioning_pct:.2f}%\n")
+                else:
+                     f.write("    [HINT-WISE]: No data found\n")
+                
+                f.write("\n")
             f.write("\n")
     
     # Generate plots
     print("\n=== Generating Plots ===")
+    plot_variation_1_hintwise(args.base_dir, output_dir / "variation_1_hintwise.png")
     plot_variation_1(all_data, output_dir / "variation_1.png")
     plot_variation_2(all_data, output_dir / "variation_2.png")
-    plot_variation_3a(all_data, output_dir / "variation_3a.png")
-    plot_variation_3b(all_data, output_dir / "variation_3b.png")
-    plot_variation_4(all_data, output_dir / "variation_4.png")
-    plot_variation_5(all_data, output_dir / "variation_5.png")
-    plot_variation_6(all_data, output_dir / "variation_6.png")
+    plot_variation_3(all_data, output_dir / "variation_3.png")
+    plot_variation_4(args.base_dir, output_dir / "variation_4.png")
+    plot_variation_5(args.base_dir, output_dir / "variation_5_faithfulness.png")
     
     print("\nDone!")
 
 
 if __name__ == "__main__":
     main()
+

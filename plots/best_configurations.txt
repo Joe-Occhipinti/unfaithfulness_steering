@@ -1,44 +1,302 @@
-=== Best Steering Configurations ===
+========== FULL EXPERIMENT RESULTS ==========
 
-Model: Qwen3-32B
-  OFF_POLICY: layer=58, coeff=2.0
-    +WU→F%: 13.7%
-    −WF→U%: 10.4%
-    +WU→Hm%: 35.2%
-  LINEAR: layer=40, coeff=0.6
-    +WU→F%: 14.1%
-    −WF→U%: 18.8%
-    +WU→Hm%: 38.1%
-  MLP: layer=41, coeff=5.0
-    +WU→F%: 11.9%
-    −WF→U%: 16.8%
-    +WU→Hm%: 35.2%
+MODEL: Qwen3-32B
+============================================================
 
-Model: DeepSeek-R1-Distill-Llama-8B
-  OFF_POLICY: layer=15, coeff=2.0
-    +WU→F%: 24.9%
-    −WF→U%: 21.1%
-    +WU→Hm%: 25.1%
-  LINEAR: layer=15, coeff=2.0
-    +WU→F%: 24.9%
-    −WF→U%: 24.5%
-    +WU→Hm%: 25.1%
-  MLP: layer=25, coeff=5.0
-    +WU→F%: 7.6%
-    −WF→U%: 7.0%
-    +WU→Hm%: 36.4%
+  APPROACH: OFF_POLICY
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 58, Coeff 2.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      13.70%
+        Hint-Mentioning Rate:   35.19%
+        Correctness (Pooled):   45.56% (WU) / 50.13% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    10.43%
+        Hint-Mentioning Rate:   21.47%
+        Correctness (Pooled):   20.48% (WF) / 11.48% (WU)
 
-Model: Qwen3-14B
-  OFF_POLICY: layer=19, coeff=1.0
-    +WU→F%: 34.3%
-    −WF→U%: 13.2%
-    +WU→Hm%: 18.3%
-  LINEAR: layer=19, coeff=2.0
-    +WU→F%: 42.0%
-    −WF→U%: 16.1%
-    +WU→Hm%: 6.5%
-  MLP: layer=7, coeff=20.0
-    +WU→F%: 43.9%
-    −WF→U%: 1.4%
-    +WU→Hm%: 4.1%
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 13, Coeff 2.0
+        +Steering Faithfulness (WU->F): 13.33%
+        -Steering Unfaithfulness (WF->U): 10.00%
+        +Steering Hint-Mentioning: 16.67%
+        -Steering Hint-Mentioning: 36.67%
+      Hint: metadata
+        Best Config: Layer 24, Coeff 0.75
+        +Steering Faithfulness (WU->F): 10.00%
+        -Steering Unfaithfulness (WF->U): 0.00%
+        +Steering Hint-Mentioning: 26.67%
+        -Steering Hint-Mentioning: 47.06%
+      Hint: professor
+        Best Config: Layer 24, Coeff 2.0
+        +Steering Faithfulness (WU->F): 33.33%
+        -Steering Unfaithfulness (WF->U): 31.25%
+        +Steering Hint-Mentioning: 33.33%
+        -Steering Hint-Mentioning: 62.50%
+
+  APPROACH: LINEAR
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 40, Coeff 0.6
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      14.07%
+        Hint-Mentioning Rate:   38.15%
+        Correctness (Pooled):   44.81% (WU) / 62.51% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    18.77%
+        Hint-Mentioning Rate:   41.66%
+        Correctness (Pooled):   56.15% (WF) / 49.26% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 24, Coeff 2.0
+        +Steering Faithfulness (WU->F): 26.67%
+        -Steering Unfaithfulness (WF->U): 16.67%
+        +Steering Hint-Mentioning: 26.67%
+        -Steering Hint-Mentioning: 40.00%
+      Hint: metadata
+        Best Config: Layer 40, Coeff 2.0
+        +Steering Faithfulness (WU->F): 23.33%
+        -Steering Unfaithfulness (WF->U): 11.76%
+        +Steering Hint-Mentioning: 26.67%
+        -Steering Hint-Mentioning: 52.94%
+      Hint: professor
+        Best Config: Layer 40, Coeff 0.6
+        +Steering Faithfulness (WU->F): 22.22%
+        -Steering Unfaithfulness (WF->U): 43.75%
+        +Steering Hint-Mentioning: 77.78%
+        -Steering Hint-Mentioning: 31.25%
+
+  APPROACH: MLP
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 41, Coeff 5.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      11.85%
+        Hint-Mentioning Rate:   35.19%
+        Correctness (Pooled):   40.74% (WU) / 59.33% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    16.82%
+        Hint-Mentioning Rate:   43.20%
+        Correctness (Pooled):   60.18% (WF) / 49.26% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 47, Coeff 20.0
+        +Steering Faithfulness (WU->F): 13.33%
+        -Steering Unfaithfulness (WF->U): 10.00%
+        +Steering Hint-Mentioning: 23.33%
+        -Steering Hint-Mentioning: 33.33%
+      Hint: metadata
+        Best Config: Layer 21, Coeff 5.0
+        +Steering Faithfulness (WU->F): 3.33%
+        -Steering Unfaithfulness (WF->U): 0.00%
+        +Steering Hint-Mentioning: 33.33%
+        -Steering Hint-Mentioning: 35.29%
+      Hint: professor
+        Best Config: Layer 41, Coeff 5.0
+        +Steering Faithfulness (WU->F): 22.22%
+        -Steering Unfaithfulness (WF->U): 31.25%
+        +Steering Hint-Mentioning: 55.56%
+        -Steering Hint-Mentioning: 50.00%
+
+
+MODEL: DeepSeek-R1-Distill-Llama-8B
+============================================================
+
+  APPROACH: OFF_POLICY
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 15, Coeff 2.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      24.88%
+        Hint-Mentioning Rate:   25.14%
+        Correctness (Pooled):   32.27% (WU) / 32.04% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    21.14%
+        Hint-Mentioning Rate:   25.39%
+        Correctness (Pooled):   41.21% (WF) / 31.05% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 15, Coeff 2.0
+        +Steering Faithfulness (WU->F): 24.24%
+        -Steering Unfaithfulness (WF->U): 26.67%
+        +Steering Hint-Mentioning: 12.12%
+        -Steering Hint-Mentioning: 26.67%
+      Hint: metadata
+        Best Config: Layer 15, Coeff 0.75
+        +Steering Faithfulness (WU->F): 23.40%
+        -Steering Unfaithfulness (WF->U): 23.53%
+        +Steering Hint-Mentioning: 51.06%
+        -Steering Hint-Mentioning: 58.82%
+      Hint: professor
+        Best Config: Layer 23, Coeff 2.0
+        +Steering Faithfulness (WU->F): 15.62%
+        -Steering Unfaithfulness (WF->U): 16.67%
+        +Steering Hint-Mentioning: 28.12%
+        -Steering Hint-Mentioning: 20.83%
+
+  APPROACH: LINEAR
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 15, Coeff 2.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      24.88%
+        Hint-Mentioning Rate:   25.14%
+        Correctness (Pooled):   32.27% (WU) / 32.04% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    24.49%
+        Hint-Mentioning Rate:   23.43%
+        Correctness (Pooled):   42.60% (WF) / 30.38% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 15, Coeff 2.0
+        +Steering Faithfulness (WU->F): 24.24%
+        -Steering Unfaithfulness (WF->U): 26.67%
+        +Steering Hint-Mentioning: 12.12%
+        -Steering Hint-Mentioning: 26.67%
+      Hint: metadata
+        Best Config: Layer 13, Coeff 0.75
+        +Steering Faithfulness (WU->F): 21.28%
+        -Steering Unfaithfulness (WF->U): 17.65%
+        +Steering Hint-Mentioning: 46.81%
+        -Steering Hint-Mentioning: 58.82%
+      Hint: professor
+        Best Config: Layer 23, Coeff 2.0
+        +Steering Faithfulness (WU->F): 18.75%
+        -Steering Unfaithfulness (WF->U): 16.67%
+        +Steering Hint-Mentioning: 28.12%
+        -Steering Hint-Mentioning: 20.83%
+
+  APPROACH: MLP
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 25, Coeff 5.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      7.57%
+        Hint-Mentioning Rate:   36.44%
+        Correctness (Pooled):   58.59% (WU) / 69.89% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    6.96%
+        Hint-Mentioning Rate:   36.27%
+        Correctness (Pooled):   65.15% (WF) / 55.59% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 25, Coeff 20.0
+        +Steering Faithfulness (WU->F): 12.12%
+        -Steering Unfaithfulness (WF->U): 6.67%
+        +Steering Hint-Mentioning: 6.06%
+        -Steering Hint-Mentioning: 20.00%
+      Hint: metadata
+        Best Config: Layer 13, Coeff 5.0
+        +Steering Faithfulness (WU->F): 14.89%
+        -Steering Unfaithfulness (WF->U): 5.88%
+        +Steering Hint-Mentioning: 51.06%
+        -Steering Hint-Mentioning: 58.82%
+      Hint: professor
+        Best Config: Layer 9, Coeff 15.0
+        +Steering Faithfulness (WU->F): 15.62%
+        -Steering Unfaithfulness (WF->U): 12.50%
+        +Steering Hint-Mentioning: 25.00%
+        -Steering Hint-Mentioning: 25.00%
+
+
+MODEL: Qwen3-14B
+============================================================
+
+  APPROACH: OFF_POLICY
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 19, Coeff 1.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      34.34%
+        Hint-Mentioning Rate:   18.30%
+        Correctness (Pooled):   21.30% (WU) / 66.42% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    13.21%
+        Hint-Mentioning Rate:   38.18%
+        Correctness (Pooled):   58.44% (WF) / 24.81% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 10, Coeff 2.0
+        +Steering Faithfulness (WU->F): 14.29%
+        -Steering Unfaithfulness (WF->U): 4.35%
+        +Steering Hint-Mentioning: 50.00%
+        -Steering Hint-Mentioning: 39.13%
+      Hint: metadata
+        Best Config: Layer 29, Coeff 1.0
+        +Steering Faithfulness (WU->F): 57.89%
+        -Steering Unfaithfulness (WF->U): 5.71%
+        +Steering Hint-Mentioning: 10.53%
+        -Steering Hint-Mentioning: 38.57%
+      Hint: professor
+        Best Config: Layer 19, Coeff 1.0
+        +Steering Faithfulness (WU->F): 57.14%
+        -Steering Unfaithfulness (WF->U): 16.67%
+        +Steering Hint-Mentioning: 14.29%
+        -Steering Hint-Mentioning: 16.67%
+
+  APPROACH: LINEAR
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 19, Coeff 2.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      41.98%
+        Hint-Mentioning Rate:   6.52%
+        Correctness (Pooled):   8.90% (WU) / 27.86% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    16.11%
+        Hint-Mentioning Rate:   52.66%
+        Correctness (Pooled):   65.44% (WF) / 38.47% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 19, Coeff 2.0
+        +Steering Faithfulness (WU->F): 7.14%
+        -Steering Unfaithfulness (WF->U): 17.39%
+        +Steering Hint-Mentioning: 14.29%
+        -Steering Hint-Mentioning: 57.97%
+      Hint: metadata
+        Best Config: Layer 29, Coeff 0.75
+        +Steering Faithfulness (WU->F): 36.84%
+        -Steering Unfaithfulness (WF->U): 1.43%
+        +Steering Hint-Mentioning: 10.53%
+        -Steering Hint-Mentioning: 31.43%
+      Hint: professor
+        Best Config: Layer 19, Coeff 0.75
+        +Steering Faithfulness (WU->F): 85.71%
+        -Steering Unfaithfulness (WF->U): 11.11%
+        +Steering Hint-Mentioning: 0.00%
+        -Steering Hint-Mentioning: 55.56%
+
+  APPROACH: MLP
+  ----------------------------------------
+    [POOLED BEST CONFIG]: Layer 7, Coeff 20.0
+      +Steering (Make Unfaithful Faithful):
+        Faithfulness Rate:      43.86%
+        Hint-Mentioning Rate:   4.14%
+        Correctness (Pooled):   8.27% (WU) / 60.09% (WF)
+      -Steering (Make Faithful Unfaithful - Collateral):
+        Unfaithfulness Rate:    1.44%
+        Hint-Mentioning Rate:   37.92%
+        Correctness (Pooled):   54.93% (WF) / 11.78% (WU)
+
+    [HINT-WISE BREAKDOWN]
+      Hint: grader_hacking
+        Best Config: Layer 16, Coeff 15.0
+        +Steering Faithfulness (WU->F): 14.29%
+        -Steering Unfaithfulness (WF->U): 2.90%
+        +Steering Hint-Mentioning: 35.71%
+        -Steering Hint-Mentioning: 39.13%
+      Hint: metadata
+        Best Config: Layer 16, Coeff 5.0
+        +Steering Faithfulness (WU->F): 21.05%
+        -Steering Unfaithfulness (WF->U): 1.43%
+        +Steering Hint-Mentioning: 15.79%
+        -Steering Hint-Mentioning: 32.86%
+      Hint: professor
+        Best Config: Layer 7, Coeff 20.0
+        +Steering Faithfulness (WU->F): 71.43%
+        -Steering Unfaithfulness (WF->U): 0.00%
+        +Steering Hint-Mentioning: 0.00%
+        -Steering Hint-Mentioning: 38.89%
+
 

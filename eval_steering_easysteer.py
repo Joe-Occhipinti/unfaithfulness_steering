@@ -281,9 +281,9 @@ Examples:
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["linear", "mlp", "off-policy"],
+        choices=["linear", "mlp", "off-policy", "random"],
         required=True,
-        help="Steering mode: 'linear' (pre-computed vectors) or 'mlp' (gradient-based per-prompt)"
+        help="Steering mode: 'linear' (pre-computed vectors), 'mlp' (gradient-based per-prompt), or 'random' (sanity check)"
     )
     
     # Model configuration
@@ -307,7 +307,7 @@ Examples:
                         help="[linear] Path to steering vectors PKL")
     parser.add_argument("--coefficients", type=float, nargs="+", 
                         default=[0.6, -0.6, 0.75, -0.75, 1, -1],
-                        help="[linear] Coefficients to test")
+                        help="[linear/random] Coefficients to test (for random: recommended 0.6, 1, 2)")
     
     # MLP mode specific
     parser.add_argument("--input-activations", type=str, default=None,
@@ -430,6 +430,121 @@ def run_linear_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
         'vectors_file': str(vectors_file),
         'layers_tested': layers_to_test,
         'coefficients_tested': args.coefficients
+    }
+
+
+# =============================================================================
+# RANDOM MODE (SANITY CHECK)
+# =============================================================================
+
+def run_random_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
+    """Run random mode: unit-normalized random vectors as sanity check.
+    
+    Generates one unit-normalized random vector per layer using seed=42.
+    Vectors are normalized to L2 norm = 1, so coefficients directly control magnitude.
+    This provides a direct comparison with linear steering methods.
+    """
+    from vllm import SamplingParams
+    from vllm.steer_vectors.request import SteerVectorRequest
+    import gguf
+    import numpy as np
+    
+    # Get hidden dimension from model config
+    hidden_dim = llm.llm_engine.model_config.hf_config.hidden_size
+    print(f"Model hidden dimension: {hidden_dim}")
+    
+    # Generate one unit-normalized random vector per layer (seed=42)
+    rng = np.random.default_rng(seed=42)
+    random_vectors = {}
+    for layer_idx in args.layers:
+        v = rng.standard_normal(hidden_dim).astype(np.float32)
+        v = v / np.linalg.norm(v)  # Unit normalize (L2 norm = 1)
+        random_vectors[layer_idx] = v
+        print(f"  Layer {layer_idx}: generated unit-normalized random vector (L2 norm: {np.linalg.norm(v):.4f})")
+    
+    # Save to GGUF (one file per layer)
+    gguf_dir = output_dir / "gguf_random_vectors"
+    gguf_dir.mkdir(parents=True, exist_ok=True)
+    gguf_paths = {}
+    
+    for layer_idx, vec in random_vectors.items():
+        gguf_path = gguf_dir / f"random_layer_{layer_idx}.gguf"
+        writer = gguf.GGUFWriter(str(gguf_path), "controlvector")
+        writer.add_string("controlvector.model_hint", "llama")
+        writer.add_string("controlvector.method", "random")
+        writer.add_uint32("controlvector.layer_count", 1)
+        writer.add_tensor(f"direction.{layer_idx}", vec)
+        writer.write_header_to_file()
+        writer.write_kv_data_to_file()
+        writer.write_tensors_to_file()
+        writer.close()
+        gguf_paths[layer_idx] = str(gguf_path)
+        print(f"  Saved: {gguf_path}")
+    
+    layers_to_test = list(gguf_paths.keys())
+    print(f"Will test {len(layers_to_test)} layers: {layers_to_test}")
+    
+    # Steering sweep (identical to linear mode)
+    sampling_params = SamplingParams(max_tokens=args.max_new_tokens, temperature=0, repetition_penalty=1.1)
+    evaluation_results = {}
+    config_count = 0
+    total_configs = len(layers_to_test) * len(args.coefficients)
+    
+    for layer_idx in layers_to_test:
+        for coeff in args.coefficients:
+            config_count += 1
+            print(f"\n[{config_count}/{total_configs}] Layer {layer_idx}, Coefficient {coeff:+.2f}")
+            
+            steer_request = SteerVectorRequest(
+                steer_vector_name=f"random_layer_{layer_idx}_coeff_{coeff}",
+                steer_vector_int_id=config_count,
+                steer_vector_local_path=gguf_paths[layer_idx],
+                scale=coeff,
+                target_layers=[layer_idx],
+                prefill_trigger_tokens=[],
+                generate_trigger_tokens=[-1],
+            )
+            
+            outputs = llm.generate(input_prompts, steer_vector_request=steer_request,
+                                   sampling_params=sampling_params)
+            
+            steered_responses = [output.outputs[0].text.strip() for output in outputs]
+            steered_prompts = [p + r for p, r in zip(input_prompts, steered_responses)]
+            
+            evaluation_results[(layer_idx, coeff)] = {
+                'steered_prompts': steered_prompts,
+                'total_prompts': len(val_data)
+            }
+            print(f"  Generated {len(steered_responses)} steered responses")
+            gc.collect()
+    
+    # Build output records
+    output_data = []
+    for (layer_idx, coeff), results in evaluation_results.items():
+        for i, orig_item in enumerate(val_data):
+            record = {
+                'hinted_id': orig_item.get('hinted_id', i),
+                'steering_layer': layer_idx,
+                'steering_coefficient': coeff,
+                'steered_prompt': results['steered_prompts'][i],
+                'hint_template': orig_item.get('hint_template'),
+                'ground_truth_letter': orig_item.get('ground_truth_letter'),
+                'hint_letter': orig_item.get('hint_letter'),
+                'biased_answer_letter': orig_item.get('biased_answer_letter'),
+                'original_faithfulness_classification': orig_item.get('faithfulness_classification'),
+                'split': 'val',
+                'date': TODAY,
+                'model': args.model,
+                'steering_mode': 'random',
+                'backend': 'easysteer_vllm'
+            }
+            output_data.append(record)
+    
+    return output_data, {
+        'random_seed': 42,
+        'layers_tested': layers_to_test,
+        'coefficients_tested': args.coefficients,
+        'vector_norms': {l: float(np.linalg.norm(v)) for l, v in random_vectors.items()}
     }
 
 
@@ -801,6 +916,10 @@ def main():
     
     if args.mode in ["linear", "off-policy"]:
         output_data, mode_metadata = run_linear_mode(
+            args, llm, val_data, input_prompts, output_dir, base_dir
+        )
+    elif args.mode == "random":
+        output_data, mode_metadata = run_random_mode(
             args, llm, val_data, input_prompts, output_dir, base_dir
         )
     else:  # mlp mode
