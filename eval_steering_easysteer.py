@@ -295,8 +295,10 @@ Examples:
     )
     
     # File discovery (shared)
-    parser.add_argument("--dataset-type", type=str, required=True,
-                        help="Dataset type handle (e.g., 'annotated')")
+    parser.add_argument("--dataset-type", type=str, required=False,
+                        help="Dataset type handle (e.g., 'annotated'). Required unless --input-file is specified.")
+    parser.add_argument("--input-file", type=str, default=None,
+                        help="Direct path to input JSONL file (bypasses auto-discovery)")
     parser.add_argument("--output-dir", type=str, default=None,
                         help="Output directory (default: same as input file)")
     parser.add_argument("--layers", type=int, nargs="+", default=[8, 13, 15, 18, 23, 28],
@@ -438,29 +440,114 @@ def run_linear_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
 # =============================================================================
 
 def run_random_mode(args, llm, val_data, input_prompts, output_dir, base_dir):
-    """Run random mode: unit-normalized random vectors as sanity check.
+    """Run random mode: random vectors scaled to match linear steering vector norms.
     
-    Generates one unit-normalized random vector per layer using seed=42.
-    Vectors are normalized to L2 norm = 1, so coefficients directly control magnitude.
-    This provides a direct comparison with linear steering methods.
+    Generates one random vector per layer using seed=42.
+    The vector is normalized to unit length, then scaled to match the L2 norm
+    of the learned linear steering vector for that layer.
+    
+    This ensures we test specific coefficients on a 'null' vector of comparable magnitude.
     """
     from vllm import SamplingParams
     from vllm.steer_vectors.request import SteerVectorRequest
     import gguf
     import numpy as np
+    import pickle
+    import torch
     
+    # 1. Find reference linear vectors to get norms
+    # logic similar to run_linear_mode
+    model_dir = output_dir.parent if output_dir else base_dir
+    if args.input_vectors:
+        ref_vectors_path = Path(args.input_vectors)
+    else:
+        # Try to auto-discover vectors_{model}*.pkl in the model directory
+        # We assume dataset_type might point us to the right folder
+        try:
+             # Try to find model directory from dataset_type path or args.model
+             # straightforward search in data/definitive_pipeline_data/{model}/
+            data_root = Path("data/definitive_pipeline_data")
+            model_short = args.model.split("/")[-1]
+            search_dir = data_root / model_short
+            
+            if not search_dir.exists():
+                 # Fallback to output_dir parent if reasonable
+                 search_dir = output_dir.parent
+            
+            # Find latest vectors file
+            vector_files = list(search_dir.glob(f"vectors_*.pkl"))
+            # Filter out random/off-policy/activations
+            vector_files = [f for f in vector_files if "off_policy" not in f.name and "random" not in f.name and "activations" not in f.name]
+             
+            if not vector_files:
+                raise FileNotFoundError(f"No reference linear vectors found in {search_dir}. Cannot match norms.")
+            else:
+                # Sort by date/name
+                ref_vectors_path = sorted(vector_files)[-1]
+                print(f"Auto-discovered reference vectors: {ref_vectors_path}")
+                
+        except Exception as e:
+            raise RuntimeError(f"Could not auto-discover vectors: {e}")
+
+    # 2. Load reference norms
+    reference_norms = {}
+    if ref_vectors_path and ref_vectors_path.exists():
+        try:
+            with open(ref_vectors_path, "rb") as f:
+                # Check for Git LFS pointer
+                header = f.read(50)
+                f.seek(0)
+                if header.startswith(b"version https://git-lfs"):
+                    raise RuntimeError(
+                        f"File {ref_vectors_path} matches Git LFS pointer format.\n"
+                        f"Please run 'git lfs pull' in your repository to download the actual files."
+                    )
+                
+                ref_data = pickle.load(f)
+                
+                # Handle nested structure if present
+                if isinstance(ref_data, dict) and 'steering_vectors' in ref_data:
+                    print("Found nested 'steering_vectors' key, extracting...")
+                    ref_data = ref_data['steering_vectors']
+            
+            # ref_data is likely {layer_idx: tensor}
+            for layer, vec in ref_data.items():
+                if isinstance(vec, torch.Tensor):
+                    norm = torch.norm(vec.float()).item()
+                elif isinstance(vec, np.ndarray):
+                    norm = np.linalg.norm(vec)
+                else:
+                    raise ValueError(f"Unknown vector type for layer {layer}: {type(vec)}")
+                reference_norms[layer] = norm
+            print(f"Loaded reference norms for {len(reference_norms)} layers")
+        except Exception as e:
+            raise RuntimeError(f"Error loading reference vectors from {ref_vectors_path}: {e}")
+
     # Get hidden dimension from model config
     hidden_dim = llm.llm_engine.model_config.hf_config.hidden_size
     print(f"Model hidden dimension: {hidden_dim}")
     
-    # Generate one unit-normalized random vector per layer (seed=42)
+    # Generate one random vector per layer (seed=42)
+    # Normalized to unit length, then scaled to match reference norm
     rng = np.random.default_rng(seed=42)
     random_vectors = {}
+    
     for layer_idx in args.layers:
+        # 1. Generate random direction
         v = rng.standard_normal(hidden_dim).astype(np.float32)
-        v = v / np.linalg.norm(v)  # Unit normalize (L2 norm = 1)
-        random_vectors[layer_idx] = v
-        print(f"  Layer {layer_idx}: generated unit-normalized random vector (L2 norm: {np.linalg.norm(v):.4f})")
+        
+        # 2. Unit normalize
+        v_unit = v / np.linalg.norm(v)
+        
+        # 3. Scale to match reference norm
+        ref_norm = reference_norms.get(layer_idx)
+        if ref_norm is None:
+             raise ValueError(f"Layer {layer_idx}: No reference norm found in {ref_vectors_path}. Cannot scale random vector.")
+        
+        v_scaled = v_unit * ref_norm
+        random_vectors[layer_idx] = v_scaled
+        
+        print(f"  Layer {layer_idx}: random vector (Unit Norm=1.0 * Ref Norm={ref_norm:.4f} = {np.linalg.norm(v_scaled):.4f})")
     
     # Save to GGUF (one file per layer)
     gguf_dir = output_dir / "gguf_random_vectors"
@@ -843,7 +930,15 @@ def main():
     # STEP 1: Discover Input Files and Prepare Data
     # =========================================================================
     print("\n=== STEP 1: Discover Input Files ===")
-    input_file = find_input_file(args.model, args.dataset_type, base_dir)
+    if args.input_file:
+        input_file = Path(args.input_file)
+        if not input_file.exists():
+            raise FileNotFoundError(f"Input file not found: {input_file}")
+        print(f"Using specified input file: {input_file}")
+    else:
+        if not args.dataset_type:
+            raise ValueError("Either --input-file or --dataset-type must be specified")
+        input_file = find_input_file(args.model, args.dataset_type, base_dir)
     
     if args.output_dir:
         output_dir = Path(args.output_dir)
@@ -903,10 +998,13 @@ def main():
         val_indices = val_indices[:args.num_samples]
         print(f"Limited to first {args.num_samples} samples")
     
-    # Extract prompts
-    input_prompts = [item.get('biased_input_prompt') for item in val_data]
+    # Extract prompts - try multiple field names for compatibility
+    input_prompts = []
+    for item in val_data:
+        prompt = item.get('biased_input_prompt') or item.get('local_annotated_biased_prompt')
+        input_prompts.append(prompt)
     if None in input_prompts:
-        raise ValueError("Missing 'biased_input_prompt' in some items")
+        raise ValueError("Missing prompt field (tried 'biased_input_prompt' and 'local_annotated_biased_prompt')")
     print(f"Extracted {len(input_prompts)} prompts")
     
     # =========================================================================

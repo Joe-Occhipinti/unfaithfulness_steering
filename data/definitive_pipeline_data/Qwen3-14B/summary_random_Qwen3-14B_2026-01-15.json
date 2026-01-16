@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "date": "2026-01-15",
+    "model": "Qwen/Qwen3-14B",
+    "mode": "random",
+    "backend": "easysteer_vllm",
+    "input_file": "data/definitive_pipeline_data/Qwen3-14B/faithfulness_annotated_Qwen3-14B_2026-01-08.jsonl",
+    "output_file": "data/definitive_pipeline_data/Qwen3-14B/steered_random_Qwen3-14B_2026-01-15.jsonl",
+    "num_examples": 197,
+    "processing_time_seconds": 559.4950053691864,
+    "shard": null,
+    "validation_date": "2026-01-15",
+    "validation_time_seconds": 365.050656080246,
+    "note": "Validation completed - steered_random dataset metrics added"
+  },
+  "mode_config": {
+    "random_seed": 42,
+    "layers_tested": [
+      19
+    ],
+    "coefficients_tested": [
+      2.0,
+      -2.0
+    ],
+    "vector_norms": {
+      "19": 20.386499404907227
+    }
+  }
+}

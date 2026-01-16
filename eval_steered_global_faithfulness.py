@@ -81,8 +81,8 @@ Examples:
         "--steering-mode",
         type=str,
         default="linear",
-        choices=["linear", "off_policy", "mlp"],
-        help="Type of steering to evaluate: linear, off_policy, or mlp (default: linear)"
+        choices=["linear", "off_policy", "mlp", "random"],
+        help="Type of steering to evaluate: linear, off_policy, mlp, or random (default: linear)"
     )
     
     # Direct input file (overrides auto-discovery)

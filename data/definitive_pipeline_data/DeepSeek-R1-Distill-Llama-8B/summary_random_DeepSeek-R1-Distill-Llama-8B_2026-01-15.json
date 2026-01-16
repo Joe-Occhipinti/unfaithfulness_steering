@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "date": "2026-01-15",
+    "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "mode": "random",
+    "backend": "easysteer_vllm",
+    "input_file": "data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/faithfulness_annotated_DeepSeek-R1-Distill-Llama-8B_2026-01-10.jsonl",
+    "output_file": "data/definitive_pipeline_data/DeepSeek-R1-Distill-Llama-8B/steered_random_DeepSeek-R1-Distill-Llama-8B_2026-01-15.jsonl",
+    "num_examples": 168,
+    "processing_time_seconds": 348.1564073562622,
+    "shard": null,
+    "validation_date": "2026-01-15",
+    "validation_time_seconds": 322.9103903770447,
+    "note": "Validation completed - steered_random dataset metrics added"
+  },
+  "mode_config": {
+    "random_seed": 42,
+    "layers_tested": [
+      15
+    ],
+    "coefficients_tested": [
+      2.0,
+      -2.0
+    ],
+    "vector_norms": {
+      "15": 3.974066972732544
+    }
+  }
+}

@@ -65,7 +65,7 @@ Example:
         "--dataset-type",
         type=str,
         required=True,
-        choices=["baseline", "steered", "steered_sampled", "hinted", "hinted_sampled", "steered_linear", "steered_off_policy", "steered_mlp"],
+        choices=["baseline", "steered", "steered_sampled", "hinted", "hinted_sampled", "steered_linear", "steered_off_policy", "steered_mlp", "steered_random"],
         help="Type of dataset to process"
     )
     
@@ -115,7 +115,8 @@ def resolve_file_paths(
         'steered_sampled': 'steered_sampled',
         'steered_linear': 'steered_linear',
         'steered_off_policy': 'steered_off_policy',
-        'steered_mlp': 'steered_mlp'
+        'steered_mlp': 'steered_mlp',
+        'steered_random': 'steered_random'
     }
     prefix = prefix_map[dataset_type]
     
@@ -127,7 +128,7 @@ def resolve_file_paths(
     
     # Determine filename pattern based on dataset type
     # New steered types don't use '_results_' in the filename
-    if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp']:
+    if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp', 'steered_random']:
         file_pattern_template = "{prefix}_{model}_{date_pattern}.jsonl"
     else:
         file_pattern_template = "{prefix}_results_{model}_{date_pattern}.jsonl"
@@ -138,7 +139,7 @@ def resolve_file_paths(
         jsonl_path = model_dir / filename
         
         # Summary path logic
-        if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp']:
+        if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp', 'steered_random']:
              summary_filename = filename.replace('steered_', 'summary_').replace('.jsonl', '.json')
         else:
              summary_filename = filename.replace('_results_', '_summary_').replace('.jsonl', '.json')
@@ -165,7 +166,7 @@ def resolve_file_paths(
         jsonl_path = Path(sorted(matching_files)[-1])
         
         # Derive summary path from jsonl path
-        if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp']:
+        if dataset_type in ['steered_linear', 'steered_off_policy', 'steered_mlp', 'steered_random']:
             summary_filename = jsonl_path.name.replace('steered_', 'summary_').replace('.jsonl', '.json')
         else:
             summary_filename = jsonl_path.name.replace('_results_', '_summary_').replace('.jsonl', '.json')
@@ -288,6 +289,15 @@ def get_field_config(dataset_type: str) -> Dict[str, str]:
             'completeness_field': 'steered_completeness',
             'validation_date_field': 'steered_validation_date',
             'prefix': 'steered_mlp'
+        },
+        'steered_random': {
+            'response_field': 'steered_prompt',
+            'answer_field': 'steered_answer_letter',
+            'accuracy_field': 'steered_accuracy',
+            'compliance_field': 'steered_compliance',
+            'completeness_field': 'steered_completeness',
+            'validation_date_field': 'steered_validation_date',
+            'prefix': 'steered_random'
         }
     }
     
@@ -306,7 +316,7 @@ def group_by_configuration(records: List[Dict], dataset_type: str) -> Dict[Any, 
     """
     configs = {}
     
-    if dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp']:
+    if dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp', 'steered_random']:
         for record in records:
             # Handle new gradient steering format (target_value + direction)
             if 'steering_target_value' in record:
@@ -530,7 +540,7 @@ def update_summary(
         # Add validation metrics directly to summary
         summary['validation_metrics'] = config_stats['all']
         
-    elif dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp']:
+    elif dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp', 'steered_random']:
         # Add validation metrics to each configuration
         for key, stats in config_stats.items():
             if key == 'all':
@@ -716,7 +726,7 @@ def process_dataset(
     if dataset_type == 'baseline':
         print(f"\nNext steps:")
         print(f"  - Run hinted evaluation: eval_hinted_runpod.py")
-    elif dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp']:
+    elif dataset_type in ['steered', 'steered_sampled', 'steered_linear', 'steered_off_policy', 'steered_mlp', 'steered_random']:
         print(f"\nNext steps:")
         print(f"  - Analyze validated results to select best steering configuration")
         print(f"  - Run faithfulness evaluation on best configuration")

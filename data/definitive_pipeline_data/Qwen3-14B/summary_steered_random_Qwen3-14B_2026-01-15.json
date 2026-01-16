@@ -1,0 +1,593 @@
+{
+  "evaluation_date": "REGENERATED",
+  "method": "global_llm_judge_steered_with_stratification (regenerated)",
+  "judge_model": "gemini-2.5-flash",
+  "source_file": "data\\definitive_pipeline_data\\Qwen3-14B\\annotated_steered_random_Qwen3-14B_2026-01-15.jsonl",
+  "subject": "Qwen3-14B",
+  "total_records": 394,
+  "dataset_info": {
+    "total_configurations": 3,
+    "layers": [
+      19
+    ],
+    "coefficient_magnitudes": [
+      2.0
+    ],
+    "note": "Regenerated from annotated records after hint mention fix"
+  },
+  "configurations_by_hint": {
+    "grader_hacking": [
+      {
+        "hint_template": "grader_hacking",
+        "layer": 19,
+        "coefficient_magnitude": 2.0,
+        "positive_on_CF": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "positive_on_CU": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "positive_on_WF": {
+          "n": 69,
+          "transitions": {
+            "stable_faithful": {
+              "count": 4,
+              "rate": 0.057971014492753624
+            },
+            "stable_unfaithful": {
+              "count": 3,
+              "rate": 0.043478260869565216
+            },
+            "wrong_to_correct": {
+              "count": 52,
+              "rate": 0.7536231884057971
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 24,
+              "rate": 0.34782608695652173
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 10,
+              "rate": 0.14492753623188406
+            }
+          }
+        },
+        "positive_on_WU": {
+          "n": 14,
+          "transitions": {
+            "stable_faithful": {
+              "count": 1,
+              "rate": 0.07142857142857142
+            },
+            "stable_unfaithful": {
+              "count": 7,
+              "rate": 0.5
+            },
+            "wrong_to_correct": {
+              "count": 4,
+              "rate": 0.2857142857142857
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 2,
+              "rate": 0.14285714285714285
+            }
+          }
+        },
+        "negative_on_CF": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "negative_on_CU": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "negative_on_WF": {
+          "n": 69,
+          "transitions": {
+            "stable_faithful": {
+              "count": 9,
+              "rate": 0.13043478260869565
+            },
+            "stable_unfaithful": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "wrong_to_correct": {
+              "count": 39,
+              "rate": 0.5652173913043478
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 14,
+              "rate": 0.2028985507246377
+            },
+            "hint_error": {
+              "count": 1,
+              "rate": 0.014492753623188406
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 20,
+              "rate": 0.2898550724637681
+            }
+          }
+        },
+        "negative_on_WU": {
+          "n": 14,
+          "transitions": {
+            "stable_faithful": {
+              "count": 1,
+              "rate": 0.07142857142857142
+            },
+            "stable_unfaithful": {
+              "count": 2,
+              "rate": 0.14285714285714285
+            },
+            "wrong_to_correct": {
+              "count": 4,
+              "rate": 0.2857142857142857
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 2,
+              "rate": 0.14285714285714285
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 7,
+              "rate": 0.5
+            }
+          }
+        }
+      }
+    ],
+    "metadata": [
+      {
+        "hint_template": "metadata",
+        "layer": 19,
+        "coefficient_magnitude": 2.0,
+        "positive_on_CF": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "positive_on_CU": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "positive_on_WF": {
+          "n": 70,
+          "transitions": {
+            "stable_faithful": {
+              "count": 28,
+              "rate": 0.4
+            },
+            "stable_unfaithful": {
+              "count": 7,
+              "rate": 0.1
+            },
+            "wrong_to_correct": {
+              "count": 29,
+              "rate": 0.4142857142857143
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 14,
+              "rate": 0.2
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 6,
+              "rate": 0.08571428571428572
+            }
+          }
+        },
+        "positive_on_WU": {
+          "n": 19,
+          "transitions": {
+            "stable_faithful": {
+              "count": 2,
+              "rate": 0.10526315789473684
+            },
+            "stable_unfaithful": {
+              "count": 12,
+              "rate": 0.631578947368421
+            },
+            "wrong_to_correct": {
+              "count": 4,
+              "rate": 0.21052631578947367
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 3,
+              "rate": 0.15789473684210525
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 1,
+              "rate": 0.05263157894736842
+            }
+          }
+        },
+        "negative_on_CF": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "negative_on_CU": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "negative_on_WF": {
+          "n": 70,
+          "transitions": {
+            "stable_faithful": {
+              "count": 11,
+              "rate": 0.15714285714285714
+            },
+            "stable_unfaithful": {
+              "count": 3,
+              "rate": 0.04285714285714286
+            },
+            "wrong_to_correct": {
+              "count": 46,
+              "rate": 0.6571428571428571
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 14,
+              "rate": 0.2
+            },
+            "hint_error": {
+              "count": 3,
+              "rate": 0.04285714285714286
+            },
+            "hint_error_mentioning_hint": {
+              "count": 2,
+              "rate": 0.02857142857142857
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 7,
+              "rate": 0.1
+            }
+          }
+        },
+        "negative_on_WU": {
+          "n": 19,
+          "transitions": {
+            "stable_faithful": {
+              "count": 2,
+              "rate": 0.10526315789473684
+            },
+            "stable_unfaithful": {
+              "count": 8,
+              "rate": 0.42105263157894735
+            },
+            "wrong_to_correct": {
+              "count": 8,
+              "rate": 0.42105263157894735
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 3,
+              "rate": 0.15789473684210525
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 1,
+              "rate": 0.05263157894736842
+            }
+          }
+        }
+      }
+    ],
+    "professor": [
+      {
+        "hint_template": "professor",
+        "layer": 19,
+        "coefficient_magnitude": 2.0,
+        "positive_on_CF": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "positive_on_CU": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "positive_on_WF": {
+          "n": 18,
+          "transitions": {
+            "stable_faithful": {
+              "count": 5,
+              "rate": 0.2777777777777778
+            },
+            "stable_unfaithful": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "wrong_to_correct": {
+              "count": 13,
+              "rate": 0.7222222222222222
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 9,
+              "rate": 0.5
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "positive_on_WU": {
+          "n": 7,
+          "transitions": {
+            "stable_faithful": {
+              "count": 2,
+              "rate": 0.2857142857142857
+            },
+            "stable_unfaithful": {
+              "count": 4,
+              "rate": 0.5714285714285714
+            },
+            "wrong_to_correct": {
+              "count": 1,
+              "rate": 0.14285714285714285
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "negative_on_CF": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "negative_on_CU": {
+          "n": 0,
+          "transitions": {},
+          "classifications": {}
+        },
+        "negative_on_WF": {
+          "n": 18,
+          "transitions": {
+            "stable_faithful": {
+              "count": 2,
+              "rate": 0.1111111111111111
+            },
+            "stable_unfaithful": {
+              "count": 1,
+              "rate": 0.05555555555555555
+            },
+            "wrong_to_correct": {
+              "count": 10,
+              "rate": 0.5555555555555556
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 4,
+              "rate": 0.2222222222222222
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 5,
+              "rate": 0.2777777777777778
+            }
+          }
+        },
+        "negative_on_WU": {
+          "n": 7,
+          "transitions": {
+            "stable_faithful": {
+              "count": 3,
+              "rate": 0.42857142857142855
+            },
+            "stable_unfaithful": {
+              "count": 2,
+              "rate": 0.2857142857142857
+            },
+            "wrong_to_correct": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "wrong_to_correct_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "hint_error_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "incomplete_mentioning_hint": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "error": {
+              "count": 2,
+              "rate": 0.2857142857142857
+            }
+          }
+        }
+      }
+    ]
+  }
+}

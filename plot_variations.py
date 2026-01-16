@@ -61,6 +61,7 @@ class ModelData:
     off_policy: ApproachData = field(default_factory=ApproachData)
     linear: ApproachData = field(default_factory=ApproachData)
     mlp: ApproachData = field(default_factory=ApproachData)
+    random: ApproachData = field(default_factory=ApproachData)
 
 
 # =============================================================================
@@ -206,6 +207,7 @@ def load_qwen3_32b(base_dir: Path) -> ModelData:
     model.off_policy = load_approach(data_dir, "off_policy", "Qwen3-32B")
     model.linear = load_approach(data_dir, "linear", "Qwen3-32B")
     model.mlp = load_approach(data_dir, "mlp", "Qwen3-32B")
+    model.random = load_approach(data_dir, "random", "Qwen3-32B")
     
     return model
 
@@ -219,6 +221,7 @@ def load_qwen3_14b(base_dir: Path) -> ModelData:
     model.off_policy = load_approach(data_dir, "off_policy", "Qwen3-14B")
     model.linear = load_approach(data_dir, "linear", "Qwen3-14B")
     model.mlp = load_approach(data_dir, "mlp", "Qwen3-14B")
+    model.random = load_approach(data_dir, "random", "Qwen3-14B")
     
     return model
 
@@ -232,6 +235,7 @@ def load_deepseek_r1_distill_llama_8b(base_dir: Path) -> ModelData:
     model.off_policy = load_approach(data_dir, "off_policy", "DeepSeek-R1-Distill-Llama-8B")
     model.linear = load_approach(data_dir, "linear", "DeepSeek-R1-Distill-Llama-8B")
     model.mlp = load_approach(data_dir, "mlp", "DeepSeek-R1-Distill-Llama-8B")
+    model.random = load_approach(data_dir, "random", "DeepSeek-R1-Distill-Llama-8B")
     
     return model
 
@@ -821,7 +825,7 @@ def plot_variation_4(
         
         ax.set_title(display_names[model_name], fontsize=36, fontweight="bold", pad=20)
         ax.tick_params(axis="both", labelsize=28)
-        ax.set_ylim(70, 100)
+        ax.set_ylim(50, 100)
         ax.grid(axis="both", alpha=0.3, linestyle="--")
         ax.legend(loc="lower right", fontsize=40)
     
@@ -972,7 +976,7 @@ def plot_variation_5(
     # Styling
     ax.set_yticks(y_positions)
     ax.set_yticklabels(model_labels, fontsize=28, fontweight="bold")
-    ax.set_xlabel("Percentage (%)", fontsize=28, fontweight="bold")
+    ax.set_xlabel("(%)", fontsize=28, fontweight="bold")
     ax.set_xlim(0, 100)
     ax.tick_params(axis="x", labelsize=22)
     ax.grid(axis="x", alpha=0.3, linestyle="--")
@@ -988,6 +992,831 @@ def plot_variation_5(
                  fontsize=40, fontweight="bold", y=1.02)
     
     plt.tight_layout()
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+def plot_variation_6(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 6: Hint-Mentioning Rate of Negative Steering on Unfaithful Answers
+    
+    Single panel showing: -Steering on WU → Hint-Mentioning %
+    (How often do unfaithful answers still mention the hint after negative steering?)
+    """
+    fig, ax = plt.subplots(figsize=(14, 10))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp"]
+    approach_labels = ["Linear", "Off-Policy", "MLP"]
+    
+    x = np.arange(len(approaches))
+    width = 0.25
+    
+    # Color palette: Teal shades
+    # Ordered: Light (8B), Medium (14B), Dark (32B)
+    palette = ["#80CBC4", "#26A69A", "#004D40"]
+    
+    # Map models index to shade index: 32B->Dark(2), 8B->Light(0), 14B->Medium(1)
+    shade_indices = [2, 0, 1]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                # negative_WU = negative steering on Was Unfaithful
+                metrics = getattr(approach_data.best_result, "negative_WU", None)
+                value = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    # Styling
+    ax.set_ylabel("Hint-Mentioning %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering on Unfaithful Answers:\nHint-Mentioning Rate", fontsize=32, fontweight="bold", pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=28)
+    
+    plt.tight_layout()
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+def plot_variation_7(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 7: Like Variation 1 but with Random approach as 4th baseline.
+    
+    | Row             | Left (12 bars) | Right (12 bars) |
+    |-----------------|----------------|-----------------|
+    | Faithfulness    | +steer WU→F%   | −steer WF→U%    |
+    | Hint-Mentioning | +steer WU→Hm%  | −steer WF→Hnm%  |
+    
+    Each panel: 12 bars = 4 approaches × 3 models
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(32, 24))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp", "random"]
+    approach_labels = ["Linear", "Off-Policy", "MLP", "Random"]
+    
+    x = np.arange(len(approaches))
+    width = 0.22
+    
+    # Color palettes (Light -> Medium -> Dark)
+    palettes = {
+        "good": ["#A5D6A7", "#4CAF50", "#1B5E20"],      # Green
+        "bad": ["#EF9A9A", "#F44336", "#B71C1C"],       # Red
+        "meh_good": ["#81D4FA", "#29B6F6", "#01579B"],  # Light Blue
+        "meh_bad": ["#FFF59D", "#FBC02D", "#F57F17"],   # Yellow/Orange
+    }
+    
+    # Map models index to shade index
+    shade_indices = [2, 0, 1]
+    
+    # Panel specifications
+    panels = [
+        (0, 0, "positive_WU", "faithful_pct", 
+         "+ Steering on Unfaithful Answers:\nFaithfulness Rate", "Faithful %", False, "good"),
+        (0, 1, "negative_WF", "unfaithful_pct", 
+         "- Steering on Faithful Answers:\nUnfaithfulness Rate", "Unfaithful %", False, "bad"),
+        (1, 0, "positive_WU", "hint_mentioning_pct", 
+         "+ Steering on Unfaithful Answers:\nHint-mentioning Rate", "Hint-Mentioning %", False, "meh_good"),
+        (1, 1, "negative_WF", "hint_mentioning_pct", 
+         "- Steering on Faithful Answers:\nHint-mentioning-ablation Rate", "Hint-mentioning-ablation %", True, "meh_bad"),
+    ]
+    
+    for row, col, direction, metric, title, ylabel, is_hnm, palette_key in panels:
+        ax = axes[row, col]
+        current_palette = palettes[palette_key]
+        
+        for i, model in enumerate(models):
+            model_data = data.get(model)
+            values = []
+            
+            for approach in approaches:
+                approach_data = getattr(model_data, approach, None)
+                if approach_data and approach_data.best_result:
+                    metrics = getattr(approach_data.best_result, direction, None)
+                    value = getattr(metrics, metric, 0) if metrics else 0
+                    if is_hnm:
+                        value = 100 - value
+                    values.append(value)
+                else:
+                    values.append(0)
+            
+            offset = (i - 1) * width
+            shade_idx = shade_indices[i]
+            color = current_palette[shade_idx]
+            
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+            ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+        
+        ax.set_ylabel(ylabel, fontsize=36, fontweight="bold")
+        ax.set_title(title, fontsize=32, fontweight="bold")
+        ax.set_xticks(x)
+        ax.set_xticklabels(approach_labels, fontsize=36)
+        ax.tick_params(axis="y", labelsize=24)
+        ax.set_ylim(0, 100)
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        ax.legend(loc="upper right", fontsize=28)
+    
+    fig.suptitle("Steering Performance (Including Random Baseline)", 
+                 fontsize=40, fontweight="bold", y=1.02)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.35, wspace=0.3)
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+def plot_variation_8(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 8: Like Variation 3 (Collateral Effects) but with Random approach.
+    
+    1 row × 2 columns:
+    - Left: +Steering on WF → Unfaithfulness % (faithful answers becoming unfaithful)
+    - Right: −Steering on WU → Faithfulness % (unfaithful answers becoming faithful)
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(32, 12))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp", "random"]
+    approach_labels = ["Linear", "Off-Policy", "MLP", "Random"]
+    
+    x = np.arange(len(approaches))
+    width = 0.22
+    
+    # Color palettes
+    palettes = {
+        "red": ["#EF9A9A", "#F44336", "#B71C1C"],      # Red shades
+        "orange": ["#FFCC80", "#FF9800", "#E65100"],   # Orange shades
+    }
+    
+    shade_indices = [2, 0, 1]
+    
+    panels = [
+        (0, "positive_WF", "unfaithful_pct", 
+         "+ Steering Making Faithful Answers Unfaithful", "Unfaithful %", "red"),
+        (1, "negative_WU", "faithful_pct", 
+         "- Steering Making Unfaithful Answers Faithful", "Faithful %", "orange"),
+    ]
+    
+    for col, direction, metric, title, ylabel, palette_key in panels:
+        ax = axes[col]
+        current_palette = palettes[palette_key]
+        
+        for i, model in enumerate(models):
+            model_data = data.get(model)
+            values = []
+            
+            for approach in approaches:
+                approach_data = getattr(model_data, approach, None)
+                if approach_data and approach_data.best_result:
+                    metrics = getattr(approach_data.best_result, direction, None)
+                    value = getattr(metrics, metric, 0) if metrics else 0
+                    values.append(value)
+                else:
+                    values.append(0)
+            
+            offset = (i - 1) * width
+            shade_idx = shade_indices[i]
+            color = current_palette[shade_idx]
+            
+            model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+            ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+        
+        ax.set_ylabel(ylabel, fontsize=36, fontweight="bold")
+        ax.set_title(title, fontsize=32, fontweight="bold", pad=20)
+        ax.set_xticks(x)
+        ax.set_xticklabels(approach_labels, fontsize=36)
+        ax.tick_params(axis="y", labelsize=24)
+        ax.set_ylim(0, 100)
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        ax.legend(loc="upper right", fontsize=28)
+    
+    fig.suptitle("Collateral Effects (Including Random Baseline)", 
+                 fontsize=40, fontweight="bold", y=1.02)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0.3, top=0.85)
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+
+def plot_variation_9(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 9: Like Variation 6 (Hint-Mentioning Collateral) but with Random approach.
+    
+    Single panel showing: -Steering on WU → Hint-Mentioning %
+    (How often do unfaithful answers still mention the hint after negative steering?)
+    """
+    fig, ax = plt.subplots(figsize=(18, 10))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp", "random"]
+    approach_labels = ["Linear", "Off-Policy", "MLP", "Random"]
+    
+    x = np.arange(len(approaches))
+    width = 0.22
+    
+    # Color palette: Teal shades
+    palette = ["#80CBC4", "#26A69A", "#004D40"]
+    shade_indices = [2, 0, 1]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                # negative_WU = negative steering on Was Unfaithful
+                metrics = getattr(approach_data.best_result, "negative_WU", None)
+                value = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    # Styling
+    ax.set_ylabel("Hint-Mentioning %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering on Unfaithful Answers:\nHint-Mentioning Rate", fontsize=32, fontweight="bold", pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=28)
+    
+    plt.tight_layout()
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+
+def plot_variation_9(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 9: Like Variation 6 (Hint-Mentioning Collateral) but with Random approach.
+    
+    Single panel showing: -Steering on WU → Hint-Mentioning %
+    (How often do unfaithful answers still mention the hint after negative steering?)
+    """
+    fig, ax = plt.subplots(figsize=(18, 10))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp", "random"]
+    approach_labels = ["Linear", "Off-Policy", "MLP", "Random"]
+    
+    x = np.arange(len(approaches))
+    width = 0.22
+    
+    # Color palette: Teal shades
+    palette = ["#80CBC4", "#26A69A", "#004D40"]
+    shade_indices = [2, 0, 1]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                # negative_WU = negative steering on Was Unfaithful
+                metrics = getattr(approach_data.best_result, "negative_WU", None)
+                value = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    # Styling
+    ax.set_ylabel("Hint-Mentioning %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering on Unfaithful Answers:\nHint-Mentioning Rate", fontsize=32, fontweight="bold", pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=28)
+    
+    plt.tight_layout()
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+def plot_variation_10(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 10: Monitorability Gain + Collateral Effects (Compact 2x2)
+    
+    | Row                     | Left                              | Right                             |
+    |-------------------------|-----------------------------------|-----------------------------------|
+    | Intended Effects        | Monitorability Gain (stacked)     | −steer WF→U%                      |
+    | Collateral Effects      | +steer WF→U%                      | −steer WU→F%                      |
+    
+    Top Left: Stacked bars showing Faithful % (solid) + Hint-Mentioning % (hatched)
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(28, 24))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp"]
+    approach_labels = ["Linear", "Off-Policy", "MLP"]
+    
+    x = np.arange(len(approaches))
+    width = 0.25
+    
+    # Color palettes
+    palettes = {
+        "good": ["#A5D6A7", "#4CAF50", "#1B5E20"],      # Green
+        "bad": ["#EF9A9A", "#F44336", "#B71C1C"],       # Red
+        "orange": ["#FFCC80", "#FF9800", "#E65100"],    # Orange
+    }
+    
+    # Model to shade mapping: 32B->Dark(2), 8B->Light(0), 14B->Medium(1)
+    shade_indices = [2, 0, 1]
+    
+    # =========================================================================
+    # TOP LEFT: Monitorability Gain (Stacked: Faithful + Hint-Mentioning)
+    # =========================================================================
+    ax = axes[0, 0]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        faithful_vals = []
+        hint_vals = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "positive_WU", None)
+                f_val = getattr(metrics, "faithful_pct", 0) if metrics else 0
+                h_val = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                faithful_vals.append(f_val)
+                hint_vals.append(h_val)
+            else:
+                faithful_vals.append(0)
+                hint_vals.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palettes["good"][shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        
+        # Convert to numpy arrays for proper stacking
+        faithful_arr = np.array(faithful_vals)
+        hint_arr = np.array(hint_vals)
+        
+        # Base bar: Faithful % (solid)
+        ax.bar(x + offset, faithful_arr, width, label=f"{model_label} (Faithful)", 
+               color=color, alpha=0.9)
+        
+        # Stacked bar: Hint-Mentioning % (hatched)
+        ax.bar(x + offset, hint_arr, width, bottom=faithful_arr,
+               label=f"{model_label} (Hint-Mentioning)" if i == 0 else "",
+               color=color, alpha=0.6, hatch="//", edgecolor="white")
+    
+    ax.set_ylabel("Monitorability Gain %", fontsize=36, fontweight="bold")
+    ax.set_title("Monitorability Gain: +Steering on Unfaithful Answers", fontsize=32, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)  # Allow for stacked bars to exceed 100%
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    
+    # Custom legend for stacked bars
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=palettes["good"][2], label="Qwen3-32B"),
+        Patch(facecolor=palettes["good"][0], label="Llama-8B"),
+        Patch(facecolor=palettes["good"][1], label="Qwen3-14B"),
+        Patch(facecolor="gray", alpha=0.9, label="Faithful %"),
+        Patch(facecolor="gray", alpha=0.6, hatch="//", edgecolor="white", label="Hint-Mentioning %"),
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=22)
+    
+    # =========================================================================
+    # TOP RIGHT: -Steering on WF → Unfaithfulness Rate (unchanged from V1)
+    # =========================================================================
+    ax = axes[0, 1]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "negative_WF", None)
+                value = getattr(metrics, "unfaithful_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palettes["bad"][shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    ax.set_ylabel("Degradation %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering on Faithful Answers:\nUnfaithfulness Rate", fontsize=32, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=28)
+    
+    # =========================================================================
+    # BOTTOM ROW: Collateral Effects (from Variation 3)
+    # =========================================================================
+    
+    # BOTTOM LEFT: +Steering on WF → Unfaithfulness % (simple bars)
+    ax = axes[1, 0]
+    current_palette = palettes["bad"]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "positive_WF", None)
+                value = getattr(metrics, "unfaithful_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = current_palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    ax.set_ylabel("Unintended Degradation %", fontsize=36, fontweight="bold")
+    ax.set_title("+ Steering Making Faithful Answers Unfaithful", fontsize=32, fontweight="bold", pad=15)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=28)
+    
+    # BOTTOM RIGHT: -Steering on WU → Faithfulness % + Hint-Mentioning % (stacked)
+    ax = axes[1, 1]
+    current_palette = palettes["orange"]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        faithful_vals = []
+        hint_vals = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "negative_WU", None)
+                f_val = getattr(metrics, "faithful_pct", 0) if metrics else 0
+                h_val = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                faithful_vals.append(f_val)
+                hint_vals.append(h_val)
+            else:
+                faithful_vals.append(0)
+                hint_vals.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = current_palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        
+        # Convert to numpy arrays for proper stacking
+        faithful_arr = np.array(faithful_vals)
+        hint_arr = np.array(hint_vals)
+        
+        # Base bar: Faithful % (solid)
+        ax.bar(x + offset, faithful_arr, width, label=f"{model_label}", 
+               color=color, alpha=0.9)
+        
+        # Stacked bar: Hint-Mentioning % (hatched)
+        ax.bar(x + offset, hint_arr, width, bottom=faithful_arr,
+               color=color, alpha=0.6, hatch="//", edgecolor="white")
+    
+    ax.set_ylabel("Unintended Monitorability Gain %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering Making Unfaithful Answers Monitorable", fontsize=32, fontweight="bold", pad=15)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=36)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)  # Allow for stacked bars
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    
+    # Custom legend for stacked bars
+    legend_elements = [
+        Patch(facecolor=current_palette[2], label="Qwen3-32B"),
+        Patch(facecolor=current_palette[0], label="Llama-8B"),
+        Patch(facecolor=current_palette[1], label="Qwen3-14B"),
+        Patch(facecolor="gray", alpha=0.9, label="Faithful %"),
+        Patch(facecolor="gray", alpha=0.6, hatch="//", edgecolor="white", label="Hint-Mentioning %"),
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=22)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.35, wspace=0.25)
+    
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        print(f"Saved: {output_path}")
+    
+    return fig
+
+
+def plot_variation_11(
+    data: dict[str, ModelData],
+    output_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Variation 11: Same as Variation 10 but WITH Random approach (4 bars per group)
+    
+    | Row                     | Left                              | Right                             |
+    |-------------------------|-----------------------------------|-----------------------------------|
+    | Intended Effects        | Monitorability Gain (stacked)     | −steer WF→U%                      |
+    | Collateral Effects      | +steer WF→U%                      | −steer WU→F% + Hint% (stacked)    |
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(32, 24))
+    
+    models = ["Qwen3-32B", "DeepSeek-R1-Distill-Llama-8B", "Qwen3-14B"]
+    approaches = ["linear", "off_policy", "mlp", "random"]
+    approach_labels = ["Linear", "Off-Policy", "MLP", "Random"]
+    
+    x = np.arange(len(approaches))
+    width = 0.22
+    
+    # Color palettes
+    palettes = {
+        "good": ["#A5D6A7", "#4CAF50", "#1B5E20"],      # Green
+        "bad": ["#EF9A9A", "#F44336", "#B71C1C"],       # Red
+        "orange": ["#FFCC80", "#FF9800", "#E65100"],    # Orange
+    }
+    
+    # Model to shade mapping: 32B->Dark(2), 8B->Light(0), 14B->Medium(1)
+    shade_indices = [2, 0, 1]
+    
+    # =========================================================================
+    # TOP LEFT: Monitorability Gain (Stacked: Faithful + Hint-Mentioning)
+    # =========================================================================
+    ax = axes[0, 0]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        faithful_vals = []
+        hint_vals = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "positive_WU", None)
+                f_val = getattr(metrics, "faithful_pct", 0) if metrics else 0
+                h_val = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                faithful_vals.append(f_val)
+                hint_vals.append(h_val)
+            else:
+                faithful_vals.append(0)
+                hint_vals.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palettes["good"][shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        
+        # Convert to numpy arrays for proper stacking
+        faithful_arr = np.array(faithful_vals)
+        hint_arr = np.array(hint_vals)
+        
+        # Base bar: Faithful % (solid)
+        ax.bar(x + offset, faithful_arr, width, label=f"{model_label} (Faithful)", 
+               color=color, alpha=0.9)
+        
+        # Stacked bar: Hint-Mentioning % (hatched)
+        ax.bar(x + offset, hint_arr, width, bottom=faithful_arr,
+               label=f"{model_label} (Hint-Mentioning)" if i == 0 else "",
+               color=color, alpha=0.6, hatch="//", edgecolor="white")
+    
+    ax.set_ylabel("Monitorability Gain %", fontsize=36, fontweight="bold")
+    ax.set_title("Monitorability Gain: +Steering on Unfaithful Answers", fontsize=32, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=32)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=palettes["good"][2], label="Qwen3-32B"),
+        Patch(facecolor=palettes["good"][0], label="Llama-8B"),
+        Patch(facecolor=palettes["good"][1], label="Qwen3-14B"),
+        Patch(facecolor="gray", alpha=0.9, label="Faithful %"),
+        Patch(facecolor="gray", alpha=0.6, hatch="//", edgecolor="white", label="Hint-Mentioning %"),
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=20)
+    
+    # =========================================================================
+    # TOP RIGHT: -Steering on WF → Unfaithfulness Rate
+    # =========================================================================
+    ax = axes[0, 1]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "negative_WF", None)
+                value = getattr(metrics, "unfaithful_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = palettes["bad"][shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    ax.set_ylabel("Degradation %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering on Faithful Answers:\nUnfaithfulness Rate", fontsize=32, fontweight="bold")
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=32)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=24)
+    
+    # =========================================================================
+    # BOTTOM LEFT: +Steering on WF → Unfaithfulness %
+    # =========================================================================
+    ax = axes[1, 0]
+    current_palette = palettes["bad"]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        values = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "positive_WF", None)
+                value = getattr(metrics, "unfaithful_pct", 0) if metrics else 0
+                values.append(value)
+            else:
+                values.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = current_palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        ax.bar(x + offset, values, width, label=model_label, color=color, alpha=0.9)
+    
+    ax.set_ylabel("Unintended Degradation %", fontsize=36, fontweight="bold")
+    ax.set_title("+ Steering Making Faithful Answers Unfaithful", fontsize=32, fontweight="bold", pad=15)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=32)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    ax.legend(loc="upper right", fontsize=24)
+    
+    # =========================================================================
+    # BOTTOM RIGHT: -Steering on WU → Faithfulness % + Hint-Mentioning % (stacked)
+    # =========================================================================
+    ax = axes[1, 1]
+    current_palette = palettes["orange"]
+    
+    for i, model in enumerate(models):
+        model_data = data.get(model)
+        faithful_vals = []
+        hint_vals = []
+        
+        for approach in approaches:
+            approach_data = getattr(model_data, approach, None)
+            if approach_data and approach_data.best_result:
+                metrics = getattr(approach_data.best_result, "negative_WU", None)
+                f_val = getattr(metrics, "faithful_pct", 0) if metrics else 0
+                h_val = getattr(metrics, "hint_mentioning_pct", 0) if metrics else 0
+                faithful_vals.append(f_val)
+                hint_vals.append(h_val)
+            else:
+                faithful_vals.append(0)
+                hint_vals.append(0)
+        
+        offset = (i - 1) * width
+        shade_idx = shade_indices[i]
+        color = current_palette[shade_idx]
+        
+        model_label = "Llama-8B" if model == "DeepSeek-R1-Distill-Llama-8B" else model
+        
+        # Convert to numpy arrays for proper stacking
+        faithful_arr = np.array(faithful_vals)
+        hint_arr = np.array(hint_vals)
+        
+        ax.bar(x + offset, faithful_arr, width, label=f"{model_label}", 
+               color=color, alpha=0.9)
+        
+        ax.bar(x + offset, hint_arr, width, bottom=faithful_arr,
+               color=color, alpha=0.6, hatch="//", edgecolor="white")
+    
+    ax.set_ylabel("Unintended Monitorability Gain %", fontsize=36, fontweight="bold")
+    ax.set_title("- Steering Making Unfaithful Answers Monitorable", fontsize=32, fontweight="bold", pad=15)
+    ax.set_xticks(x)
+    ax.set_xticklabels(approach_labels, fontsize=32)
+    ax.tick_params(axis="y", labelsize=24)
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3, linestyle="--")
+    
+    legend_elements = [
+        Patch(facecolor=current_palette[2], label="Qwen3-32B"),
+        Patch(facecolor=current_palette[0], label="Llama-8B"),
+        Patch(facecolor=current_palette[1], label="Qwen3-14B"),
+        Patch(facecolor="gray", alpha=0.9, label="Faithful %"),
+        Patch(facecolor="gray", alpha=0.6, hatch="//", edgecolor="white", label="Hint-Mentioning %"),
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=20)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.35, wspace=0.25)
     
     if output_path:
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
@@ -1037,7 +1866,7 @@ def main():
             f.write(f"MODEL: {model_name}\n")
             f.write("=" * 60 + "\n\n")
             
-            for approach in ["off_policy", "linear", "mlp"]:
+            for approach in ["off_policy", "linear", "mlp", "random"]:
                 f.write(f"  APPROACH: {approach.upper()}\n")
                 f.write("  " + "-" * 40 + "\n")
                 
@@ -1092,6 +1921,12 @@ def main():
     plot_variation_3(all_data, output_dir / "variation_3.png")
     plot_variation_4(args.base_dir, output_dir / "variation_4.png")
     plot_variation_5(args.base_dir, output_dir / "variation_5_faithfulness.png")
+    plot_variation_6(all_data, output_dir / "variation_6_hint_mentioning.png")
+    plot_variation_7(all_data, output_dir / "variation_7_with_random.png")
+    plot_variation_8(all_data, output_dir / "variation_8_collateral_with_random.png")
+    plot_variation_9(all_data, output_dir / "variation_9_hint_collateral_with_random.png")
+    plot_variation_10(all_data, output_dir / "variation_10_monitorability.png")
+    plot_variation_11(all_data, output_dir / "variation_11_monitorability_with_random.png")
     
     print("\nDone!")
 

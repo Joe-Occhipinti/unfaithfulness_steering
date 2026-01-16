@@ -84,8 +84,28 @@ def parse_hint_mentioned(content: str) -> Union[bool, str]:
 
 
 def extract_steered_response(record: Dict[str, Any]) -> str:
-    """Extract steered response from record for hint mention classification."""
-    return record.get('steered_response', record.get('steered_prompt', ''))
+    """
+    Extract steered response from record for hint mention classification.
+    
+    If steered_response is missing, tries to extract it from steered_prompt
+    by splitting on 'Assistant:' to avoid passing the full prompt (with hint) to the judge.
+    """
+    response = record.get('steered_response')
+    if response:
+        return response
+        
+    # Fallback: extract from prompt but be careful not to include the hint
+    prompt = record.get('steered_prompt', '')
+    if 'Assistant:' in prompt:
+        # Split on the *first* "Assistant:" to separate prompt preamble from the rest.
+        # This handles cases where the response itself contains "Assistant:"
+        parts = prompt.split('Assistant:', 1)
+        if len(parts) > 1:
+            return parts[1].strip()
+        
+    # If we can't find the split, return empty string to be safe
+    # Returning the full prompt would improperly leak the hint to the judge
+    return ''
 
 
 async def classify_hint_mentions(
