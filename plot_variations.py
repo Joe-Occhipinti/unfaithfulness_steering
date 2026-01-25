@@ -458,59 +458,95 @@ def plot_variation_1_hintwise(
         "professor": "#FF9800",        # Orange
     }
     
-    # Panel specifications (row index, direction, metric, ylabel)
-    panels = [
-        (0, "positive_WU", "faithful_pct", "+ Steering: Faithfulness Rate", "Faithful %"),
-        (1, "negative_WF", "unfaithful_pct", "- Steering: Unfaithfulness Rate", "Unfaithful %"),
-    ]
-    
     # Bar positioning
     n_hints = len(hints)
     bar_width = 0.25
     x_base = np.arange(len(approaches))
     
-    for row_idx, direction, metric, row_title, ylabel in panels:
-        for col_idx, model in enumerate(models):
-            ax = axes[row_idx, col_idx]
+    # =========================================================================
+    # TOP ROW: Monitorability Gain (Stacked: Faithful + Hint-Mentioning)
+    # =========================================================================
+    for col_idx, model in enumerate(models):
+        ax = axes[0, col_idx]
+        
+        for h_idx, hint in enumerate(hints):
+            faithful_vals = []
+            hint_vals = []
+            for approach in approaches:
+                data = hintwise_data.get(model, {}).get(approach, {}).get(hint)
+                if data:
+                    metrics_obj = getattr(data, "positive_WU", None)
+                    f_val = getattr(metrics_obj, "faithful_pct", 0) if metrics_obj else 0
+                    h_val = getattr(metrics_obj, "hint_mentioning_pct", 0) if metrics_obj else 0
+                else:
+                    f_val = 0
+                    h_val = 0
+                faithful_vals.append(f_val)
+                hint_vals.append(h_val)
             
-            # Plot 3 hints per approach
-            for h_idx, hint in enumerate(hints):
-                values = []
-                for approach in approaches:
-                    data = hintwise_data.get(model, {}).get(approach, {}).get(hint)
-                    if data:
-                        metrics_obj = getattr(data, direction, None)
-                        value = getattr(metrics_obj, metric, 0) if metrics_obj else 0
-                    else:
-                        value = 0
-                    values.append(value)
-                
-                offset = (h_idx - 1) * bar_width
-                ax.bar(x_base + offset, values, bar_width * 0.9, 
-                       label=hint_labels[h_idx] if (row_idx == 0 and col_idx == 0) else "",
-                       color=hint_colors[hint], alpha=0.85)
+            offset = (h_idx - 1) * bar_width
+            faithful_arr = np.array(faithful_vals)
+            hint_arr = np.array(hint_vals)
             
-            # Styling
-            ax.set_xticks(x_base)
-            ax.set_xticklabels(approach_labels, fontsize=36)
-            ax.tick_params(axis="y", labelsize=30)
-            ax.set_ylim(0, 100)
-            ax.grid(axis="y", alpha=0.3, linestyle="--")
+            # Base bar: Faithful % (solid)
+            ax.bar(x_base + offset, faithful_arr, bar_width * 0.9, 
+                   color=hint_colors[hint], alpha=0.85)
             
-            # Y-axis label only on first column
-            if col_idx == 0:
-                ax.set_ylabel(ylabel, fontsize=40, fontweight="bold")
+            # Stacked bar: Hint-Mentioning % (hatched)
+            ax.bar(x_base + offset, hint_arr, bar_width * 0.9, bottom=faithful_arr,
+                   color=hint_colors[hint], alpha=0.5, hatch="//", edgecolor="white")
+        
+        # Styling
+        ax.set_xticks(x_base)
+        ax.set_xticklabels(approach_labels, fontsize=36)
+        ax.tick_params(axis="y", labelsize=30)
+        ax.set_ylim(0, 100)
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        
+        if col_idx == 0:
+            ax.set_ylabel("Monitorability Gain %", fontsize=40, fontweight="bold")
+        
+        # Legend only on top-right panel
+        if col_idx == 2:
+            from matplotlib.patches import Patch
+            legend_elements = [Patch(facecolor=hint_colors[h], label=l) 
+                              for h, l in zip(hints, hint_labels)]
+            legend_elements.append(Patch(facecolor="gray", alpha=0.85, label="Faithful %"))
+            legend_elements.append(Patch(facecolor="gray", alpha=0.5, hatch="//", edgecolor="white", label="Hint-Mentioning %"))
+            ax.legend(handles=legend_elements, loc="upper right", fontsize=24, 
+                     title="Legend", title_fontsize=22)
+    
+    # =========================================================================
+    # BOTTOM ROW: Unfaithfulness Rate (simple bars, no stacking)
+    # =========================================================================
+    for col_idx, model in enumerate(models):
+        ax = axes[1, col_idx]
+        
+        for h_idx, hint in enumerate(hints):
+            values = []
+            for approach in approaches:
+                data = hintwise_data.get(model, {}).get(approach, {}).get(hint)
+                if data:
+                    metrics_obj = getattr(data, "negative_WF", None)
+                    value = getattr(metrics_obj, "unfaithful_pct", 0) if metrics_obj else 0
+                else:
+                    value = 0
+                values.append(value)
             
-            # Model name as column title (only on first row) - using absolute positioning via fig.text
-            # We skip ax.set_title to avoid padding guess-work and potential overlaps
-            
-            # Legend only on top-right panel (rightest plot)
-            if row_idx == 0 and col_idx == 2:
-                from matplotlib.patches import Patch
-                legend_elements = [Patch(facecolor=hint_colors[h], label=l) 
-                                  for h, l in zip(hints, hint_labels)]
-                ax.legend(handles=legend_elements, loc="upper right", fontsize=30, 
-                         title="Hint Type", title_fontsize=28)
+            offset = (h_idx - 1) * bar_width
+            ax.bar(x_base + offset, values, bar_width * 0.9, 
+                   label=hint_labels[h_idx] if col_idx == 0 else "",
+                   color=hint_colors[hint], alpha=0.85)
+        
+        # Styling
+        ax.set_xticks(x_base)
+        ax.set_xticklabels(approach_labels, fontsize=36)
+        ax.tick_params(axis="y", labelsize=30)
+        ax.set_ylim(0, 100)
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        
+        if col_idx == 0:
+            ax.set_ylabel("Unfaithful %", fontsize=40, fontweight="bold")
     
     # Model Names (Column Headers) - High up, near main title
     # Columns are at ~0.15, ~0.48, ~0.81 roughly in 3-col layout with wspace=0.15
@@ -829,11 +865,8 @@ def plot_variation_4(
         ax.grid(axis="both", alpha=0.3, linestyle="--")
         ax.legend(loc="lower right", fontsize=40)
     
-    fig.suptitle("Faithfulness Probes Performance Across Layers", 
-                 fontsize=48, fontweight="bold", y=1.02)
-    
     plt.tight_layout()
-    plt.subplots_adjust(wspace=0.25, top=0.88)
+    plt.subplots_adjust(wspace=0.25, top=0.92)
     
     if output_path:
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
