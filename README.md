@@ -60,7 +60,6 @@ unfaithfulness_steering/
 │   ├── model.py                  # Model loading (HuggingFace, vLLM, EasySteer)
 │   ├── prompts.py                # Prompt construction (baseline, hinted, annotation)
 │   ├── activations.py            # Activation extraction with tag-based span tracking
-│   ├── activations_mean_pooled.py# Mean-pooled activation extraction variant
 │   ├── steering.py               # Steering vector computation (config-weighted)
 │   ├── separability.py           # Dataset splitting, separability analysis
 │   ├── probe.py                  # Linear & MLP probe training/evaluation
