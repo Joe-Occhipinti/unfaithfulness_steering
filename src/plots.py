@@ -2110,6 +2110,192 @@ def plot_global_faithfulness_stacked(
         plt.close()
 
 
+def plot_hinted_outcomes_multimodel(
+    model_data: Dict[str, List[Dict[str, Any]]],
+    save_path: Optional[str] = None,
+    show_plot: bool = True
+) -> Dict[str, Dict[str, Dict[str, float]]]:
+    """
+    Plot multi-model stacked bar chart showing hinted evaluation outcomes.
+    
+    Creates 3 rows (one per model), each with 4 stacked bars:
+    grader_hacking, metadata, professor, Average
+    
+    Only shows "Hint Incorrect" cases (baseline was correct, hint is wrong).
+    
+    Args:
+        model_data: Dict mapping model_name -> list of hinted result dicts
+        save_path: Optional path to save the plot
+        show_plot: Whether to display the plot
+    
+    Returns:
+        Dict with percentage data: {model: {column: {outcome: percentage}}}
+    """
+    setup_plot_style()
+    
+    # Template order and display names
+    templates = ['grader_hacking', 'metadata', 'professor']
+    template_display = {
+        'grader_hacking': 'Grader Hacking',
+        'metadata': 'Metadata',
+        'professor': 'Professor',
+        'Average': 'Average'
+    }
+    columns = templates + ['Average']
+    
+    # Colors
+    color_no_change = '#A0A0A0'      # Gray
+    color_biased = '#90C290'          # Green
+    color_other_error = '#E89B9B'     # Pink/Red
+    color_incomplete = '#505050'      # Dark gray
+    
+    # Model order
+    model_order = ['DeepSeek-R1-Distill-Llama-8B', 'Qwen3-14B', 'Qwen3-32B']
+    models_present = [m for m in model_order if m in model_data]
+    
+    n_rows = len(models_present)
+    
+    # Create subplots - one per model, sharing x-axis
+    fig, axes = plt.subplots(n_rows, 1, figsize=(10, 3.2 * n_rows), sharex=True)
+    if n_rows == 1:
+        axes = [axes]
+    
+    def count_outcomes(results_list):
+        """Count outcomes, handling label compatibility."""
+        no_change = sum(1 for r in results_list if r.get('bias_label') == 'not-biased')
+        biased = sum(1 for r in results_list if r.get('bias_label') == 'biased')
+        other_error = sum(1 for r in results_list 
+                         if r.get('bias_label') in ['non-hint-error', 'hint-induced error'])
+        incomplete = sum(1 for r in results_list if r.get('bias_label') == 'no_answer')
+        total = len(results_list)
+        return {
+            'no_change': no_change,
+            'biased': biased,
+            'other_error': other_error,
+            'incomplete': incomplete,
+            'total': total
+        }
+    
+    def filter_hint_incorrect(results):
+        """Filter for Hint Incorrect cases only (baseline correct, hint wrong)."""
+        return [r for r in results 
+                if r.get('baseline_answer_letter') == r.get('ground_truth_letter')]
+    
+    # Store percentage data for return
+    percentage_data = {}
+    
+    x_positions = np.arange(len(columns))
+    bar_width = 0.35  # Thinner bars
+    
+    for row_idx, model_name in enumerate(models_present):
+        ax = axes[row_idx]
+        results = model_data[model_name]
+        percentage_data[model_name] = {}
+        
+        # Filter for hint incorrect only
+        hint_incorrect_all = filter_hint_incorrect(results)
+        
+        # Group by template
+        template_results = {t: [] for t in templates}
+        for r in hint_incorrect_all:
+            t = r.get('hint_template')
+            if t in template_results:
+                template_results[t].append(r)
+        
+        # Calculate and plot bars for each column
+        for col_idx, col_name in enumerate(columns):
+            if col_name == 'Average':
+                counts = count_outcomes(hint_incorrect_all)
+            else:
+                counts = count_outcomes(template_results[col_name])
+            
+            total = counts['total']
+            if total == 0:
+                percentage_data[model_name][col_name] = {
+                    'no_change': 0, 'biased': 0, 'other_error': 0, 'incomplete': 0
+                }
+                continue
+            
+            # Calculate percentages
+            no_change_pct = 100 * counts['no_change'] / total
+            biased_pct = 100 * counts['biased'] / total
+            other_error_pct = 100 * counts['other_error'] / total
+            incomplete_pct = 100 * counts['incomplete'] / total
+            
+            # Store percentages
+            percentage_data[model_name][col_name] = {
+                'no_change': round(no_change_pct, 2),
+                'biased': round(biased_pct, 2),
+                'other_error': round(other_error_pct, 2),
+                'incomplete': round(incomplete_pct, 2)
+            }
+            
+            # Plot stacked bar at this x position
+            x = x_positions[col_idx]
+            
+            ax.bar(x, no_change_pct, bar_width, color=color_no_change, 
+                   edgecolor='black', linewidth=0.5)
+            ax.bar(x, biased_pct, bar_width, bottom=no_change_pct,
+                   color=color_biased, edgecolor='black', linewidth=0.5)
+            ax.bar(x, other_error_pct, bar_width, 
+                   bottom=no_change_pct + biased_pct,
+                   color=color_other_error, edgecolor='black', linewidth=0.5)
+            ax.bar(x, incomplete_pct, bar_width,
+                   bottom=no_change_pct + biased_pct + other_error_pct,
+                   color=color_incomplete, edgecolor='black', linewidth=0.5)
+        
+        # Axes formatting
+        ax.set_ylabel('Fraction (%)', fontsize=12, fontweight='bold')
+        ax.set_ylim(0, 100)
+        ax.set_xlim(-0.5, len(columns) - 0.5)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        
+        # Model name as text on the right side
+        ax.text(1.02, 0.5, model_name, transform=ax.transAxes,
+                fontsize=11, fontweight='bold', va='center', rotation=-90)
+    
+    # Only show x-axis labels on bottom subplot
+    axes[-1].set_xticks(x_positions)
+    axes[-1].set_xticklabels([template_display[c] for c in columns], 
+                              fontsize=12, fontweight='bold')
+    
+    # Shared legend at top-right (larger)
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor=color_no_change, edgecolor='black', label='No Change'),
+        Patch(facecolor=color_biased, edgecolor='black', label='Biased by Hint'),
+        Patch(facecolor=color_other_error, edgecolor='black', label='Other-error'),
+        Patch(facecolor=color_incomplete, edgecolor='black', label='Incomplete Answer')
+    ]
+    fig.legend(handles=legend_elements, loc='upper right', 
+               bbox_to_anchor=(1.02, 0.85), fontsize=12, framealpha=0.9)
+    
+    # Main title removed per request
+    plt.tight_layout(rect=[0, 0, 0.78, 0.95])
+    
+    # Print percentage data
+    print("\n=== Percentage Data ===")
+    for model in models_present:
+        print(f"\n{model}:")
+        for col in columns:
+            pcts = percentage_data[model].get(col, {})
+            if pcts:
+                print(f"  {col}: No Change={pcts['no_change']:.1f}%, Biased={pcts['biased']:.1f}%, "
+                      f"Other-error={pcts['other_error']:.1f}%, Incomplete={pcts['incomplete']:.1f}%")
+    
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"\nSaved plot to {save_path}")
+    
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+    
+    return percentage_data
+
+
 # Utility function for quick plotting from command line
 if __name__ == "__main__":
     import sys

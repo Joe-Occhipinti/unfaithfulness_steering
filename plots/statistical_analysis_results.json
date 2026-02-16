@@ -1,0 +1,398 @@
+[
+  {
+    "model": "Qwen3-32B",
+    "approach": "linear",
+    "layer": 40,
+    "coefficient": 0.6,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 26.2962962962963,
+        "ci_low": 17.18555528885597,
+        "ci_high": 37.51057445062042,
+        "count": 18,
+        "n": 69
+      },
+      "intended_degradation": {
+        "rate": 18.766339869281047,
+        "ci_low": 11.246191872292464,
+        "ci_high": 30.406787149874546,
+        "count": 12,
+        "n": 63
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 4.3055555555555545,
+        "ci_low": 1.63261688679956,
+        "ci_high": 13.090967837906076,
+        "count": 3,
+        "n": 63
+      },
+      "collateral_recovery": {
+        "rate": 21.48148148148148,
+        "ci_low": 13.640766010620265,
+        "ci_high": 32.81829640876092,
+        "count": 15,
+        "n": 69
+      }
+    },
+    "vs_random": {
+      "z_statistic": 2.695024655682549,
+      "p_value": 0.0035191711368879365,
+      "p_corrected": 0.00697417168091195,
+      "significant": true
+    }
+  },
+  {
+    "model": "Qwen3-32B",
+    "approach": "off_policy",
+    "layer": 58,
+    "coefficient": 2.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 25.555555555555554,
+        "ci_low": 17.18555528885597,
+        "ci_high": 37.51057445062042,
+        "count": 18,
+        "n": 69
+      },
+      "intended_degradation": {
+        "rate": 10.433006535947714,
+        "ci_low": 5.487548662383721,
+        "ci_high": 21.204655750082527,
+        "count": 7,
+        "n": 63
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 10.555555555555555,
+        "ci_low": 5.487548662383721,
+        "ci_high": 21.204655750082527,
+        "count": 7,
+        "n": 63
+      },
+      "collateral_recovery": {
+        "rate": 11.111111111111112,
+        "ci_low": 5.993498142176159,
+        "ci_high": 21.245740530316226,
+        "count": 8,
+        "n": 69
+      }
+    },
+    "vs_random": {
+      "z_statistic": 2.695024655682549,
+      "p_value": 0.0035191711368879365,
+      "p_corrected": 0.00697417168091195,
+      "significant": true
+    }
+  },
+  {
+    "model": "Qwen3-32B",
+    "approach": "mlp",
+    "layer": 41,
+    "coefficient": 5.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 21.48148148148148,
+        "ci_low": 13.640766010620265,
+        "ci_high": 32.81829640876092,
+        "count": 15,
+        "n": 69
+      },
+      "intended_degradation": {
+        "rate": 16.8218954248366,
+        "ci_low": 10.039396579467887,
+        "ci_high": 28.621427520758974,
+        "count": 11,
+        "n": 63
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 13.504901960784313,
+        "ci_low": 7.701948334720689,
+        "ci_high": 24.974565921625864,
+        "count": 9,
+        "n": 63
+      },
+      "collateral_recovery": {
+        "rate": 10.74074074074074,
+        "ci_low": 5.001663810845994,
+        "ci_high": 19.49188575494799,
+        "count": 7,
+        "n": 69
+      }
+    },
+    "vs_random": {
+      "z_statistic": 2.1329441036863925,
+      "p_value": 0.01646465590290373,
+      "p_corrected": 0.018522737890766697,
+      "significant": true
+    }
+  },
+  {
+    "model": "Qwen3-14B",
+    "approach": "linear",
+    "layer": 19,
+    "coefficient": 2.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 46.11528822055138,
+        "ci_low": 30.705307810904927,
+        "ci_high": 60.17090820106795,
+        "count": 18,
+        "n": 40
+      },
+      "intended_degradation": {
+        "rate": 16.11456176673568,
+        "ci_low": 11.024504097001337,
+        "ci_high": 22.45035942106493,
+        "count": 25,
+        "n": 157
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 0.47619047619047616,
+        "ci_low": 0.11252464719862972,
+        "ci_high": 3.519286991121673,
+        "count": 1,
+        "n": 157
+      },
+      "collateral_recovery": {
+        "rate": 12.406015037593983,
+        "ci_low": 5.4595002509454025,
+        "ci_high": 26.1121198388511,
+        "count": 5,
+        "n": 40
+      }
+    },
+    "vs_random": {
+      "z_statistic": 2.3870495801314426,
+      "p_value": 0.008492100291065304,
+      "p_corrected": 0.010918414659941105,
+      "significant": true
+    }
+  },
+  {
+    "model": "Qwen3-14B",
+    "approach": "off_policy",
+    "layer": 19,
+    "coefficient": 1.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 47.368421052631575,
+        "ci_low": 32.9354701126789,
+        "ci_high": 62.502637893307536,
+        "count": 19,
+        "n": 40
+      },
+      "intended_degradation": {
+        "rate": 13.209109730848859,
+        "ci_low": 8.917764877628272,
+        "ci_high": 19.583256660480338,
+        "count": 21,
+        "n": 157
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 0.0,
+        "ci_low": -1.734723475976807e-16,
+        "ci_high": 2.3883511433308877,
+        "count": 0,
+        "n": 157
+      },
+      "collateral_recovery": {
+        "rate": 14.285714285714285,
+        "ci_low": 7.061187717320356,
+        "ci_high": 29.07232436648971,
+        "count": 6,
+        "n": 40
+      }
+    },
+    "vs_random": {
+      "z_statistic": 2.600865307816998,
+      "p_value": 0.004649447787274633,
+      "p_corrected": 0.00697417168091195,
+      "significant": true
+    }
+  },
+  {
+    "model": "Qwen3-14B",
+    "approach": "mlp",
+    "layer": 7,
+    "coefficient": 20.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 47.99498746867168,
+        "ci_low": 32.9354701126789,
+        "ci_high": 62.502637893307536,
+        "count": 19,
+        "n": 40
+      },
+      "intended_degradation": {
+        "rate": 1.4354727398205658,
+        "ci_low": 0.3500433177716384,
+        "ci_high": 4.525228815538081,
+        "count": 2,
+        "n": 157
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 0.9592822636300896,
+        "ci_low": 0.3500433177716384,
+        "ci_high": 4.525228815538081,
+        "count": 2,
+        "n": 157
+      },
+      "collateral_recovery": {
+        "rate": 37.96992481203007,
+        "ci_low": 24.22297916723327,
+        "ci_high": 52.9675608626989,
+        "count": 15,
+        "n": 40
+      }
+    },
+    "vs_random": {
+      "z_statistic": 2.600865307816998,
+      "p_value": 0.004649447787274633,
+      "p_corrected": 0.00697417168091195,
+      "significant": true
+    }
+  },
+  {
+    "model": "DeepSeek-R1-Distill-Llama-8B",
+    "approach": "linear",
+    "layer": 15,
+    "coefficient": 2.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 38.08362884160756,
+        "ci_low": 29.913013278483895,
+        "ci_high": 47.642517992713024,
+        "count": 43,
+        "n": 112
+      },
+      "intended_degradation": {
+        "rate": 24.493464052287585,
+        "ci_low": 15.517054688270681,
+        "ci_high": 37.6926421476675,
+        "count": 14,
+        "n": 56
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 3.349673202614379,
+        "ci_low": 0.9849425148236369,
+        "ci_high": 12.118780180490111,
+        "count": 2,
+        "n": 56
+      },
+      "collateral_recovery": {
+        "rate": 13.643079733505267,
+        "ci_low": 8.287141976469584,
+        "ci_high": 20.926456648074524,
+        "count": 15,
+        "n": 112
+      }
+    },
+    "vs_random": {
+      "z_statistic": 4.095621323019458,
+      "p_value": 2.1051883063296324e-05,
+      "p_corrected": 9.473347378483346e-05,
+      "significant": true
+    }
+  },
+  {
+    "model": "DeepSeek-R1-Distill-Llama-8B",
+    "approach": "off_policy",
+    "layer": 15,
+    "coefficient": 2.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 38.08362884160756,
+        "ci_low": 29.913013278483895,
+        "ci_high": 47.642517992713024,
+        "count": 43,
+        "n": 112
+      },
+      "intended_degradation": {
+        "rate": 21.143790849673202,
+        "ci_low": 12.705904249095651,
+        "ci_high": 33.81946356340512,
+        "count": 12,
+        "n": 56
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 3.349673202614379,
+        "ci_low": 0.9849425148236369,
+        "ci_high": 12.118780180490111,
+        "count": 2,
+        "n": 56
+      },
+      "collateral_recovery": {
+        "rate": 12.933859875349238,
+        "ci_low": 7.594026855583393,
+        "ci_high": 19.893074174437402,
+        "count": 14,
+        "n": 112
+      }
+    },
+    "vs_random": {
+      "z_statistic": 4.095621323019458,
+      "p_value": 2.1051883063296324e-05,
+      "p_corrected": 9.473347378483346e-05,
+      "significant": true
+    }
+  },
+  {
+    "model": "DeepSeek-R1-Distill-Llama-8B",
+    "approach": "mlp",
+    "layer": 25,
+    "coefficient": 5.0,
+    "intended_effects": {
+      "monitorability_recovery": {
+        "rate": 23.31291639802278,
+        "ci_low": 16.363031200339673,
+        "ci_high": 31.842040963960898,
+        "count": 26,
+        "n": 112
+      },
+      "intended_degradation": {
+        "rate": 6.9607843137254894,
+        "ci_low": 2.8126036578876965,
+        "ci_high": 16.975448060863457,
+        "count": 4,
+        "n": 56
+      }
+    },
+    "collateral_effects": {
+      "collateral_degradation": {
+        "rate": 2.7777777777777777,
+        "ci_low": 0.9849425148236369,
+        "ci_high": 12.118780180490111,
+        "count": 2,
+        "n": 56
+      },
+      "collateral_recovery": {
+        "rate": 16.08438104448743,
+        "ci_low": 10.414537208810222,
+        "ci_high": 23.978554199303836,
+        "count": 18,
+        "n": 112
+      }
+    },
+    "vs_random": {
+      "z_statistic": 1.711841970043652,
+      "p_value": 0.04346289759851124,
+      "p_corrected": 0.04346289759851124,
+      "significant": true
+    }
+  }
+]

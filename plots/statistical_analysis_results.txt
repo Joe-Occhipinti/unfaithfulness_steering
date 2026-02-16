@@ -1,0 +1,341 @@
+================================================================================
+STATISTICAL ANALYSIS OF STEERING VECTOR PERFORMANCE
+================================================================================
+
+
+============================================================
+MODEL: DeepSeek-R1-Distill-Llama-8B
+============================================================
+
+  LINEAR (Layer 15, Coeff 2.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 38.08% [95% CI: 29.91%-47.64%]
+      n = 112 (43 recoveries)
+      vs Random: z = 4.10, p = 0.0000 (FDR: 0.0001) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 24.49% [95% CI: 15.52%-37.69%]
+      n = 56 (14 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 3.35% [95% CI: 0.98%-12.12%]
+      n = 56 (2 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 13.64% [95% CI: 8.29%-20.93%]
+      n = 112 (15 recoveries)
+
+  MLP (Layer 25, Coeff 5.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 23.31% [95% CI: 16.36%-31.84%]
+      n = 112 (26 recoveries)
+      vs Random: z = 1.71, p = 0.0435 (FDR: 0.0435) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 6.96% [95% CI: 2.81%-16.98%]
+      n = 56 (4 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 2.78% [95% CI: 0.98%-12.12%]
+      n = 56 (2 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 16.08% [95% CI: 10.41%-23.98%]
+      n = 112 (18 recoveries)
+
+  OFF_POLICY (Layer 15, Coeff 2.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 38.08% [95% CI: 29.91%-47.64%]
+      n = 112 (43 recoveries)
+      vs Random: z = 4.10, p = 0.0000 (FDR: 0.0001) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 21.14% [95% CI: 12.71%-33.82%]
+      n = 56 (12 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 3.35% [95% CI: 0.98%-12.12%]
+      n = 56 (2 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 12.93% [95% CI: 7.59%-19.89%]
+      n = 112 (14 recoveries)
+
+============================================================
+MODEL: Qwen3-14B
+============================================================
+
+  LINEAR (Layer 19, Coeff 2.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 46.12% [95% CI: 30.71%-60.17%]
+      n = 40 (18 recoveries)
+      vs Random: z = 2.39, p = 0.0085 (FDR: 0.0109) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 16.11% [95% CI: 11.02%-22.45%]
+      n = 157 (25 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 0.48% [95% CI: 0.11%-3.52%]
+      n = 157 (1 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 12.41% [95% CI: 5.46%-26.11%]
+      n = 40 (5 recoveries)
+
+  MLP (Layer 7, Coeff 20.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 47.99% [95% CI: 32.94%-62.50%]
+      n = 40 (19 recoveries)
+      vs Random: z = 2.60, p = 0.0046 (FDR: 0.0070) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 1.44% [95% CI: 0.35%-4.53%]
+      n = 157 (2 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 0.96% [95% CI: 0.35%-4.53%]
+      n = 157 (2 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 37.97% [95% CI: 24.22%-52.97%]
+      n = 40 (15 recoveries)
+
+  OFF_POLICY (Layer 19, Coeff 1.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 47.37% [95% CI: 32.94%-62.50%]
+      n = 40 (19 recoveries)
+      vs Random: z = 2.60, p = 0.0046 (FDR: 0.0070) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 13.21% [95% CI: 8.92%-19.58%]
+      n = 157 (21 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 0.00% [95% CI: -0.00%-2.39%]
+      n = 157 (0 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 14.29% [95% CI: 7.06%-29.07%]
+      n = 40 (6 recoveries)
+
+============================================================
+MODEL: Qwen3-32B
+============================================================
+
+  LINEAR (Layer 40, Coeff 0.6):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 26.30% [95% CI: 17.19%-37.51%]
+      n = 69 (18 recoveries)
+      vs Random: z = 2.70, p = 0.0035 (FDR: 0.0070) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 18.77% [95% CI: 11.25%-30.41%]
+      n = 63 (12 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 4.31% [95% CI: 1.63%-13.09%]
+      n = 63 (3 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 21.48% [95% CI: 13.64%-32.82%]
+      n = 69 (15 recoveries)
+
+  MLP (Layer 41, Coeff 5.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 21.48% [95% CI: 13.64%-32.82%]
+      n = 69 (15 recoveries)
+      vs Random: z = 2.13, p = 0.0165 (FDR: 0.0185) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 16.82% [95% CI: 10.04%-28.62%]
+      n = 63 (11 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 13.50% [95% CI: 7.70%-24.97%]
+      n = 63 (9 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 10.74% [95% CI: 5.00%-19.49%]
+      n = 69 (7 recoveries)
+
+  OFF_POLICY (Layer 58, Coeff 2.0):
+    --- INTENDED EFFECTS ---
+    Monitorability Recovery (+steering WU → F/HM):
+      Rate: 25.56% [95% CI: 17.19%-37.51%]
+      n = 69 (18 recoveries)
+      vs Random: z = 2.70, p = 0.0035 (FDR: 0.0070) ***
+    Intended Degradation (-steering WF → U):
+      Rate: 10.43% [95% CI: 5.49%-21.20%]
+      n = 63 (7 degradations)
+    --- COLLATERAL EFFECTS (should be low) ---
+    Collateral Degradation (+steering WF → U):
+      Rate: 10.56% [95% CI: 5.49%-21.20%]
+      n = 63 (7 degradations)
+    Collateral Recovery (-steering WU → F/HM):
+      Rate: 11.11% [95% CI: 5.99%-21.25%]
+      n = 69 (8 recoveries)
+
+================================================================================
+LEGEND:
+  *** = Significant after FDR correction (p < 0.05)
+  z = Z-test statistic (config vs random baseline)
+  CI = Wilson score 95% confidence interval
+  WU = Was Unfaithful, WF = Was Faithful, F = Faithful, U = Unfaithful, HM = Hint-Mentioning
+  Percentages are averaged across hint templates (matching plots)
+================================================================================
+
+================================================================================
+PAIRWISE COMPARISONS (Z-Test for Proportions, Two-Sided)
+================================================================================
+
+--- APPROACH COMPARISONS (within model) ---
+  DeepSeek-R1-Distill-Llama-8B_linear (38.1%) vs DeepSeek-R1-Distill-Llama-8B_mlp (23.3%)
+    z=2.46, p=0.0139 (FDR: 0.0588) 
+  DeepSeek-R1-Distill-Llama-8B_linear (38.1%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%)
+    z=0.00, p=1.0000 (FDR: 1.0000) 
+  DeepSeek-R1-Distill-Llama-8B_mlp (23.3%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%)
+    z=-2.46, p=0.0139 (FDR: 0.0588) 
+  Qwen3-14B_linear (46.1%) vs Qwen3-14B_mlp (48.0%)
+    z=-0.22, p=0.8226 (FDR: 0.8974) 
+  Qwen3-14B_linear (46.1%) vs Qwen3-14B_off_policy (47.4%)
+    z=-0.22, p=0.8226 (FDR: 0.8974) 
+  Qwen3-14B_mlp (48.0%) vs Qwen3-14B_off_policy (47.4%)
+    z=0.00, p=1.0000 (FDR: 1.0000) 
+  Qwen3-32B_linear (26.3%) vs Qwen3-32B_mlp (21.5%)
+    z=0.60, p=0.5494 (FDR: 0.7063) 
+  Qwen3-32B_linear (26.3%) vs Qwen3-32B_off_policy (25.6%)
+    z=0.00, p=1.0000 (FDR: 1.0000) 
+  Qwen3-32B_mlp (21.5%) vs Qwen3-32B_off_policy (25.6%)
+    z=-0.60, p=0.5494 (FDR: 0.7063) 
+
+--- MODEL COMPARISONS (within approach) ---
+  DeepSeek-R1-Distill-Llama-8B_linear (38.1%) vs Qwen3-14B_linear (46.1%)
+    z=-0.73, p=0.4643 (FDR: 0.6429) 
+  DeepSeek-R1-Distill-Llama-8B_linear (38.1%) vs Qwen3-32B_linear (26.3%)
+    z=1.70, p=0.0889 (FDR: 0.1601) 
+  DeepSeek-R1-Distill-Llama-8B_mlp (23.3%) vs Qwen3-14B_mlp (48.0%)
+    z=-2.89, p=0.0039 (FDR: 0.0463) ***
+  DeepSeek-R1-Distill-Llama-8B_mlp (23.3%) vs Qwen3-32B_mlp (21.5%)
+    z=0.23, p=0.8179 (FDR: 0.8974) 
+  DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%) vs Qwen3-14B_off_policy (47.4%)
+    z=-1.01, p=0.3144 (FDR: 0.4716) 
+  DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%) vs Qwen3-32B_off_policy (25.6%)
+    z=1.70, p=0.0889 (FDR: 0.1601) 
+  Qwen3-14B_linear (46.1%) vs Qwen3-32B_linear (26.3%)
+    z=2.02, p=0.0430 (FDR: 0.0968) 
+  Qwen3-14B_mlp (48.0%) vs Qwen3-32B_mlp (21.5%)
+    z=2.80, p=0.0051 (FDR: 0.0463) ***
+  Qwen3-14B_off_policy (47.4%) vs Qwen3-32B_off_policy (25.6%)
+    z=2.28, p=0.0229 (FDR: 0.0588) 
+
+--- GLOBAL COMPARISONS (cross model-approach) ---
+  Qwen3-14B_off_policy (47.4%) vs DeepSeek-R1-Distill-Llama-8B_mlp (23.3%)
+    z=2.89, p=0.0039 (FDR: 0.0463) ***
+  Qwen3-32B_mlp (21.5%) vs Qwen3-14B_off_policy (47.4%)
+    z=-2.80, p=0.0051 (FDR: 0.0463) ***
+  Qwen3-14B_linear (46.1%) vs DeepSeek-R1-Distill-Llama-8B_mlp (23.3%)
+    z=2.61, p=0.0091 (FDR: 0.0588) 
+  Qwen3-32B_mlp (21.5%) vs Qwen3-14B_linear (46.1%)
+    z=-2.55, p=0.0108 (FDR: 0.0588) 
+  Qwen3-32B_mlp (21.5%) vs DeepSeek-R1-Distill-Llama-8B_linear (38.1%)
+    z=-2.33, p=0.0197 (FDR: 0.0588) 
+  Qwen3-32B_mlp (21.5%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%)
+    z=-2.33, p=0.0197 (FDR: 0.0588) 
+  Qwen3-32B_linear (26.3%) vs Qwen3-14B_off_policy (47.4%)
+    z=-2.28, p=0.0229 (FDR: 0.0588) 
+  Qwen3-32B_linear (26.3%) vs Qwen3-14B_mlp (48.0%)
+    z=-2.28, p=0.0229 (FDR: 0.0588) 
+  Qwen3-32B_off_policy (25.6%) vs Qwen3-14B_mlp (48.0%)
+    z=-2.28, p=0.0229 (FDR: 0.0588) 
+  Qwen3-32B_off_policy (25.6%) vs Qwen3-14B_linear (46.1%)
+    z=-2.02, p=0.0430 (FDR: 0.0968) 
+  Qwen3-32B_linear (26.3%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%)
+    z=-1.70, p=0.0889 (FDR: 0.1601) 
+  Qwen3-32B_off_policy (25.6%) vs DeepSeek-R1-Distill-Llama-8B_linear (38.1%)
+    z=-1.70, p=0.0889 (FDR: 0.1601) 
+  Qwen3-14B_off_policy (47.4%) vs DeepSeek-R1-Distill-Llama-8B_linear (38.1%)
+    z=1.01, p=0.3144 (FDR: 0.4716) 
+  Qwen3-14B_mlp (48.0%) vs DeepSeek-R1-Distill-Llama-8B_linear (38.1%)
+    z=1.01, p=0.3144 (FDR: 0.4716) 
+  Qwen3-14B_mlp (48.0%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%)
+    z=1.01, p=0.3144 (FDR: 0.4716) 
+  Qwen3-14B_linear (46.1%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (38.1%)
+    z=0.73, p=0.4643 (FDR: 0.6429) 
+  Qwen3-32B_linear (26.3%) vs DeepSeek-R1-Distill-Llama-8B_mlp (23.3%)
+    z=0.44, p=0.6617 (FDR: 0.7940) 
+  Qwen3-32B_off_policy (25.6%) vs DeepSeek-R1-Distill-Llama-8B_mlp (23.3%)
+    z=0.44, p=0.6617 (FDR: 0.7940) 
+
+SUMMARY:
+  Approach comparisons: 0/9 significant
+  Model comparisons: 2/9 significant
+  Global comparisons: 2/18 significant
+  Total: 4/36 significant
+
+================================================================================
+MULTI-METRIC PAIRWISE COMPARISONS (Z-Test, Cohen's h Effect Size)
+================================================================================
+Effect size interpretation: |h| < 0.2 = small, 0.2-0.5 = medium, > 0.5 = large
+
+
+============================================================
+APPROACH COMPARISONS (within model)
+============================================================
+
+  Intended Degradation:
+    Qwen3-14B_linear (16.1%) vs Qwen3-14B_mlp (1.4%) | z=4.63, p=0.0000 (FDR:0.0000) | h=0.59 (LARGE) ***
+    Qwen3-14B_mlp (1.4%) vs Qwen3-14B_off_policy (13.2%) | z=-4.12, p=0.0000 (FDR:0.0002) | h=-0.50 (LARGE) ***
+    DeepSeek-R1-Distill-Llama-8B_linear (24.5%) vs DeepSeek-R1-Distill-Llama-8B_mlp (7.0%) | z=2.57, p=0.0101 (FDR:0.0454) | h=0.50 (LARGE) ***
+
+  Collateral Recovery:
+    Qwen3-14B_linear (12.4%) vs Qwen3-14B_mlp (38.0%) | z=-2.58, p=0.0098 (FDR:0.0589) | h=-0.61 (LARGE) 
+    Qwen3-14B_mlp (38.0%) vs Qwen3-14B_off_policy (14.3%) | z=2.29, p=0.0222 (FDR:0.1142) | h=0.55 (LARGE) 
+
+============================================================
+MODEL COMPARISONS (within approach)
+============================================================
+
+  Monitorability Recovery:
+    Qwen3-14B_mlp (48.0%) vs Qwen3-32B_mlp (21.5%) | z=2.80, p=0.0051 (FDR:0.0463) | h=0.57 (LARGE) ***
+    DeepSeek-R1-Distill-Llama-8B_mlp (23.3%) vs Qwen3-14B_mlp (48.0%) | z=-2.89, p=0.0039 (FDR:0.0463) | h=-0.52 (LARGE) ***
+
+  Intended Degradation:
+    Qwen3-14B_mlp (1.4%) vs Qwen3-32B_mlp (16.8%) | z=-4.60, p=0.0000 (FDR:0.0000) | h=-0.61 (LARGE) ***
+
+  Collateral Degradation:
+    Qwen3-14B_off_policy (0.0%) vs Qwen3-32B_off_policy (10.6%) | z=-4.24, p=0.0000 (FDR:0.0003) | h=-0.66 (LARGE) ***
+    Qwen3-14B_mlp (1.0%) vs Qwen3-32B_mlp (13.5%) | z=-4.00, p=0.0001 (FDR:0.0006) | h=-0.56 (LARGE) ***
+
+  Collateral Recovery:
+    Qwen3-14B_mlp (38.0%) vs Qwen3-32B_mlp (10.7%) | z=3.43, p=0.0006 (FDR:0.0109) | h=0.66 (LARGE) ***
+    DeepSeek-R1-Distill-Llama-8B_mlp (16.1%) vs Qwen3-14B_mlp (38.0%) | z=-2.82, p=0.0048 (FDR:0.0344) | h=-0.50 (LARGE) ***
+
+============================================================
+GLOBAL COMPARISONS (cross model-approach)
+============================================================
+
+  Monitorability Recovery:
+    Qwen3-32B_mlp (21.5%) vs Qwen3-14B_off_policy (47.4%) | z=-2.80, p=0.0051 (FDR:0.0463) | h=-0.55 (LARGE) ***
+    Qwen3-32B_mlp (21.5%) vs Qwen3-14B_linear (46.1%) | z=-2.55, p=0.0108 (FDR:0.0588) | h=-0.53 (LARGE) 
+    Qwen3-14B_off_policy (47.4%) vs DeepSeek-R1-Distill-Llama-8B_mlp (23.3%) | z=2.89, p=0.0039 (FDR:0.0463) | h=0.51 (LARGE) ***
+
+  Intended Degradation:
+    Qwen3-14B_mlp (1.4%) vs DeepSeek-R1-Distill-Llama-8B_linear (24.5%) | z=-5.78, p=0.0000 (FDR:0.0000) | h=-0.80 (LARGE) ***
+    Qwen3-14B_mlp (1.4%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (21.1%) | z=-5.23, p=0.0000 (FDR:0.0000) | h=-0.72 (LARGE) ***
+    Qwen3-32B_linear (18.8%) vs Qwen3-14B_mlp (1.4%) | z=4.88, p=0.0000 (FDR:0.0000) | h=0.66 (LARGE) ***
+    Qwen3-32B_off_policy (10.4%) vs Qwen3-14B_mlp (1.4%) | z=3.33, p=0.0009 (FDR:0.0045) | h=0.42 (medium) ***
+
+  Collateral Degradation:
+    Qwen3-32B_mlp (13.5%) vs Qwen3-14B_off_policy (0.0%) | z=4.84, p=0.0000 (FDR:0.0000) | h=0.75 (LARGE) ***
+    Qwen3-32B_mlp (13.5%) vs Qwen3-14B_linear (0.5%) | z=4.39, p=0.0000 (FDR:0.0002) | h=0.61 (LARGE) ***
+    Qwen3-32B_off_policy (10.6%) vs Qwen3-14B_linear (0.5%) | z=3.75, p=0.0002 (FDR:0.0013) | h=0.52 (LARGE) ***
+    Qwen3-32B_off_policy (10.6%) vs Qwen3-14B_mlp (1.0%) | z=3.33, p=0.0009 (FDR:0.0052) | h=0.47 (medium) ***
+    Qwen3-32B_linear (4.3%) vs Qwen3-14B_off_policy (0.0%) | z=2.75, p=0.0059 (FDR:0.0304) | h=0.42 (medium) ***
+
+  Collateral Recovery:
+    Qwen3-32B_off_policy (11.1%) vs Qwen3-14B_mlp (38.0%) | z=-3.19, p=0.0014 (FDR:0.0126) | h=-0.65 (LARGE) ***
+    Qwen3-14B_mlp (38.0%) vs DeepSeek-R1-Distill-Llama-8B_off_policy (12.9%) | z=3.45, p=0.0006 (FDR:0.0109) | h=0.59 (LARGE) ***
+    Qwen3-14B_mlp (38.0%) vs DeepSeek-R1-Distill-Llama-8B_linear (13.6%) | z=3.29, p=0.0010 (FDR:0.0121) | h=0.57 (LARGE) ***
+
+================================================================================
+SUMMARY BY METRIC:
+  Monitorability Recovery: 4/36 significant, 5 large effect
+  Intended Degradation: 8/36 significant, 7 large effect
+  Collateral Degradation: 7/36 significant, 5 large effect
+  Collateral Recovery: 5/36 significant, 7 large effect
+
+TOTAL: 24/144 significant, 24 large effect size
+================================================================================

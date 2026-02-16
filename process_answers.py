@@ -65,7 +65,7 @@ Example:
         "--dataset-type",
         type=str,
         required=True,
-        choices=["baseline", "steered", "steered_sampled", "hinted", "hinted_sampled", "steered_linear", "steered_off_policy", "steered_mlp", "steered_random"],
+        choices=["baseline", "steered", "hinted", "steered_linear", "steered_off_policy", "steered_mlp", "steered_random"],
         help="Type of dataset to process"
     )
     
