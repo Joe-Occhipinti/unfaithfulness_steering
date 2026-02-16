@@ -6,6 +6,8 @@ vllm==0.6.0
 
 # Additional HuggingFace libraries
 datasets>=2.14.0
+accelerate
+hf_transfer
 huggingface-hub>=0.20.0
 
 # API clients
