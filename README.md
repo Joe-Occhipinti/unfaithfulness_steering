@@ -88,24 +88,20 @@ unfaithfulness_steering/
 │   └── Qwen3-32B/
 │
 ├── # ── Pipeline Scripts ──
-├── eval_baseline_runpod.py       # Step 1: Baseline MMLU evaluation
-├── eval_hinted_runpod.py         # Step 2: Hinted (biased) evaluation
+├── eval_baseline.py              # Step 1: Baseline MMLU evaluation
+├── eval_hinted.py                # Step 2: Hinted (biased) evaluation
 ├── process_answers.py            # Step 3: Answer validation & accuracy metrics
 ├── eval_faithfulness.py          # Step 4: Global faithfulness classification
 ├── annotate_faithfulness.py      # Step 5: Local [F_body]/[U_body] annotation
-├── extract_activations_runpod.py # Step 6: Hidden-state activation extraction
+├── extract_activations.py        # Step 6: Hidden-state activation extraction
 ├── generate_steering_vectors.py  # Step 7: Steering vector computation
-├── train_layer_probes.py         # Step 8: Linear/MLP probe training
-├── eval_steering_easysteer.py    # Step 9: Steered evaluation (EasySteer + vLLM)
-├── eval_steered_global_faithfulness.py  # Step 10: Post-steering faithfulness eval
+├── train_probes.py               # Step 8: Linear/MLP probe training
+├── eval_steering.py              # Step 9: Steered evaluation (EasySteer + vLLM)
+├── eval_faithfulness_steered.py  # Step 10: Post-steering faithfulness eval
 │
 ├── # ── Analysis & Utilities ──
 ├── generate_off_policy_data.py   # Generate synthetic faithful/unfaithful completions
-├── classify_hint_mentions.py     # Classify hint mentions in steered responses
-├── reclassify_hints.py           # Re-run hint classification on annotated files
-├── find_best_configs.py          # Find best steering configs (recovery rate)
-├── find_best_configs_ratio.py    # Find best configs (recovery/collateral ratio)
-├── select_best_config.py         # Select best bidirectional config per hint
+├── find_best_configs_ratio.py    # Find best steering configs (recovery/collateral ratio)
 ├── statistical_analysis.py       # Z-tests, BH-corrected significance analysis
 ├── plot_variations.py            # Publication-ready visualizations
 │
@@ -157,6 +153,8 @@ cp .env.example .env  # or create .env manually
 | `scikit-learn` | Logistic regression probes |
 | `scipy` | Statistical tests |
 | `tqdm` | Progress bars |
+| `accelerate` | Hugging Face Accelerate for distributed training/inference |
+| `hf_transfer` | Higher speed downloads from Hugging Face Hub |
 
 ---
 
@@ -166,12 +164,12 @@ The pipeline is a sequential workflow. Each step produces artifacts consumed by 
 
 ### Step 1 — Baseline Evaluation
 
-**Script:** `eval_baseline_runpod.py`
+**Script:** `eval_baseline.py`
 
 Evaluates the target model on MMLU questions without any bias, establishing baseline accuracy.
 
 ```bash
-python eval_baseline_runpod.py \
+python eval_baseline.py \
     --model_name Qwen3-32B \
     --backend vllm \
     --subjects college_biology high_school_chemistry \
@@ -185,19 +183,19 @@ python eval_baseline_runpod.py \
 
 ### Step 2 — Hinted Evaluation
 
-**Script:** `eval_hinted_runpod.py`
+**Script:** `eval_hinted.py`
 
 Takes baseline results and adds biased hints. For items the model answered correctly, a **wrong** hint is added (testing for unfaithfulness). For incorrect baseline answers, a **correct** hint is added.
 
 ```bash
-python eval_hinted_runpod.py \
+python eval_hinted.py \
     --model_name Qwen3-32B \
     --backend vllm \
     --bias_strategies professor grader_hacking metadata \
     --distribution_strategy round_robin
 ```
 
-**Bias strategies:** `professor`, `grader_hacking`, `metadata`, `self_consistency`, `argument`, `fewshot_marker`, `user`, `black_square`
+**Bias strategies:** `professor`, `grader_hacking`, `metadata`
 
 **Outputs:** `data/<model>/hinted_results_<model>_<date>.jsonl`
 
@@ -255,12 +253,12 @@ python annotate_faithfulness.py \
 
 ### Step 6 — Activation Extraction
 
-**Script:** `extract_activations_runpod.py`
+**Script:** `extract_activations.py`
 
 Extracts hidden-state activations from the model at the annotated `[F_body]`/`[U_body]` spans across all layers.
 
 ```bash
-python extract_activations_runpod.py \
+python extract_activations.py \
     --model_name Qwen3-32B \
     --mode on-policy \
     --layers 0 1 2 ... 31
@@ -302,12 +300,12 @@ Supports config-weighted computation to balance across hint templates and domain
 
 ### Step 8 — Probe Training
 
-**Script:** `train_layer_probes.py`
+**Script:** `train_probes.py`
 
 Trains per-layer binary classifiers (logistic regression + MLP) to distinguish faithful from unfaithful activations. These probes serve dual purposes: measuring linear separability and enabling gradient-based MLP steering.
 
 ```bash
-python train_layer_probes.py \
+python train_probes.py \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --hyper 2 8
 ```
@@ -318,13 +316,13 @@ python train_layer_probes.py \
 
 ### Step 9 — Steering Evaluation
 
-**Script:** `eval_steering_easysteer.py`
+**Script:** `eval_steering.py`
 
 Applies steering vectors during inference using EasySteer + vLLM and evaluates the effect on model outputs.
 
 ```bash
 # Linear mode (pre-computed vectors)
-python eval_steering_easysteer.py \
+python eval_steering.py \
     --mode linear \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --dataset-type annotated \
@@ -332,7 +330,7 @@ python eval_steering_easysteer.py \
     --coefficients 0.6 -0.6 1 -1
 
 # MLP mode (gradient-based per-prompt)
-python eval_steering_easysteer.py \
+python eval_steering.py \
     --mode mlp \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --dataset-type annotated \
@@ -341,7 +339,7 @@ python eval_steering_easysteer.py \
     --target-values 5 10 15
 
 # Random baseline (sanity check)
-python eval_steering_easysteer.py \
+python eval_steering.py \
     --mode random \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --dataset-type annotated \
@@ -362,12 +360,12 @@ python eval_steering_easysteer.py \
 
 ### Step 10 — Steered Faithfulness Evaluation
 
-**Script:** `eval_steered_global_faithfulness.py`
+**Script:** `eval_faithfulness_steered.py`
 
 Evaluates the faithfulness and hint-mentioning of steered model outputs, computing transition rates (e.g., unfaithful→faithful, unfaithful→correct and hint-mentioning).
 
 ```bash
-python eval_steered_global_faithfulness.py \
+python eval_faithfulness_steered.py \
     --model Qwen3-32B \
     --steering-mode linear
 ```
