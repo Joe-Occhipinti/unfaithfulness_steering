@@ -76,6 +76,13 @@ Example:
         help="Extraction mode: 'on-policy' (tag-based) or 'off-policy' (last-token)"
     )
     
+    parser.add_argument(
+        "--off-policy-file",
+        type=str,
+        default=None,
+        help="Path to off-policy responses file (required if mode is 'off-policy')"
+    )
+    
     return parser.parse_args()
 
 
@@ -172,8 +179,15 @@ def main():
         )
         
         # Find off-policy input file
-        print(f"\n=== DISCOVERING OFF-POLICY FILE ===")
-        input_file = find_off_policy_file()
+        if args.off_policy_file:
+            print(f"\n=== USING PROVIDED OFF-POLICY FILE ===")
+            input_file = os.path.abspath(args.off_policy_file)
+            if not os.path.exists(input_file):
+                print(f"ERROR: Off-policy file not found: {input_file}")
+                sys.exit(1)
+        else:
+            print(f"\n=== DISCOVERING OFF-POLICY FILE ===")
+            input_file = find_off_policy_file()
         
         # Find model's on-policy data directory for output location
         print(f"\n=== FINDING MODEL DATA DIRECTORY ===")

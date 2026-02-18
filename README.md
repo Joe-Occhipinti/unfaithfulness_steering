@@ -185,6 +185,10 @@ python main.py --stage baseline \
 # OR Run Full Pipeline (Sequentially runs all steps + validation)
 # This automates: baseline -> process -> hinted -> process -> annotate -> ...
 python main.py --full_pipeline --models Qwen3-32B
+
+> [!WARNING]
+> **Resource Intensive**: Running the full pipeline can take up to **40 hours** depending on the model size and hardware.
+> Ensure you have a **GPU** available. If not, it is recommended to run scripts stage-by-stage, offloading heavy inference (generation) to a GPU machine and running lightweight analysis (probes, stats) locally.
 ```
 
 
