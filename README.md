@@ -181,7 +181,12 @@ python main.py --stage baseline \
     --backend vllm \
     --subjects college_biology high_school_chemistry \
     --num_samples 200
+
+# OR Run Full Pipeline (Sequentially runs all steps + validation)
+# This automates: baseline -> process -> hinted -> process -> annotate -> ...
+python main.py --full_pipeline --models Qwen3-32B
 ```
+
 
 **Inputs:** MMLU dataset (auto-downloaded via HuggingFace)
 **Outputs:** `data/<model>/behavioural/baseline_results_<model>_<date>.jsonl`, summary JSON
