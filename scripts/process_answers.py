@@ -16,6 +16,10 @@ Usage:
     python process_answers.py --model Qwen3-32B --dataset-type hinted --date 2025-12-28
 """
 
+import sys
+import os
+# Add the project root to sys.path to allow importing from src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 import json
 import time

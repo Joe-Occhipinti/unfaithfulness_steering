@@ -19,6 +19,10 @@ Usage:
     python eval_steered_global_faithfulness.py --model Qwen3-8B --steering-mode off_policy
 """
 
+import sys
+import os
+# Add the project root to sys.path to allow importing from src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 import json
 import os

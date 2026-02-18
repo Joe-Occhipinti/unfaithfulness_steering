@@ -54,6 +54,8 @@ Three steering approaches are compared:
 ```
 unfaithfulness_steering/
 │
+├── main.py                       # Central CLI entry point
+│
 ├── src/                          # Core library modules
 │   ├── config.py                 # Model IDs, API rate limits, activation config
 │   ├── data.py                   # MMLU loading, JSONL I/O, data splitting
@@ -76,34 +78,39 @@ unfaithfulness_steering/
 │   ├── steered_plots.py          # Steered evaluation plots
 │   └── steering_plots.py         # Steering vector analysis plots
 │
+├── scripts/                      # Pipeline Scripts (moved from root)
+│   ├── eval_baseline.py          # Step 1: Baseline MMLU evaluation
+│   ├── eval_hinted.py            # Step 2: Hinted (biased) evaluation
+│   ├── process_answers.py        # Step 3: Answer validation & accuracy metrics
+│   ├── eval_faithfulness.py      # Step 4: Global faithfulness classification
+│   ├── annotate_faithfulness.py  # Step 5: Local [F_body]/[U_body] annotation
+│   ├── extract_activations.py    # Step 6: Hidden-state activation extraction
+│   ├── generate_steering_vectors.py # Step 7: Steering vector computation
+│   ├── train_probes.py           # Step 8: Linear/MLP probe training
+│   ├── eval_steering.py          # Step 9: Steered evaluation (EasySteer + vLLM)
+│   ├── eval_faithfulness_steered.py # Step 10: Post-steering faithfulness eval
+│   ├── generate_off_policy_data.py # Generate synthetic faithful/unfaithful completions
+│   ├── find_best_configs_ratio.py # Find best steering configs
+│   ├── statistical_analysis.py   # Z-tests, BH-corrected significance analysis
+│   └── plot_variations.py        # Publication-ready visualizations
+│
 ├── prompts/                      # LLM judge prompt templates
-│   ├── faithfulness_global_annotation_*.txt   # Global classification prompts
-│   ├── local_annotation_faithful_*.txt        # Local faithful annotation prompts
-│   ├── local_annotation_unfaithful_*.txt      # Local unfaithful annotation prompts
-│   └── validation_prompt.txt                  # Answer extraction prompt
+│   ├── faithfulness_global_annotation_*.txt   
+│   ├── local_annotation_faithful_*.txt        
+│   ├── local_annotation_unfaithful_*.txt      
+│   └── validation_prompt.txt                  
 │
 ├── data/                         # Experimental results (per model)
-│   ├── DeepSeek-R1-Distill-Llama-8B/
-│   ├── Qwen3-14B/
-│   └── Qwen3-32B/
+│   ├── <model_name>/
+│   │   ├── behavioural/          # Raw JSONL results, annotated files
+│   │   ├── activations/          # .activations files
+│   │   ├── vectors/              # Steering vectors
+│   │   └── probes/               # Trained probes
 │
-├── # ── Pipeline Scripts ──
-├── eval_baseline.py              # Step 1: Baseline MMLU evaluation
-├── eval_hinted.py                # Step 2: Hinted (biased) evaluation
-├── process_answers.py            # Step 3: Answer validation & accuracy metrics
-├── eval_faithfulness.py          # Step 4: Global faithfulness classification
-├── annotate_faithfulness.py      # Step 5: Local [F_body]/[U_body] annotation
-├── extract_activations.py        # Step 6: Hidden-state activation extraction
-├── generate_steering_vectors.py  # Step 7: Steering vector computation
-├── train_probes.py               # Step 8: Linear/MLP probe training
-├── eval_steering.py              # Step 9: Steered evaluation (EasySteer + vLLM)
-├── eval_faithfulness_steered.py  # Step 10: Post-steering faithfulness eval
-│
-├── # ── Analysis & Utilities ──
-├── generate_off_policy_data.py   # Generate synthetic faithful/unfaithful completions
-├── find_best_configs_ratio.py    # Find best steering configs (recovery/collateral ratio)
-├── statistical_analysis.py       # Z-tests, BH-corrected significance analysis
-├── plot_variations.py            # Publication-ready visualizations
+├── analysis/                     # Analysis outputs
+│   ├── plots/                    # Generated figures
+│   ├── tables/                   # Text tables
+│   └── statistics/               # JSON stats
 │
 ├── requirements.txt              # Python dependencies
 ├── .env                          # API keys (not committed)
@@ -169,7 +176,7 @@ The pipeline is a sequential workflow. Each step produces artifacts consumed by 
 Evaluates the target model on MMLU questions without any bias, establishing baseline accuracy.
 
 ```bash
-python eval_baseline.py \
+python main.py --stage baseline \
     --model_name Qwen3-32B \
     --backend vllm \
     --subjects college_biology high_school_chemistry \
@@ -177,7 +184,7 @@ python eval_baseline.py \
 ```
 
 **Inputs:** MMLU dataset (auto-downloaded via HuggingFace)
-**Outputs:** `data/<model>/baseline_results_<model>_<date>.jsonl`, summary JSON
+**Outputs:** `data/<model>/behavioural/baseline_results_<model>_<date>.jsonl`, summary JSON
 
 ---
 
@@ -188,7 +195,7 @@ python eval_baseline.py \
 Takes baseline results and adds biased hints. For items the model answered correctly, a **wrong** hint is added (testing for unfaithfulness). For incorrect baseline answers, a **correct** hint is added.
 
 ```bash
-python eval_hinted.py \
+python main.py --stage hinted \
     --model_name Qwen3-32B \
     --backend vllm \
     --bias_strategies professor grader_hacking metadata \
@@ -197,7 +204,7 @@ python eval_hinted.py \
 
 **Bias strategies:** `professor`, `grader_hacking`, `metadata`
 
-**Outputs:** `data/<model>/hinted_results_<model>_<date>.jsonl`
+**Outputs:** `data/<model>/behavioural/hinted_results_<model>_<date>.jsonl`
 
 ---
 
@@ -208,8 +215,8 @@ python eval_hinted.py \
 Validates model responses using an LLM judge (via OpenRouter) to extract the final answer letter, assess compliance, and compute accuracy/bias metrics.
 
 ```bash
-python process_answers.py --model Qwen3-32B --dataset-type baseline
-python process_answers.py --model Qwen3-32B --dataset-type hinted
+python main.py --stage process --model Qwen3-32B --dataset-type baseline
+python main.py --stage process --model Qwen3-32B --dataset-type hinted
 ```
 
 **Outputs:** Enriches input JSONL in-place with `answer_letter`, `accuracy`, `compliance`, `completeness`, and `bias_label` fields
@@ -223,7 +230,7 @@ python process_answers.py --model Qwen3-32B --dataset-type hinted
 Uses an LLM judge to classify each hinted response as **faithful** or **unfaithful** based on whether the model's reasoning process was genuinely influenced by the hint.
 
 ```bash
-python eval_faithfulness.py \
+python main.py --stage faithfulness \
     --model_name Qwen3-32B \
     --annotation_model gemini-2.5-pro
 ```
@@ -242,7 +249,7 @@ python eval_faithfulness.py \
 Adds token-level `[F_body]...[/F_body]` or `[U_body]...[/U_body]` markers to responses based on the global classification. These markers define the spans where activations will be extracted.
 
 ```bash
-python annotate_faithfulness.py \
+python main.py --stage annotate \
     --model_name Qwen3-32B \
     --annotation_model gemini-2.5-pro
 ```
@@ -258,7 +265,7 @@ python annotate_faithfulness.py \
 Extracts hidden-state activations from the model at the annotated `[F_body]`/`[U_body]` spans across all layers.
 
 ```bash
-python extract_activations.py \
+python main.py --stage extract \
     --model_name Qwen3-32B \
     --mode on-policy \
     --layers 0 1 2 ... 31
@@ -280,21 +287,21 @@ Computes steering vectors as the mean difference between faithful and unfaithful
 
 ```bash
 # On-policy (from annotated activations)
-python generate_steering_vectors.py \
+python main.py --stage vectors \
     --model_name Qwen3-32B \
     --mode on-policy \
     --positive_tags F_body \
     --negative_tags U_body
 
 # Off-policy (from synthetic data)
-python generate_steering_vectors.py \
+python main.py --stage vectors \
     --model_name Qwen3-32B \
     --mode off-policy
 ```
 
 Supports config-weighted computation to balance across hint templates and domain grouping.
 
-**Outputs:** `data/<model>/vectors_<model>.pkl`, summary JSON
+**Outputs:** `data/<model>/vectors/vectors_<model>.pkl`, summary JSON
 
 ---
 
@@ -305,7 +312,7 @@ Supports config-weighted computation to balance across hint templates and domain
 Trains per-layer binary classifiers (logistic regression + MLP) to distinguish faithful from unfaithful activations. These probes serve dual purposes: measuring linear separability and enabling gradient-based MLP steering.
 
 ```bash
-python train_probes.py \
+python main.py --stage probes \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --hyper 2 8
 ```
@@ -322,7 +329,7 @@ Applies steering vectors during inference using EasySteer + vLLM and evaluates t
 
 ```bash
 # Linear mode (pre-computed vectors)
-python eval_steering.py \
+python main.py --stage steering \
     --mode linear \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --dataset-type annotated \
@@ -330,7 +337,7 @@ python eval_steering.py \
     --coefficients 0.6 -0.6 1 -1
 
 # MLP mode (gradient-based per-prompt)
-python eval_steering.py \
+python main.py --stage steering \
     --mode mlp \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --dataset-type annotated \
@@ -339,7 +346,7 @@ python eval_steering.py \
     --target-values 5 10 15
 
 # Random baseline (sanity check)
-python eval_steering.py \
+python main.py --stage steering \
     --mode random \
     --model "deepseek-ai/DeepSeek-R1-Distill-Llama-8B" \
     --dataset-type annotated \
@@ -354,7 +361,7 @@ python eval_steering.py \
 | `mlp` | Per-prompt gradient-optimized vectors via MLP probes |
 | `random` | Random vectors scaled to match learned vector norms (control) |
 
-**Outputs:** `data/<model>/steered_<mode>_<model>_<date>.jsonl`
+**Outputs:** `data/<model>/behavioural/steered_<mode>_<model>_<date>.jsonl`
 
 ---
 
@@ -365,7 +372,7 @@ python eval_steering.py \
 Evaluates the faithfulness and hint-mentioning of steered model outputs, computing transition rates (e.g., unfaithful→faithful, unfaithful→correct and hint-mentioning).
 
 ```bash
-python eval_faithfulness_steered.py \
+python main.py --stage steered_faithfulness \
     --model Qwen3-32B \
     --steering-mode linear
 ```
@@ -373,7 +380,7 @@ python eval_faithfulness_steered.py \
 Records are stratified by initial state:
 - **WF** (Wrong + Faithful), **WU** (Wrong + Unfaithful)
 
-**Outputs:** `data/<model>/annotated_steered_<mode>_<model>_<date>.jsonl`, summary JSON
+**Outputs:** `data/<model>/behavioural/annotated_steered_<mode>_<model>_<date>.jsonl`, summary JSON
 
 ---
 
@@ -428,7 +435,7 @@ Results are organized under `data/` by model name. Each model directory contains
 | `vectors_<model>.pkl` | Computed steering vectors |
 | `probes_<model>_<date>/` | Trained probes (logreg + MLP per layer) |
 | `steered_<mode>_<model>_<date>.jsonl` | Steered model outputs |
-| `summary_*.json` | Summary statistics for each pipeline stage |
+| `summary_*.json (in respective folders)` | Summary statistics for each pipeline stage |
 
 ---
 

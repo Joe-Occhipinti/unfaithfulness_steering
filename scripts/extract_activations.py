@@ -10,6 +10,10 @@ Extracts activations at the level of periods before closing tags in annotated pr
 For every prompt, stores activations from every label from any layer inside separate .pt files.
 """
 
+import sys
+import os
+# Add the project root to sys.path to allow importing from src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import os
 import sys
 import time

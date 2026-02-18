@@ -12,6 +12,10 @@ Each panel: 9 bars = 3 approaches × 3 models (grouped by approach)
 Using top configuration per (approach × model) via argmax.
 """
 
+import sys
+import os
+# Add the project root to sys.path to allow importing from src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 from pathlib import Path
 from dataclasses import dataclass, field

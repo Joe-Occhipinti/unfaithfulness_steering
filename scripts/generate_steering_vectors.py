@@ -1,3 +1,7 @@
+import sys
+import os
+# Add the project root to sys.path to allow importing from src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 import json
 import os

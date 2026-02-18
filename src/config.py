@@ -6,6 +6,7 @@ Contains settings for baseline, hinted, and steering evaluation scripts.
 """
 
 from datetime import datetime
+from pathlib import Path
 
 # =============================================================================
 # SHARED CONFIGURATION
@@ -18,15 +19,45 @@ from datetime import datetime
 # DATA CONFIGURATION
 # =============================================================================
 
-# Directory paths only (matching README structure)
-BEHAVIOURAL_DIR = "data/behavioural"
-ANNOTATED_DIR = "data/annotated"
-SUMMARIES_DIR = "data/summaries"
-ACTIVATIONS_DIR = "data/activations"
-DATASETS_DIR = "data/datasets"
-STEERING_VECTORS_DIR = "data/steering vectors"
-SEPARABILITY_DIR = "data/separability"
-PLOTS_DIR = "plots"
+# Directory paths (Absolute paths relative to project root)
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+
+BEHAVIOURAL_DIR = PROJECT_ROOT / "data" / "behavioural"  # Will be overridden per model usually, or we use a function
+# Actually, the prompt implies data/<model>/behavioural.
+# The previous config had: BEHAVIOURAL_DIR = "data/behavioural" which seems to imply a single folder?
+# But the prompt says "Refactor data/<model>/ structure to be explicit: data/<model>/behavioural/"
+# So the code needs to handle model-specific paths dynamically or the config constants are just bases.
+# Let's look at how they are used.
+
+# Base directories
+DATA_DIR = PROJECT_ROOT / "data"
+ANALYSIS_DIR = PROJECT_ROOT / "analysis"
+
+# These seem to be used as variable names in scripts.
+# Let's see how they are used in scripts.
+# If I change them to Path objects, I need to make sure scripts handle Path objects. 
+# Most scripts use `Path(BEHAVIOURAL_DIR)` or similar.
+
+# Let's keep them as strings relative to root if scripts expect strings, OR update them to absolute Paths.
+# Given scripts are now in `scripts/`, relative paths like "data/..." will fail if CWD is `scripts/`.
+# So config MUST provide absolute paths.
+
+# New Structure Keys
+# We can't easily put model-specific paths here as constants unless we change how they are used.
+# But we can define the *suffixes*.
+
+BEHAVIOURAL_DIR_NAME = "behavioural"
+ANNOTATED_DIR_NAME = "behavioural" # merged? Prompt says "behavioural/ -> Move all raw JSONL results here."
+# Wait, "data/annotated" was old.
+SUMMARIES_DIR_NAME = "behavioural" # summaries usually go with results?
+ACTIVATIONS_DIR_NAME = "activations"
+VECTORS_DIR_NAME = "vectors"
+PROBES_DIR_NAME = "probes"
+
+# Legacy support or usage update?
+# If scripts use `BEHAVIOURAL_DIR`, they might expect a full path.
+# I should probably check how `BEHAVIOURAL_DIR` is used.
+
 
 # Date formatting (available if needed, but prefer hardcoding dates)
 TODAY = datetime.now().strftime("%Y-%m-%d")
