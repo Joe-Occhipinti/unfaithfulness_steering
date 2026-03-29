@@ -1,6 +1,4 @@
-# Unfaithfulness Steering
-
-The project paper can be read [here](https://openreview.net/attachment?id=LocRunEIxK&name=pdf).
+# Probing and Steering Chain-of-Thought Unfaithfulness in Language Models
 
 **Representation engineering pipeline for detecting and steering faithfulness in chain-of-thought (CoT) reasoning of LLMs.**
 
@@ -11,6 +9,8 @@ This project implements a complete experimental framework for:
 4. **Computing** steering vectors (linear mean-diff, off-policy, and MLP gradient-based)
 5. **Evaluating** the causal effect of activation steering on model faithfulness
 6. **Analyzing** results with statistical tests and publication-ready visualizations
+
+The project paper can be read [here](https://openreview.net/attachment?id=LocRunEIxK&name=pdf).
 
 ---
 
