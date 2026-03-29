@@ -1,5 +1,7 @@
 # Unfaithfulness Steering
 
+The project paper can be read [here](https://openreview.net/attachment?id=LocRunEIxK&name=pdf).
+
 **Representation engineering pipeline for detecting and steering faithfulness in chain-of-thought (CoT) reasoning of LLMs.**
 
 This project implements a complete experimental framework for:
